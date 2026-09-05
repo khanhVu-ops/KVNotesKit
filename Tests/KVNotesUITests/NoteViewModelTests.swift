@@ -22,10 +22,14 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state.visibleNotes.map(\.title), ["Friday journal"])
 
         viewModel.send(.updateSearchQuery(""))
-        viewModel.send(.toggleFavorite(NoteFixtures.bank.id))
+        viewModel.send(.togglePin(NoteFixtures.bank.id))
         try await settle { !viewModel.state.isBusy }
-        let favoriteIndex = await store.index()
-        XCTAssertTrue(favoriteIndex.notes.first(where: { $0.id == NoteFixtures.bank.id })?.isFavorite == true)
+        let pinnedIndex = await store.index()
+        XCTAssertTrue(pinnedIndex.notes.first(where: { $0.id == NoteFixtures.bank.id })?.isPinned == true)
+        // Both fixtures that are now pinned lead the list, and the rest keep their edit order.
+        XCTAssertEqual(viewModel.state.pinnedCount, 2)
+        XCTAssertTrue(viewModel.state.pinnedNotes.allSatisfy(\.isPinned))
+        XCTAssertTrue(viewModel.state.timelineNotes.allSatisfy { !$0.isPinned })
 
         viewModel.send(.requestDiscard(NoteFixtures.journal))
         viewModel.send(.confirmDiscard)

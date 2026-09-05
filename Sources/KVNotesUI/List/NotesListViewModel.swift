@@ -18,7 +18,12 @@ public struct NotesListState: Equatable, Sendable {
     public var index = NoteIndex()
     public var selectedFolder: String?
     public var searchQuery = ""
+    /// The filtered list the screen draws, pinned notes first. One array rather than two, so a
+    /// note can never be missing from both or present in both.
     public var visibleNotes: [NoteDigest] = []
+    /// How many of `visibleNotes` lead it as pinned. The screen slices rather than filters
+    /// again, and the count is what tells it whether to draw the pinned header at all.
+    public var pinnedCount = 0
     public var folderChips: [FolderChip] = []
     public var pendingDiscard: NoteDigest?
     public var isBusy = false
@@ -49,11 +54,19 @@ public struct NotesListState: Equatable, Sendable {
             index.notes.filter { $0.folder == folder }
         } ?? index.notes
         let tokens = Self.normalize(searchQuery).split(whereSeparator: \.isWhitespace)
-        visibleNotes = tokens.isEmpty ? folderNotes : folderNotes.filter { note in
+        let matched = tokens.isEmpty ? folderNotes : folderNotes.filter { note in
             let haystack = normalizedSearchHaystacks[note.id]?.normalized ?? ""
             return tokens.allSatisfy(haystack.contains)
         }
+        // A stable partition: the store already ordered these by last edit, and pinning must
+        // not reshuffle the notes around the one that was pinned.
+        let pinned = matched.filter(\.isPinned)
+        pinnedCount = pinned.count
+        visibleNotes = pinned + matched.filter { !$0.isPinned }
     }
+
+    public var pinnedNotes: ArraySlice<NoteDigest> { visibleNotes.prefix(pinnedCount) }
+    public var timelineNotes: ArraySlice<NoteDigest> { visibleNotes.dropFirst(pinnedCount) }
 
     private static func normalize(_ value: String) -> String {
         value.folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: .current)
@@ -70,7 +83,7 @@ public final class NotesListViewModel {
         case refresh
         case selectFolder(String?)
         case updateSearchQuery(String)
-        case toggleFavorite(NoteID)
+        case togglePin(NoteID)
         case moveToFolder(NoteID, String?)
         case requestDiscard(NoteDigest)
         case confirmDiscard
@@ -105,9 +118,9 @@ public final class NotesListViewModel {
         case .updateSearchQuery(let query):
             state.searchQuery = query
             state.recompute()
-        case .toggleFavorite(let id):
+        case .togglePin(let id):
             guard let note = state.index.notes.first(where: { $0.id == id }) else { return }
-            perform { try await self.store.apply(NoteAttributePatch(isFavorite: !note.isFavorite), to: id) }
+            perform { try await self.store.apply(NoteAttributePatch(isPinned: !note.isPinned), to: id) }
         case .moveToFolder(let id, let folder):
             perform { try await self.store.apply(NoteAttributePatch(folder: .set(folder)), to: id) }
         case .requestDiscard(let note):

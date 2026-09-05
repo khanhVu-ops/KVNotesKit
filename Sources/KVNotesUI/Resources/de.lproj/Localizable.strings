@@ -6,8 +6,9 @@
 "Done" = "Fertig";
 "Edit" = "Bearbeiten";
 "All" = "Alle";
-"Add to Favorites" = "Zu Favoriten hinzufügen";
-"Remove from Favorites" = "Aus Favoriten entfernen";
+"Pin" = "Anheften";
+"Unpin" = "Loslösen";
+"All notes" = "Alle Notizen";
 "Private notes" = "Private Notizen";
 "No notes yet" = "Noch keine Notizen";
 "Notes you write here are sealed in the vault with AES-256." = "Hier geschriebene Notizen werden mit AES-256 im Tresor verschlossen.";
@@ -36,7 +37,7 @@
 "Use PIN instead" = "PIN verwenden";
 "Characters" = "Zeichen";
 "Clipboard clears in" = "Zwischenablage leert in";
-"Favorite" = "Zu Favoriten hinzufügen";
+"Pinned" = "Angeheftet";
 "Locked" = "Gesperrt";
 "Locked note" = "Gesperrte Notiz";
 "Monogram" = "Monogramm";

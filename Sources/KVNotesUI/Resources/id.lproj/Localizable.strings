@@ -6,8 +6,9 @@
 "Done" = "Selesai";
 "Edit" = "Edit";
 "All" = "Semua";
-"Add to Favorites" = "Tambahkan ke Favorit";
-"Remove from Favorites" = "Hapus dari Favorit";
+"Pin" = "Sematkan";
+"Unpin" = "Lepas sematan";
+"All notes" = "Semua catatan";
 "Private notes" = "Catatan pribadi";
 "No notes yet" = "Belum ada catatan";
 "Notes you write here are sealed in the vault with AES-256." = "Catatan yang Anda tulis di sini disegel di dalam vault dengan AES-256.";
@@ -36,7 +37,7 @@
 "Use PIN instead" = "Gunakan PIN";
 "Characters" = "Karakter";
 "Clipboard clears in" = "Papan klip dibersihkan dalam";
-"Favorite" = "Jadikan Favorit";
+"Pinned" = "Disematkan";
 "Locked" = "Terkunci";
 "Locked note" = "Catatan terkunci";
 "Monogram" = "Monogram";

@@ -6,8 +6,9 @@
 "Done" = "Terminé";
 "Edit" = "Modifier";
 "All" = "Tout";
-"Add to Favorites" = "Ajouter aux favoris";
-"Remove from Favorites" = "Retirer des favoris";
+"Pin" = "Épingler";
+"Unpin" = "Ne plus épingler";
+"All notes" = "Toutes les notes";
 "Private notes" = "Notes privées";
 "No notes yet" = "Aucune note pour l’instant";
 "Notes you write here are sealed in the vault with AES-256." = "Les notes écrites ici sont scellées dans le coffre avec AES-256.";
@@ -36,7 +37,7 @@
 "Use PIN instead" = "Utiliser le code PIN";
 "Characters" = "Caractères";
 "Clipboard clears in" = "Le presse-papiers s’efface dans";
-"Favorite" = "Ajouter aux favoris";
+"Pinned" = "Épinglées";
 "Locked" = "Verrouillée";
 "Locked note" = "Note verrouillée";
 "Monogram" = "Monogramme";

@@ -86,12 +86,12 @@ struct NoteRowCard: View {
                     .foregroundStyle(theme.primaryText)
                     .accessibilityLabel(Text(.notesKit("Locked")))
             }
-            if note.isFavorite {
+            if note.isPinned {
                 dot
-                Image(systemName: "heart.fill")
+                Image(systemName: "pin.fill")
                     .font(.system(size: 8))
-                    .foregroundStyle(theme.error)
-                    .accessibilityLabel(Text(.notesKit("Favorite")))
+                    .foregroundStyle(theme.accent)
+                    .accessibilityLabel(Text(.notesKit("Pinned")))
             }
         }
         .font(theme.metadataFont)

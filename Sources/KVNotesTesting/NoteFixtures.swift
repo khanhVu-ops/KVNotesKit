@@ -14,7 +14,7 @@ public enum NoteFixtures {
         icon: "🔑",
         requiresBiometricUnlock: true,
         isTitleUserProvided: true,
-        isFavorite: true,
+        isPinned: true,
         createdAt: Date().addingTimeInterval(-86_400),
         lastEditedAt: Date().addingTimeInterval(-180)
     )

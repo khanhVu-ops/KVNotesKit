@@ -26,7 +26,9 @@ public struct NoteDigest: Identifiable, Equatable, Sendable {
     public var icon: String?
     public var requiresBiometricUnlock: Bool
     public var isTitleUserProvided: Bool
-    public var isFavorite: Bool
+    /// Pinned notes lead the list under their own header. Notes have Pin where the rest of the
+    /// vault has Favourite, and never both — two "keep this at the top" gestures on one row.
+    public var isPinned: Bool
     public var createdAt: Date
     public var lastEditedAt: Date
 
@@ -39,7 +41,7 @@ public struct NoteDigest: Identifiable, Equatable, Sendable {
         icon: String? = nil,
         requiresBiometricUnlock: Bool = false,
         isTitleUserProvided: Bool = false,
-        isFavorite: Bool = false,
+        isPinned: Bool = false,
         createdAt: Date = Date(),
         lastEditedAt: Date = Date()
     ) {
@@ -51,7 +53,7 @@ public struct NoteDigest: Identifiable, Equatable, Sendable {
         self.icon = icon
         self.requiresBiometricUnlock = requiresBiometricUnlock
         self.isTitleUserProvided = isTitleUserProvided
-        self.isFavorite = isFavorite
+        self.isPinned = isPinned
         self.createdAt = createdAt
         self.lastEditedAt = lastEditedAt
     }
@@ -92,18 +94,18 @@ public struct NoteAttributePatch: Equatable, Sendable {
     public var folder: NoteOptionalPatch<String>
     public var icon: NoteOptionalPatch<String>
     public var requiresBiometricUnlock: Bool?
-    public var isFavorite: Bool?
+    public var isPinned: Bool?
 
     public init(
         folder: NoteOptionalPatch<String> = .unchanged,
         icon: NoteOptionalPatch<String> = .unchanged,
         requiresBiometricUnlock: Bool? = nil,
-        isFavorite: Bool? = nil
+        isPinned: Bool? = nil
     ) {
         self.folder = folder
         self.icon = icon
         self.requiresBiometricUnlock = requiresBiometricUnlock
-        self.isFavorite = isFavorite
+        self.isPinned = isPinned
     }
 }
 

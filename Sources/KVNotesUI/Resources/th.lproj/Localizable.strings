@@ -6,8 +6,9 @@
 "Done" = "เสร็จสิ้น";
 "Edit" = "แก้ไข";
 "All" = "ทั้งหมด";
-"Add to Favorites" = "เพิ่มไปยังรายการโปรด";
-"Remove from Favorites" = "นำออกจากรายการโปรด";
+"Pin" = "ปักหมุด";
+"Unpin" = "เลิกปักหมุด";
+"All notes" = "โน้ตทั้งหมด";
 "Private notes" = "บันทึกส่วนตัว";
 "No notes yet" = "ยังไม่มีบันทึก";
 "Notes you write here are sealed in the vault with AES-256." = "บันทึกที่คุณเขียนที่นี่จะถูกผนึกไว้ในตู้นิรภัยด้วย AES-256";
@@ -36,7 +37,7 @@
 "Use PIN instead" = "ใช้ PIN แทน";
 "Characters" = "อักขระ";
 "Clipboard clears in" = "คลิปบอร์ดจะถูกล้างใน";
-"Favorite" = "เพิ่มเป็นรายการโปรด";
+"Pinned" = "ปักหมุดแล้ว";
 "Locked" = "ล็อกอยู่";
 "Locked note" = "บันทึกที่ล็อกอยู่";
 "Monogram" = "อักษรย่อ";

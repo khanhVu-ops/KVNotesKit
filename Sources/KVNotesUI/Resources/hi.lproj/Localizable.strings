@@ -6,8 +6,9 @@
 "Done" = "हो गया";
 "Edit" = "संपादित करें";
 "All" = "सभी";
-"Add to Favorites" = "पसंदीदा में जोड़ें";
-"Remove from Favorites" = "पसंदीदा से हटाएँ";
+"Pin" = "पिन करें";
+"Unpin" = "पिन हटाएँ";
+"All notes" = "सभी नोट्स";
 "Private notes" = "निजी नोट्स";
 "No notes yet" = "अभी कोई नोट नहीं";
 "Notes you write here are sealed in the vault with AES-256." = "यहाँ लिखे गए नोट्स AES-256 के साथ वॉल्ट में सील कर दिए जाते हैं।";
@@ -36,7 +37,7 @@
 "Use PIN instead" = "PIN इस्तेमाल करें";
 "Characters" = "वर्ण";
 "Clipboard clears in" = "क्लिपबोर्ड साफ़ होगा";
-"Favorite" = "पसंदीदा बनाएं";
+"Pinned" = "पिन किए गए";
 "Locked" = "लॉक";
 "Locked note" = "लॉक किया गया नोट";
 "Monogram" = "पहला अक्षर";

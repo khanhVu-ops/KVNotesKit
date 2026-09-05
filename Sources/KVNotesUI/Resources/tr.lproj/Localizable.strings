@@ -6,8 +6,9 @@
 "Done" = "Bitti";
 "Edit" = "Düzenle";
 "All" = "Tümü";
-"Add to Favorites" = "Favorilere Ekle";
-"Remove from Favorites" = "Favorilerden Kaldır";
+"Pin" = "Sabitle";
+"Unpin" = "Sabitlemeyi kaldır";
+"All notes" = "Tüm notlar";
 "Private notes" = "Özel notlar";
 "No notes yet" = "Henüz not yok";
 "Notes you write here are sealed in the vault with AES-256." = "Burada yazdığınız notlar kasada AES-256 ile şifrelenerek saklanır.";
@@ -36,7 +37,7 @@
 "Use PIN instead" = "PIN kullan";
 "Characters" = "Karakter";
 "Clipboard clears in" = "Pano şu süre sonra temizlenir";
-"Favorite" = "Favorilere Ekle";
+"Pinned" = "Sabitlenenler";
 "Locked" = "Kilitli";
 "Locked note" = "Kilitli not";
 "Monogram" = "Baş harf";

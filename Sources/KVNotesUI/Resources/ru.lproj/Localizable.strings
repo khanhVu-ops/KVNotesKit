@@ -6,8 +6,9 @@
 "Done" = "Готово";
 "Edit" = "Изменить";
 "All" = "Все";
-"Add to Favorites" = "Добавить в избранное";
-"Remove from Favorites" = "Удалить из избранного";
+"Pin" = "Закрепить";
+"Unpin" = "Открепить";
+"All notes" = "Все заметки";
 "Private notes" = "Личные заметки";
 "No notes yet" = "Заметок пока нет";
 "Notes you write here are sealed in the vault with AES-256." = "Заметки, написанные здесь, запечатываются в хранилище с шифрованием AES-256.";
@@ -36,7 +37,7 @@
 "Use PIN instead" = "Ввести PIN";
 "Characters" = "Символы";
 "Clipboard clears in" = "Буфер обмена очистится через";
-"Favorite" = "Добавить в избранное";
+"Pinned" = "Закреплённые";
 "Locked" = "Заблокировано";
 "Locked note" = "Заблокированная заметка";
 "Monogram" = "Монограмма";

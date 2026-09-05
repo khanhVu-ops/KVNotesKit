@@ -6,8 +6,9 @@
 "Done" = "完成";
 "Edit" = "编辑";
 "All" = "全部";
-"Add to Favorites" = "添加到收藏";
-"Remove from Favorites" = "取消收藏";
+"Pin" = "置顶";
+"Unpin" = "取消置顶";
+"All notes" = "全部笔记";
 "Private notes" = "私密笔记";
 "No notes yet" = "还没有笔记";
 "Notes you write here are sealed in the vault with AES-256." = "在这里写的笔记会以 AES-256 加密封存在保险库中。";
@@ -36,7 +37,7 @@
 "Use PIN instead" = "改用 PIN";
 "Characters" = "字符";
 "Clipboard clears in" = "剪贴板将在";
-"Favorite" = "收藏";
+"Pinned" = "已置顶";
 "Locked" = "已锁定";
 "Locked note" = "已锁定的笔记";
 "Monogram" = "首字母";

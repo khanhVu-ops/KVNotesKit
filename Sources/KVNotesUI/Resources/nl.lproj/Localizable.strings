@@ -6,8 +6,9 @@
 "Done" = "Gereed";
 "Edit" = "Bewerken";
 "All" = "Alles";
-"Add to Favorites" = "Toevoegen aan favorieten";
-"Remove from Favorites" = "Verwijderen uit favorieten";
+"Pin" = "Vastzetten";
+"Unpin" = "Losmaken";
+"All notes" = "Alle notities";
 "Private notes" = "Privénotities";
 "No notes yet" = "Nog geen notities";
 "Notes you write here are sealed in the vault with AES-256." = "Notities die je hier schrijft, worden met AES-256 in de kluis verzegeld.";
@@ -36,7 +37,7 @@
 "Use PIN instead" = "Gebruik pincode";
 "Characters" = "Tekens";
 "Clipboard clears in" = "Klembord wist na";
-"Favorite" = "Voeg toe aan favorieten";
+"Pinned" = "Vastgezet";
 "Locked" = "Vergrendeld";
 "Locked note" = "Vergrendelde notitie";
 "Monogram" = "Monogram";

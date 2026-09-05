@@ -6,8 +6,9 @@
 "Done" = "完了";
 "Edit" = "編集";
 "All" = "すべて";
-"Add to Favorites" = "お気に入りに追加";
-"Remove from Favorites" = "お気に入りから削除";
+"Pin" = "ピン留め";
+"Unpin" = "ピン留めを解除";
+"All notes" = "すべてのメモ";
 "Private notes" = "プライベートメモ";
 "No notes yet" = "メモがありません";
 "Notes you write here are sealed in the vault with AES-256." = "ここで書いたメモはAES-256で暗号化してVaultに保管されます。";
@@ -36,7 +37,7 @@
 "Use PIN instead" = "PINを使う";
 "Characters" = "文字";
 "Clipboard clears in" = "クリップボードを消去するまで";
-"Favorite" = "お気に入りに追加";
+"Pinned" = "ピン留め済み";
 "Locked" = "ロック中";
 "Locked note" = "ロック中のメモ";
 "Monogram" = "頭文字";

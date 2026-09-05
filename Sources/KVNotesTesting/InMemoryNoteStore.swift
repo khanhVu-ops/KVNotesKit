@@ -68,7 +68,7 @@ public actor InMemoryNoteStore: NoteStore {
             digest.requiresBiometricUnlock = locked
             digest.snippet = locked ? nil : bodies[id]
         }
-        if let favorite = patch.isFavorite { digest.isFavorite = favorite }
+        if let pinned = patch.isPinned { digest.isPinned = pinned }
         digests[id] = digest
         return digest
     }

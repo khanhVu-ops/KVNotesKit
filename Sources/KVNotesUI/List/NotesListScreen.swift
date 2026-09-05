@@ -254,7 +254,23 @@ public struct NotesListScreen: View {
 
     private var rowList: some View {
         List {
-            ForEach(viewModel.state.visibleNotes) { note in row(note) }
+            if viewModel.state.pinnedCount > 0 {
+                Section {
+                    ForEach(viewModel.state.pinnedNotes) { note in row(note) }
+                } header: {
+                    sectionHeader(Text(.notesKit("Pinned")), icon: "pin.fill")
+                }
+
+                if viewModel.state.pinnedCount < viewModel.state.visibleNotes.count {
+                    Section {
+                        ForEach(viewModel.state.timelineNotes) { note in row(note) }
+                    } header: {
+                        sectionHeader(Text(.notesKit("All notes")), icon: nil)
+                    }
+                }
+            } else {
+                ForEach(viewModel.state.visibleNotes) { note in row(note) }
+            }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
@@ -262,6 +278,27 @@ public struct NotesListScreen: View {
         .environment(\.defaultMinListRowHeight, 0)
         .refreshable { viewModel.send(.refresh) }
         .animation(NoteMotion.content(reduceMotion: reduceMotion), value: viewModel.state.visibleNotes.map(\.id))
+    }
+
+    /// Deliberately not a `.headerProminence` default: the header has to read as the same
+    /// typographic family as the count line above the list, not as a grouped-table caption.
+    private func sectionHeader(_ title: Text, icon: String?) -> some View {
+        HStack(spacing: 5) {
+            if let icon {
+                Image(systemName: icon).font(.system(size: 9, weight: .semibold))
+            }
+            title.textCase(.uppercase).tracking(1.4)
+        }
+        .font(theme.metadataFont)
+        .foregroundStyle(theme.secondaryText)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, theme.medium)
+        .padding(.top, theme.small)
+        .padding(.bottom, theme.xs)
+        .listRowInsets(EdgeInsets())
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .accessibilityAddTraits(.isHeader)
     }
 
     private func row(_ note: NoteDigest) -> some View {
@@ -279,9 +316,9 @@ public struct NotesListScreen: View {
                     Label(.notesKit("Move to Trash"), systemImage: "trash")
                 }
             }
-            .swipeActions(edge: .leading) { favoriteButton(note) }
+            .swipeActions(edge: .leading) { pinButton(note) }
             .contextMenu {
-                favoriteButton(note)
+                pinButton(note)
                 if !viewModel.state.index.folders.isEmpty || note.folder != nil {
                     Menu {
                         Button { viewModel.send(.moveToFolder(note.id, nil)) } label: {
@@ -302,14 +339,17 @@ public struct NotesListScreen: View {
             }
     }
 
-    private func favoriteButton(_ note: NoteDigest) -> some View {
-        Button { viewModel.send(.toggleFavorite(note.id)) } label: {
+    private func pinButton(_ note: NoteDigest) -> some View {
+        Button {
+            haptic()
+            viewModel.send(.togglePin(note.id))
+        } label: {
             Label(
-                note.isFavorite ? .notesKit("Remove from Favorites") : .notesKit("Add to Favorites"),
-                systemImage: note.isFavorite ? "heart.slash" : "heart"
+                note.isPinned ? .notesKit("Unpin") : .notesKit("Pin"),
+                systemImage: note.isPinned ? "pin.slash" : "pin"
             )
         }
-        .tint(theme.error)
+        .tint(theme.accent)
     }
 
     private var skeleton: some View {

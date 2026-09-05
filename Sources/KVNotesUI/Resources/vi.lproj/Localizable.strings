@@ -6,8 +6,9 @@
 "Done" = "Xong";
 "Edit" = "Chỉnh sửa";
 "All" = "Tất cả";
-"Add to Favorites" = "Thêm vào yêu thích";
-"Remove from Favorites" = "Bỏ yêu thích";
+"Pin" = "Ghim";
+"Unpin" = "Bỏ ghim";
+"All notes" = "Tất cả ghi chú";
 "Private notes" = "Ghi chú riêng tư";
 "No notes yet" = "Chưa có ghi chú nào";
 "Notes you write here are sealed in the vault with AES-256." = "Ghi chú bạn viết ở đây được niêm phong trong két bằng AES-256.";
@@ -36,7 +37,7 @@
 "Use PIN instead" = "Dùng mã PIN";
 "Characters" = "Ký tự";
 "Clipboard clears in" = "Bảng tạm sẽ xoá sau";
-"Favorite" = "Yêu thích";
+"Pinned" = "Đã ghim";
 "Locked" = "Đã khoá";
 "Locked note" = "Ghi chú đã khoá";
 "Monogram" = "Chữ cái đầu";
