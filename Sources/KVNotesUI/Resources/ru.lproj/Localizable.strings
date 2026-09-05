@@ -91,3 +91,11 @@
 "Insert" = "Вставить";
 /* Accessibility label of the editor toolbar's timestamp key. */
 "Insert the time" = "Вставить время";
+/* Placeholder and label of the in-note search field. */
+"Find in note" = "Найти в заметке";
+/* Accessibility label of the n-of-m match counter. */
+"Matches" = "Совпадения";
+/* Accessibility label of the find bar's down chevron. */
+"Next match" = "Следующее совпадение";
+/* Accessibility label of the find bar's up chevron. */
+"Previous match" = "Предыдущее совпадение";

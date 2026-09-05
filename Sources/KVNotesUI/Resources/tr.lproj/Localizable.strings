@@ -91,3 +91,11 @@
 "Insert" = "Ekle";
 /* Accessibility label of the editor toolbar's timestamp key. */
 "Insert the time" = "Saati ekle";
+/* Placeholder and label of the in-note search field. */
+"Find in note" = "Notta bul";
+/* Accessibility label of the n-of-m match counter. */
+"Matches" = "Eşleşmeler";
+/* Accessibility label of the find bar's down chevron. */
+"Next match" = "Sonraki eşleşme";
+/* Accessibility label of the find bar's up chevron. */
+"Previous match" = "Önceki eşleşme";

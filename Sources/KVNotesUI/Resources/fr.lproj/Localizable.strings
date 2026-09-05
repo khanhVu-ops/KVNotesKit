@@ -91,3 +91,11 @@
 "Insert" = "Insérer";
 /* Accessibility label of the editor toolbar's timestamp key. */
 "Insert the time" = "Insérer l’heure";
+/* Placeholder and label of the in-note search field. */
+"Find in note" = "Rechercher dans la note";
+/* Accessibility label of the n-of-m match counter. */
+"Matches" = "Résultats";
+/* Accessibility label of the find bar's down chevron. */
+"Next match" = "Résultat suivant";
+/* Accessibility label of the find bar's up chevron. */
+"Previous match" = "Résultat précédent";

@@ -17,8 +17,11 @@ struct NoteTextEditor: UIViewRepresentable {
     let onRedo: @MainActor @Sendable () -> Void
     let onInsertTimestamp: @MainActor @Sendable () -> Void
     let onOpenGenerator: @MainActor @Sendable () -> Void
+    let onOpenFind: @MainActor @Sendable () -> Void
     let canUndo: Bool
     let canRedo: Bool
+    let findMatches: [NSRange]
+    let currentFindMatch: NSRange?
     /// False while read mode is on top. The view stays in the hierarchy — it keeps the caret and
     /// the scroll position across the switch — but it must not hold the keyboard.
     let isActive: Bool
@@ -27,6 +30,7 @@ struct NoteTextEditor: UIViewRepresentable {
     let redoTitle: String
     let timestampTitle: String
     let generatorTitle: String
+    let findTitle: String
     let haptic: @MainActor @Sendable () -> Void
 
     func makeUIView(context: Context) -> UITextView {
@@ -69,6 +73,7 @@ struct NoteTextEditor: UIViewRepresentable {
         }
         context.coordinator.updateHistoryKeys(canUndo: canUndo, canRedo: canRedo)
         if !isActive, view.isFirstResponder { view.resignFirstResponder() }
+        context.coordinator.applyFindHighlights(in: view)
         view.tintColor = UIColor(theme.primaryText)
         if view.font != Self.font {
             view.font = Self.font
@@ -113,6 +118,7 @@ struct NoteTextEditor: UIViewRepresentable {
         /// Built once and reused: the attribute dictionaries are the expensive part, and they do
         /// not change between keystrokes. Rebuilt only when the font does — a Dynamic Type change.
         private var cachedStyling: NoteSyntaxStyling?
+        private var lastFindSignature: FindSignature?
         private var styling: NoteSyntaxStyling {
             if let cachedStyling, cachedStyling.baseFont == NoteTextEditor.font { return cachedStyling }
             let styling = NoteSyntaxStyling(theme: parent.theme, baseFont: NoteTextEditor.font)
@@ -124,7 +130,12 @@ struct NoteTextEditor: UIViewRepresentable {
         func styleEverythingVisible(in view: UITextView) {
             let text = view.text as NSString
             guard text.length > 0 else { return }
-            styling.apply(to: view.textStorage, range: visibleRange(of: view))
+            styling.apply(
+                to: view.textStorage,
+                range: visibleRange(of: view),
+                matches: parent.findMatches,
+                current: parent.currentFindMatch
+            )
             view.typingAttributes = styling.typingAttributes
         }
 
@@ -136,10 +147,31 @@ struct NoteTextEditor: UIViewRepresentable {
             let text = view.text as NSString
             guard text.length > 0 else { return }
             let paragraph = NoteSyntaxHighlighting.lineRange(of: text, containing: view.selectedRange)
-            styling.apply(to: view.textStorage, range: paragraph)
+            styling.apply(
+                to: view.textStorage,
+                range: paragraph,
+                matches: parent.findMatches,
+                current: parent.currentFindMatch
+            )
             // Typing attributes are reset every time: without this, a character typed right after
             // a bold run inherits bold and the note grows styling the author never wrote.
             view.typingAttributes = styling.typingAttributes
+        }
+
+        /// Repaints and scrolls when the search moves, and does nothing at all when it has not —
+        /// `updateUIView` runs for every state change in the screen, including every keystroke.
+        func applyFindHighlights(in view: UITextView) {
+            let signature = FindSignature(matches: parent.findMatches, current: parent.currentFindMatch)
+            guard signature != lastFindSignature else { return }
+            lastFindSignature = signature
+            styleEverythingVisible(in: view)
+            guard let current = parent.currentFindMatch else { return }
+            view.scrollRangeToVisible(current)
+        }
+
+        private struct FindSignature: Equatable {
+            let matches: [NSRange]
+            let current: NSRange?
         }
 
         private func visibleRange(of view: UITextView) -> NSRange {
@@ -205,7 +237,10 @@ struct NoteTextEditor: UIViewRepresentable {
             let generator = key(symbol: "key.horizontal", action: #selector(generatorTapped))
             generator.accessibilityLabel = parent.generatorTitle
 
-            let keys = UIStackView(arrangedSubviews: [undo, redo, separator, timestamp, generator]
+            let find = key(symbol: "magnifyingglass", action: #selector(findTapped))
+            find.accessibilityLabel = parent.findTitle
+
+            let keys = UIStackView(arrangedSubviews: [undo, redo, separator, find, timestamp, generator]
                 + MarkdownToken.allCases.enumerated().map { index, token in
                     key(titled: token.keyTitle, tag: index, action: #selector(insertTapped(_:)))
                 })
@@ -323,6 +358,11 @@ struct NoteTextEditor: UIViewRepresentable {
             parent.onOpenGenerator()
         }
 
+        @objc private func findTapped() {
+            parent.haptic()
+            parent.onOpenFind()
+        }
+
         func textViewDidChange(_ textView: UITextView) {
             self.textView = textView
             styleEditedParagraph(in: textView)
@@ -364,14 +404,18 @@ struct NoteTextEditor: View {
     let onRedo: @MainActor @Sendable () -> Void
     let onInsertTimestamp: @MainActor @Sendable () -> Void
     let onOpenGenerator: @MainActor @Sendable () -> Void
+    let onOpenFind: @MainActor @Sendable () -> Void
     let canUndo: Bool
     let canRedo: Bool
+    let findMatches: [NSRange]
+    let currentFindMatch: NSRange?
     let isActive: Bool
     let doneTitle: String
     let undoTitle: String
     let redoTitle: String
     let timestampTitle: String
     let generatorTitle: String
+    let findTitle: String
     let haptic: @MainActor @Sendable () -> Void
 
     var body: some View {

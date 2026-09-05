@@ -262,6 +262,48 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state.body, "password: s3cret!")
     }
 
+    func testFindCountsMatchesStepsThroughThemAndFollowsTheBody() {
+        let viewModel = NoteEditorViewModel(store: InMemoryNoteStore(), unlockAuthority: UnlockAuthority())
+        viewModel.send(.setBody("ledger one\nLEDGER two\nnothing"))
+        viewModel.send(.setSelection(0..<0))
+
+        viewModel.send(.openFind)
+        // Find reads the source, so it opens the editor rather than searching the rendered view.
+        XCTAssertEqual(viewModel.state.mode, .edit)
+
+        viewModel.send(.setFindQuery("ledger"))
+        XCTAssertEqual(viewModel.state.find.matches.count, 2)
+        XCTAssertEqual(viewModel.state.find.currentNumber, 1)
+
+        viewModel.send(.stepFind(forward: true))
+        XCTAssertEqual(viewModel.state.find.currentNumber, 2)
+        // Stepping past the end wraps rather than stopping dead.
+        viewModel.send(.stepFind(forward: true))
+        XCTAssertEqual(viewModel.state.find.currentNumber, 1)
+        viewModel.send(.stepFind(forward: false))
+        XCTAssertEqual(viewModel.state.find.currentNumber, 2)
+
+        // A match range into text that has moved is a highlight over the wrong words.
+        viewModel.send(.setBody("ledger one"))
+        XCTAssertEqual(viewModel.state.find.matches.count, 1)
+
+        viewModel.send(.closeFind)
+        XCTAssertFalse(viewModel.state.find.isOpen)
+        XCTAssertTrue(viewModel.state.find.matches.isEmpty)
+    }
+
+    func testFindStartsAtTheMatchNearestTheCaret() {
+        let viewModel = NoteEditorViewModel(store: InMemoryNoteStore(), unlockAuthority: UnlockAuthority())
+        viewModel.send(.setBody("key at the top\n\nand a key far below"))
+        viewModel.send(.setSelection(20..<20))
+
+        viewModel.send(.openFind)
+        viewModel.send(.setFindQuery("key"))
+
+        // Opening find where the reader is should not throw them back to the top of the note.
+        XCTAssertEqual(viewModel.state.find.currentNumber, 2)
+    }
+
     private func settle(
         until condition: @escaping @MainActor () -> Bool,
         file: StaticString = #filePath,

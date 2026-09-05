@@ -88,6 +88,7 @@ public struct NoteEditorScreen: View {
     private var editor: some View {
         VStack(spacing: 0) {
             header
+            if viewModel.state.find.isOpen { findBar }
             // Both surfaces stay in the hierarchy across the switch. Rebuilding the text view
             // every time the user previews a note would throw away the caret and the scroll
             // position, and read mode's own state with them.
@@ -110,6 +111,7 @@ public struct NoteEditorScreen: View {
         }
         .background(theme.background)
         .animation(NoteMotion.mode(reduceMotion: reduceMotion), value: viewModel.state.mode)
+        .animation(NoteMotion.mode(reduceMotion: reduceMotion), value: viewModel.state.find.isOpen)
         .overlay(alignment: .bottom) { savedToast }
     }
 
@@ -213,10 +215,27 @@ public struct NoteEditorScreen: View {
         #if os(iOS)
         ToolbarItem(placement: .principal) { modeSwitch }
         ToolbarItem(placement: .topBarTrailing) { optionsButton }
+        ToolbarItem(placement: .topBarLeading) { findButton }
         #else
         ToolbarItem { modeSwitch }
         ToolbarItem { optionsButton }
+        ToolbarItem { findButton }
         #endif
+    }
+
+    /// In the toolbar rather than only on the keyboard's accessory bar: looking for something in
+    /// a note is what a reader does, and read mode has no keyboard up to hang a key from.
+    private var findButton: some View {
+        Button {
+            haptic()
+            viewModel.send(viewModel.state.find.isOpen ? .closeFind : .openFind)
+        } label: {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(viewModel.state.find.isOpen ? theme.accent : theme.primaryText)
+        }
+        .disabled(viewModel.state.isLocked)
+        .accessibilityLabel(Text(.notesKit("Find in note")))
     }
 
     private var optionsButton: some View {
@@ -268,6 +287,74 @@ public struct NoteEditorScreen: View {
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
+    /// Reachable from the toolbar while typing and from the options sheet while reading, because
+    /// looking for something in a note is not an editing gesture.
+    private var findBar: some View {
+        HStack(spacing: theme.small) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(theme.secondaryText)
+
+            TextField(
+                text: Binding(
+                    get: { viewModel.state.find.query },
+                    set: { viewModel.send(.setFindQuery($0)) }
+                ),
+                prompt: Text(.notesKit("Find in note")).foregroundStyle(theme.disabledText)
+            ) { Text(.notesKit("Find in note")) }
+                .textFieldStyle(.plain)
+                .font(theme.monoFont)
+                .foregroundStyle(theme.primaryText)
+                .autocorrectionDisabled()
+                .noteNeverAutocapitalizes()
+                .submitLabel(.search)
+                .onSubmit { viewModel.send(.stepFind(forward: true)) }
+
+            if viewModel.state.find.hasQuery {
+                Text(verbatim: "\(viewModel.state.find.currentNumber)/\(viewModel.state.find.matches.count)")
+                    .font(theme.metadataFont)
+                    .foregroundStyle(viewModel.state.find.matches.isEmpty ? theme.error : theme.secondaryText)
+                    .contentTransition(.numericText())
+                    .accessibilityLabel(Text(.notesKit("Matches")))
+            }
+
+            stepButton(systemImage: "chevron.up", forward: false)
+            stepButton(systemImage: "chevron.down", forward: true)
+
+            Button { viewModel.send(.closeFind) } label: {
+                Text(.notesKit("Done"))
+                    .font(theme.modeFont)
+                    .textCase(.uppercase)
+                    .tracking(1.2)
+                    .foregroundStyle(theme.primaryText)
+            }
+            .buttonStyle(NotePressButtonStyle())
+        }
+        .padding(.horizontal, theme.medium)
+        .padding(.vertical, theme.small)
+        .background(theme.sheet)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(theme.separator).frame(height: 0.75)
+        }
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .animation(NoteMotion.mode(reduceMotion: reduceMotion), value: viewModel.state.find.matches.count)
+    }
+
+    private func stepButton(systemImage: String, forward: Bool) -> some View {
+        Button {
+            haptic()
+            viewModel.send(.stepFind(forward: forward))
+        } label: {
+            Image(systemName: systemImage)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(viewModel.state.find.matches.isEmpty ? theme.disabledText : theme.primaryText)
+                .frame(width: 28, height: 28)
+        }
+        .buttonStyle(NotePressButtonStyle())
+        .disabled(viewModel.state.find.matches.isEmpty)
+        .accessibilityLabel(Text(forward ? .notesKit("Next match") : .notesKit("Previous match")))
+    }
+
     private var isEditing: Bool { viewModel.state.mode == .edit }
 
     private var editBody: some View {
@@ -287,14 +374,18 @@ public struct NoteEditorScreen: View {
                 viewModel.send(.insertText(NoteTimestamp.text(locale: locale), viewModel.state.selection))
             },
             onOpenGenerator: { showsGenerator = true },
+            onOpenFind: { viewModel.send(.openFind) },
             canUndo: viewModel.state.canUndo,
             canRedo: viewModel.state.canRedo,
+            findMatches: viewModel.state.find.matches,
+            currentFindMatch: viewModel.state.find.currentMatch,
             isActive: viewModel.state.mode == .edit,
             doneTitle: NotesLocalization.string("Done", locale: locale),
             undoTitle: NotesLocalization.string("Undo", locale: locale),
             redoTitle: NotesLocalization.string("Redo", locale: locale),
             timestampTitle: NotesLocalization.string("Insert the time", locale: locale),
             generatorTitle: NotesLocalization.string("Generate a password", locale: locale),
+            findTitle: NotesLocalization.string("Find in note", locale: locale),
             haptic: haptic
         )
     }

@@ -31,6 +31,8 @@ final class NoteSyntaxStyling {
     private let taskDone: [NSAttributedString.Key: Any]
     private let taskOpen: [NSAttributedString.Key: Any]
     private let syntax: [NSAttributedString.Key: Any]
+    private let match: [NSAttributedString.Key: Any]
+    private let currentMatch: [NSAttributedString.Key: Any]
 
     init(theme: NoteTheme, baseFont: UIFont) {
         self.baseFont = baseFont
@@ -64,12 +66,25 @@ final class NoteSyntaxStyling {
         // Dimmed, never hidden. Hiding the markers makes the caret step over glyphs that are not
         // drawn, and selection stops matching what the eye sees.
         syntax = [.foregroundColor: dimmed]
+        // Find highlights sit on top of syntax styling rather than replacing it: a match inside a
+        // heading is still a heading, and losing that while searching makes the note look like a
+        // different note.
+        match = [.backgroundColor: accent.withAlphaComponent(0.22)]
+        currentMatch = [.backgroundColor: accent, .foregroundColor: UIColor(theme.onAccent)]
     }
 
     var typingAttributes: [NSAttributedString.Key: Any] { base }
 
     /// Applies styling to `range` and leaves the rest of the storage untouched.
-    func apply(to storage: NSTextStorage, range: NSRange) {
+    ///
+    /// `matches` and `current` are the find results; only the ones intersecting `range` cost
+    /// anything, so highlighting a search in a long note is still a per-paragraph operation.
+    func apply(
+        to storage: NSTextStorage,
+        range: NSRange,
+        matches: [NSRange] = [],
+        current: NSRange? = nil
+    ) {
         let text = storage.string as NSString
         let target = NSIntersectionRange(range, NSRange(location: 0, length: text.length))
         guard target.length > 0 else { return }
@@ -80,6 +95,11 @@ final class NoteSyntaxStyling {
             let clipped = NSIntersectionRange(span.range, target)
             guard clipped.length > 0 else { continue }
             storage.addAttributes(attributes(for: span.kind), range: clipped)
+        }
+        for found in matches {
+            let clipped = NSIntersectionRange(found, target)
+            guard clipped.length > 0 else { continue }
+            storage.addAttributes(found == current ? currentMatch : match, range: clipped)
         }
         storage.endEditing()
     }

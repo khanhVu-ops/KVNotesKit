@@ -91,3 +91,11 @@
 "Insert" = "Sisipkan";
 /* Accessibility label of the editor toolbar's timestamp key. */
 "Insert the time" = "Sisipkan waktu";
+/* Placeholder and label of the in-note search field. */
+"Find in note" = "Cari di catatan";
+/* Accessibility label of the n-of-m match counter. */
+"Matches" = "Hasil cocok";
+/* Accessibility label of the find bar's down chevron. */
+"Next match" = "Hasil berikutnya";
+/* Accessibility label of the find bar's up chevron. */
+"Previous match" = "Hasil sebelumnya";

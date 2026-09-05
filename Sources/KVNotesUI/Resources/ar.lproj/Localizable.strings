@@ -91,3 +91,11 @@
 "Insert" = "إدراج";
 /* Accessibility label of the editor toolbar's timestamp key. */
 "Insert the time" = "إدراج الوقت";
+/* Placeholder and label of the in-note search field. */
+"Find in note" = "البحث في الملاحظة";
+/* Accessibility label of the n-of-m match counter. */
+"Matches" = "النتائج المطابقة";
+/* Accessibility label of the find bar's down chevron. */
+"Next match" = "النتيجة التالية";
+/* Accessibility label of the find bar's up chevron. */
+"Previous match" = "النتيجة السابقة";

@@ -91,3 +91,11 @@
 "Insert" = "插入";
 /* Accessibility label of the editor toolbar's timestamp key. */
 "Insert the time" = "插入時間";
+/* Placeholder and label of the in-note search field. */
+"Find in note" = "在備忘錄中尋找";
+/* Accessibility label of the n-of-m match counter. */
+"Matches" = "符合項目";
+/* Accessibility label of the find bar's down chevron. */
+"Next match" = "下一個符合項目";
+/* Accessibility label of the find bar's up chevron. */
+"Previous match" = "上一個符合項目";

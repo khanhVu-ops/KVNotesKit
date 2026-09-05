@@ -31,6 +31,26 @@ public struct NoteEditorState: Equatable, Sendable {
     public var selection = 0..<0
     public var canUndo = false
     public var canRedo = false
+    public var find = Find()
+
+    /// Find-in-note, as state rather than as a one-shot effect: it survives a rebuild, and the
+    /// match count can be asserted without SwiftUI.
+    public struct Find: Equatable, Sendable {
+        public var isOpen = false
+        public var query = ""
+        /// Ranges into the body, in UTF-16 units — the editor highlights and scrolls with them.
+        public var matches: [NSRange] = []
+        public var currentIndex = 0
+
+        public var currentMatch: NSRange? {
+            matches.indices.contains(currentIndex) ? matches[currentIndex] : nil
+        }
+        public var hasQuery: Bool {
+            !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        /// The ordinal a human reads: 1-based, and 0 when there is nothing to count.
+        public var currentNumber: Int { matches.isEmpty ? 0 : currentIndex + 1 }
+    }
 
     public var isAuthenticating: Bool { unlockPhase == .authenticating }
     public var authenticationDenied: Bool { unlockPhase == .denied }
@@ -71,6 +91,10 @@ public final class NoteEditorViewModel {
         case insert(MarkdownToken, Range<Int>)
         case insertText(String, Range<Int>)
         case setSelection(Range<Int>)
+        case openFind
+        case closeFind
+        case setFindQuery(String)
+        case stepFind(forward: Bool)
         case undo
         case redo
         case toggleTask(line: Int)
@@ -183,6 +207,22 @@ public final class NoteEditorViewModel {
         case .setSelection(let range):
             guard range != state.selection else { return }
             state.selection = range
+        case .openFind:
+            // Find reads the note's source, so it opens the editor. Searching the rendered view
+            // would highlight text at offsets that do not exist in what is stored.
+            state.mode = .edit
+            state.find.isOpen = true
+            refreshFindMatches(startingAt: state.selection.lowerBound)
+        case .closeFind:
+            state.find = NoteEditorState.Find()
+        case .setFindQuery(let query):
+            guard query != state.find.query else { return }
+            state.find.query = query
+            refreshFindMatches(startingAt: state.selection.lowerBound)
+        case .stepFind(let forward):
+            guard !state.find.matches.isEmpty else { return }
+            let count = state.find.matches.count
+            state.find.currentIndex = (state.find.currentIndex + (forward ? 1 : count - 1)) % count
         case .undo:
             step(undoing: true)
         case .redo:
@@ -291,8 +331,23 @@ public final class NoteEditorViewModel {
         state.canRedo = !redoStack.isEmpty
     }
 
+    /// Recomputed whenever the query or the body changes, because a match range into text that
+    /// has moved is a highlight over the wrong words.
+    private func refreshFindMatches(startingAt caret: Int) {
+        guard state.find.isOpen, state.find.hasQuery else {
+            state.find.matches = []
+            state.find.currentIndex = 0
+            return
+        }
+        let matches = NoteFind.matches(of: state.find.query, in: state.body as NSString)
+        state.find.matches = matches
+        state.find.currentIndex = NoteFind.indexOfMatch(at: caret, in: matches) ?? 0
+    }
+
     private func dirty() {
         state.saveStatus = .unsaved
+        // The body just changed under the matches.
+        if state.find.isOpen { refreshFindMatches(startingAt: state.find.currentMatch?.location ?? 0) }
         autosaveTask?.cancel()
         autosaveTask = Task { [weak self] in
             try? await Task.sleep(for: Self.autosaveDelay)
