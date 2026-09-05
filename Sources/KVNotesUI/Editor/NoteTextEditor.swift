@@ -54,17 +54,26 @@ struct NoteTextEditor: UIViewRepresentable {
         view.text = text
         view.inputAccessoryView = context.coordinator.makeAccessoryBar()
         context.coordinator.attach(view)
+        context.coordinator.styleEverythingVisible(in: view)
         return view
     }
 
     func updateUIView(_ view: UITextView, context: Context) {
         context.coordinator.parent = self
-        if view.text != text { view.text = text }
+        if view.text != text {
+            // A ViewModel-driven change: an insertion, an undo, a toggled checkbox. Assigning
+            // `.text` drops every attribute in the storage, so the visible range is restyled
+            // immediately afterwards rather than on the next keystroke.
+            view.text = text
+            context.coordinator.styleEverythingVisible(in: view)
+        }
         context.coordinator.updateHistoryKeys(canUndo: canUndo, canRedo: canRedo)
         if !isActive, view.isFirstResponder { view.resignFirstResponder() }
-        view.textColor = UIColor(theme.primaryText)
         view.tintColor = UIColor(theme.primaryText)
-        view.font = Self.font
+        if view.font != Self.font {
+            view.font = Self.font
+            context.coordinator.styleEverythingVisible(in: view)
+        }
 
         if let pendingCaretOffset {
             let clamped = min(max(pendingCaretOffset, 0), view.text.count)
@@ -96,7 +105,67 @@ struct NoteTextEditor: UIViewRepresentable {
 
         init(parent: NoteTextEditor) { self.parent = parent }
 
-        func attach(_ view: UITextView) { textView = view }
+        func attach(_ view: UITextView) {
+            textView = view
+            view.typingAttributes = styling.typingAttributes
+        }
+
+        /// Built once and reused: the attribute dictionaries are the expensive part, and they do
+        /// not change between keystrokes. Rebuilt only when the font does — a Dynamic Type change.
+        private var cachedStyling: NoteSyntaxStyling?
+        private var styling: NoteSyntaxStyling {
+            if let cachedStyling, cachedStyling.baseFont == NoteTextEditor.font { return cachedStyling }
+            let styling = NoteSyntaxStyling(theme: parent.theme, baseFont: NoteTextEditor.font)
+            cachedStyling = styling
+            return styling
+        }
+
+        /// Styles what is on screen plus a margin either side.
+        func styleEverythingVisible(in view: UITextView) {
+            let text = view.text as NSString
+            guard text.length > 0 else { return }
+            styling.apply(to: view.textStorage, range: visibleRange(of: view))
+            view.typingAttributes = styling.typingAttributes
+        }
+
+        /// Styles only the lines an edit touched.
+        ///
+        /// The keystroke path. Everything here is bounded by the paragraph the caret is in, so the
+        /// cost of typing does not grow with the length of the note.
+        private func styleEditedParagraph(in view: UITextView) {
+            let text = view.text as NSString
+            guard text.length > 0 else { return }
+            let paragraph = NoteSyntaxHighlighting.lineRange(of: text, containing: view.selectedRange)
+            styling.apply(to: view.textStorage, range: paragraph)
+            // Typing attributes are reset every time: without this, a character typed right after
+            // a bold run inherits bold and the note grows styling the author never wrote.
+            view.typingAttributes = styling.typingAttributes
+        }
+
+        private func visibleRange(of view: UITextView) -> NSRange {
+            let text = view.text as NSString
+            let inset = view.textContainerInset
+            let rect = CGRect(
+                x: 0,
+                y: view.contentOffset.y - inset.top,
+                width: view.bounds.width,
+                height: view.bounds.height
+            )
+            guard let start = view.closestPosition(to: CGPoint(x: rect.minX, y: rect.minY)),
+                  let end = view.closestPosition(to: CGPoint(x: rect.maxX, y: rect.maxY))
+            else { return NSRange(location: 0, length: min(text.length, NoteSyntaxStyling.visibleMargin)) }
+
+            let lower = view.offset(from: view.beginningOfDocument, to: start)
+            let upper = view.offset(from: view.beginningOfDocument, to: end)
+            let padded = NSRange(
+                location: max(0, min(lower, upper) - NoteSyntaxStyling.visibleMargin),
+                length: abs(upper - lower) + NoteSyntaxStyling.visibleMargin * 2
+            )
+            return NoteSyntaxHighlighting.lineRange(
+                of: text,
+                containing: NSIntersectionRange(padded, NSRange(location: 0, length: text.length))
+            )
+        }
 
         /// Dim rather than hide: keys that come and go move every other key under the thumb.
         func updateHistoryKeys(canUndo: Bool, canRedo: Bool) {
@@ -256,8 +325,16 @@ struct NoteTextEditor: UIViewRepresentable {
 
         func textViewDidChange(_ textView: UITextView) {
             self.textView = textView
+            styleEditedParagraph(in: textView)
             parent.text = textView.text
             reportSelection(of: textView)
+        }
+
+        func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            guard let view = scrollView as? UITextView else { return }
+            // Scrolling styles what has come into view. Cheap for the same reason the keystroke
+            // path is: it is a range, not the document.
+            styleEverythingVisible(in: view)
         }
 
         func textViewDidChangeSelection(_ textView: UITextView) {
