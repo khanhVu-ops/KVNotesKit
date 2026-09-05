@@ -25,3 +25,25 @@ public protocol NoteSecretPolicy: Sendable {
 public extension NoteSecretPolicy {
     var transientCopyLifetime: TimeInterval { 60 }
 }
+
+/// How the user last chose to see the list.
+public struct NoteListPreferences: Equatable, Codable, Sendable {
+    public var sortOrder: NoteSortOrder
+    public var filter: NoteFilter
+
+    public init(sortOrder: NoteSortOrder = .lastEditedNewest, filter: NoteFilter = .all) {
+        self.sortOrder = sortOrder
+        self.filter = filter
+    }
+}
+
+/// Where those choices survive between visits.
+///
+/// A port rather than `UserDefaults` inside the package: the host decides where a preference
+/// lives, and a package that wrote to the app's defaults suite would be writing into a container
+/// it does not own. Nothing secret passes through here — a sort order says nothing about what the
+/// notes contain — which is also why it is not the encrypted store's problem.
+public protocol NoteListPreferencesStore: Sendable {
+    func load() -> NoteListPreferences
+    func save(_ preferences: NoteListPreferences)
+}

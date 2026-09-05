@@ -17,6 +17,7 @@ public struct NotesListScreen: View {
     public init(
         store: any NoteStore,
         theme: NoteTheme,
+        preferences: (any NoteListPreferencesStore)? = nil,
         refreshToken: Int = 0,
         onClose: @escaping @MainActor @Sendable () -> Void,
         onOpenNote: @escaping @MainActor @Sendable (NoteDigest) -> Void,
@@ -24,7 +25,11 @@ public struct NotesListScreen: View {
         onChange: @escaping @MainActor @Sendable () -> Void = {},
         haptic: @escaping @MainActor @Sendable () -> Void = {}
     ) {
-        _viewModel = State(initialValue: NotesListViewModel(store: store, onChange: onChange))
+        _viewModel = State(initialValue: NotesListViewModel(
+            store: store,
+            preferences: preferences,
+            onChange: onChange
+        ))
         self.theme = theme
         self.refreshToken = refreshToken
         self.onClose = onClose

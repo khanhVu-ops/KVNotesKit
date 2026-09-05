@@ -129,13 +129,23 @@ public final class NotesListViewModel {
 
     public private(set) var state = NotesListState()
     @ObservationIgnored private let store: any NoteStore
+    @ObservationIgnored private let preferences: (any NoteListPreferencesStore)?
     @ObservationIgnored private let onChange: @MainActor @Sendable () -> Void
     @ObservationIgnored private var loadTask: Task<Void, Never>?
     @ObservationIgnored private var mutationTask: Task<Void, Never>?
 
-    public init(store: any NoteStore, onChange: @escaping @MainActor @Sendable () -> Void = {}) {
+    public init(
+        store: any NoteStore,
+        preferences: (any NoteListPreferencesStore)? = nil,
+        onChange: @escaping @MainActor @Sendable () -> Void = {}
+    ) {
         self.store = store
+        self.preferences = preferences
         self.onChange = onChange
+        if let stored = preferences?.load() {
+            state.sortOrder = stored.sortOrder
+            state.filter = stored.filter
+        }
     }
 
     deinit {
@@ -158,9 +168,11 @@ public final class NotesListViewModel {
         case .setSortOrder(let order):
             state.sortOrder = order
             state.recompute()
+            rememberHowTheListIsShown()
         case .setFilter(let filter):
             state.filter = filter
             state.recompute()
+            rememberHowTheListIsShown()
         case .togglePin(let id):
             guard let note = state.index.notes.first(where: { $0.id == id }) else { return }
             perform { try await self.store.apply(NoteAttributePatch(isPinned: !note.isPinned), to: id) }
@@ -175,6 +187,10 @@ public final class NotesListViewModel {
         case .cancelDiscard:
             state.pendingDiscard = nil
         }
+    }
+
+    private func rememberHowTheListIsShown() {
+        preferences?.save(NoteListPreferences(sortOrder: state.sortOrder, filter: state.filter))
     }
 
     private func load() {

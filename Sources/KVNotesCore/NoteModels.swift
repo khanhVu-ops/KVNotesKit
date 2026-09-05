@@ -141,14 +141,14 @@ public struct NoteIndex: Equatable, Sendable {
     }
 }
 
-public enum NoteSortOrder: String, CaseIterable, Equatable, Sendable {
+public enum NoteSortOrder: String, CaseIterable, Equatable, Codable, Sendable {
     case lastEditedNewest
     case lastEditedOldest
     case createdNewest
     case title
 }
 
-public enum NoteFilter: String, CaseIterable, Equatable, Sendable {
+public enum NoteFilter: String, CaseIterable, Equatable, Codable, Sendable {
     case all
     case locked
     case hasChecklist

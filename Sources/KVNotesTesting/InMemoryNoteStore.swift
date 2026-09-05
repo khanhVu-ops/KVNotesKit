@@ -101,3 +101,25 @@ public actor InMemoryNoteStore: NoteStore {
         return trimmed
     }
 }
+
+/// A preferences store that forgets, for previews and for tests that assert the default view.
+public final class InMemoryNoteListPreferences: NoteListPreferencesStore, @unchecked Sendable {
+    private let lock = NSLock()
+    private var preferences: NoteListPreferences
+
+    public init(_ preferences: NoteListPreferences = NoteListPreferences()) {
+        self.preferences = preferences
+    }
+
+    public func load() -> NoteListPreferences {
+        lock.lock()
+        defer { lock.unlock() }
+        return preferences
+    }
+
+    public func save(_ preferences: NoteListPreferences) {
+        lock.lock()
+        defer { lock.unlock() }
+        self.preferences = preferences
+    }
+}

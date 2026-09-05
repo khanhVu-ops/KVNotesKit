@@ -145,6 +145,30 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state.visibleNotes.count, 3)
     }
 
+    func testTheListRemembersHowItWasLastShown() async throws {
+        let store = InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies)
+        let preferences = InMemoryNoteListPreferences()
+        let first = NotesListViewModel(store: store, preferences: preferences)
+
+        first.send(.onAppear)
+        try await settle { first.state.phase == .loaded }
+        first.send(.setSortOrder(.title))
+        first.send(.setFilter(.locked))
+
+        // A second screen, as if the user had left the flow and come back.
+        let second = NotesListViewModel(store: store, preferences: preferences)
+        XCTAssertEqual(second.state.sortOrder, .title)
+        XCTAssertEqual(second.state.filter, .locked)
+        second.send(.onAppear)
+        try await settle { second.state.phase == .loaded }
+        XCTAssertEqual(second.state.visibleNotes.map(\.title), ["Hardware wallet"])
+
+        // And a screen with nowhere to read from opens on the defaults rather than crashing.
+        let third = NotesListViewModel(store: store)
+        XCTAssertEqual(third.state.sortOrder, .lastEditedNewest)
+        XCTAssertEqual(third.state.filter, .all)
+    }
+
     private func settle(
         until condition: @escaping @MainActor () -> Bool,
         file: StaticString = #filePath,
