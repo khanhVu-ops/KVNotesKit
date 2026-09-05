@@ -29,39 +29,51 @@ struct NoteFolderManagerSheet: View {
             if folders.isEmpty { empty } else { list }
         }
         .background(theme.sheet)
-        .confirmationDialog(
-            Text(.notesKit("Remove this folder?")),
+        .noteConfirmOverlay(
             isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
-            titleVisibility: .visible
-        ) {
-            Button(.notesKit("Remove folder"), role: .destructive) {
+            title: .notesKit("Remove this folder?"),
+            message: .notesKit("The notes in it stay in the vault, with no folder."),
+            confirmTitle: .notesKit("Remove folder"),
+            icon: "folder.badge.minus",
+            theme: theme,
+            reduceMotion: reduceMotion,
+            onConfirm: {
                 if let removing { onRemove(removing) }
                 removing = nil
-            }
-            Button(.notesKit("Cancel"), role: .cancel) { removing = nil }
-        } message: {
-            Text(.notesKit("The notes in it stay in the vault, with no folder."))
-        }
+            },
+            onCancel: { removing = nil }
+        )
     }
 
     private var header: some View {
-        HStack {
-            Text(.notesKit("Folders"))
-                .font(theme.sectionFont)
-                .textCase(.uppercase)
-                .tracking(1.6)
-                .foregroundStyle(theme.primaryText)
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(.notesKit("Folders"))
+                    .font(theme.titleFont)
+                    .foregroundStyle(theme.primaryText)
+                Text(.notesKit(count: "\(folders.count) folders"))
+                    .font(theme.metadataFont)
+                    .textCase(.uppercase)
+                    .tracking(1.3)
+                    .foregroundStyle(theme.secondaryText)
+                    .contentTransition(.numericText())
+            }
             Spacer()
             Button(action: onDismiss) {
                 Text(.notesKit("Done"))
                     .font(theme.modeFont)
                     .textCase(.uppercase)
                     .tracking(1.2)
-                    .foregroundStyle(theme.primaryText)
+                    .foregroundStyle(theme.onAccent)
+                    .padding(.horizontal, theme.medium)
+                    .frame(height: 36)
+                    .background(theme.accent, in: Capsule())
             }
             .buttonStyle(NotePressButtonStyle())
         }
-        .padding(theme.medium)
+        .padding(.horizontal, theme.medium)
+        .padding(.top, theme.medium)
+        .padding(.bottom, theme.small)
     }
 
     private var empty: some View {
@@ -98,10 +110,16 @@ struct NoteFolderManagerSheet: View {
     private func row(_ folder: String) -> some View {
         let tint = tints[folder] ?? .neutral
         VStack(alignment: .leading, spacing: theme.small) {
-            HStack(spacing: theme.small) {
-                Image(systemName: "folder.fill")
-                    .font(.system(size: 15))
-                    .foregroundStyle(theme.color(for: tint))
+            HStack(spacing: theme.small + 2) {
+                // The tint reads as the folder's own colour, not as decoration beside it.
+                ZStack {
+                    RoundedRectangle(cornerRadius: theme.smallRadius, style: .continuous)
+                        .fill(theme.color(for: tint).opacity(tint == .neutral ? 0.12 : 0.18))
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 15))
+                        .foregroundStyle(theme.color(for: tint))
+                }
+                .frame(width: 36, height: 36)
 
                 if renaming == folder {
                     TextField(text: $draftName) { Text(.notesKit("Folder name")) }
@@ -112,10 +130,17 @@ struct NoteFolderManagerSheet: View {
                         .submitLabel(.done)
                         .onSubmit { commitRename(folder) }
                 } else {
-                    Text(verbatim: folder)
-                        .font(theme.rowFont)
-                        .foregroundStyle(theme.primaryText)
-                        .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(verbatim: folder)
+                            .font(theme.rowFont)
+                            .foregroundStyle(theme.primaryText)
+                            .lineLimit(1)
+                        Text(.notesKit(count: "\(counts[folder] ?? 0) notes"))
+                            .font(theme.metadataFont)
+                            .textCase(.uppercase)
+                            .tracking(1.2)
+                            .foregroundStyle(theme.disabledText)
+                    }
                 }
 
                 Spacer(minLength: theme.small)
@@ -130,12 +155,6 @@ struct NoteFolderManagerSheet: View {
                     }
                     .buttonStyle(NotePressButtonStyle())
                 } else {
-                    Text(.notesKit(count: "\(counts[folder] ?? 0) notes"))
-                        .font(theme.metadataFont)
-                        .textCase(.uppercase)
-                        .tracking(1.2)
-                        .foregroundStyle(theme.disabledText)
-
                     Menu {
                         Button {
                             draftName = folder
@@ -148,12 +167,18 @@ struct NoteFolderManagerSheet: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(theme.secondaryText)
-                            .frame(width: 32, height: 32)
+                            .frame(width: 36, height: 36)
+                            .background(theme.elevatedCard, in: Circle())
                     }
+                    .accessibilityLabel(Text(.notesKit("Folder options")))
                 }
             }
+
+            Rectangle()
+                .fill(theme.separator)
+                .frame(height: 0.75)
 
             tintRow(folder, current: tint)
         }
@@ -162,22 +187,24 @@ struct NoteFolderManagerSheet: View {
     }
 
     private func tintRow(_ folder: String, current: NoteFolderTint) -> some View {
-        HStack(spacing: theme.small) {
+        HStack(spacing: theme.xs) {
             ForEach(NoteFolderTint.allCases, id: \.self) { tint in
                 Button {
                     haptic()
                     onTint(folder, tint)
                 } label: {
-                    Circle()
-                        .fill(theme.color(for: tint))
-                        .frame(width: 18, height: 18)
-                        .overlay {
-                            Circle().strokeBorder(
-                                tint == current ? theme.primaryText : theme.separator,
-                                lineWidth: tint == current ? 2 : 0.75
-                            )
+                    ZStack {
+                        Circle()
+                            .fill(theme.color(for: tint).opacity(tint == .neutral ? 0.35 : 1))
+                            .frame(width: 20, height: 20)
+                        if tint == current {
+                            // A ring outside the swatch rather than a border on it: a border eats
+                            // into the colour it is meant to be confirming.
+                            Circle()
+                                .strokeBorder(theme.primaryText, lineWidth: 1.5)
+                                .frame(width: 28, height: 28)
                         }
-                        .opacity(tint == .neutral ? 0.5 : 1)
+                    }
                 }
                 .buttonStyle(NotePressButtonStyle())
                 .frame(width: 32, height: 32)

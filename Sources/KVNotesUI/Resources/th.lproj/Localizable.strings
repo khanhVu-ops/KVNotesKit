@@ -149,3 +149,9 @@
 "Teal" = "สีเขียวน้ำทะเล";
 /* Folder manager sheet on the notes list. */
 "Green" = "สีเขียว";
+/* Message in the notes flow's confirmation sheet. */
+"They stay in the vault's trash until you empty it." = "โน้ตจะอยู่ในถังขยะของตู้นิรภัยจนกว่าคุณจะล้าง";
+/* Message in the notes flow's confirmation sheet. */
+"It stays in the vault's trash until you empty it." = "โน้ตจะอยู่ในถังขยะของตู้นิรภัยจนกว่าคุณจะล้าง";
+/* Accessibility label of a folder row's menu button. */
+"Folder options" = "ตัวเลือกโฟลเดอร์";

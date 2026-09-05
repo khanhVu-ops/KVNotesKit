@@ -44,5 +44,19 @@
 			<string>已选择 %lld 项</string>
 		</dict>
 	</dict>
+	<key>%lld folders</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 个文件夹</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

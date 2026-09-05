@@ -149,3 +149,9 @@
 "Teal" = "Blauwgroen";
 /* Folder manager sheet on the notes list. */
 "Green" = "Groen";
+/* Message in the notes flow's confirmation sheet. */
+"They stay in the vault's trash until you empty it." = "Ze blijven in de prullenmand van de kluis tot je die leegt.";
+/* Message in the notes flow's confirmation sheet. */
+"It stays in the vault's trash until you empty it." = "Ze blijft in de prullenmand van de kluis tot je die leegt.";
+/* Accessibility label of a folder row's menu button. */
+"Folder options" = "Mapopties";

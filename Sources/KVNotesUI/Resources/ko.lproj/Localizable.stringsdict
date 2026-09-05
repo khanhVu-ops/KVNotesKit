@@ -44,5 +44,19 @@
 			<string>%lld개 선택됨</string>
 		</dict>
 	</dict>
+	<key>%lld folders</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>폴더 %lld개</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

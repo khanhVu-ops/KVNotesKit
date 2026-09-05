@@ -149,3 +149,9 @@
 "Teal" = "Azul-petróleo";
 /* Folder manager sheet on the notes list. */
 "Green" = "Verde";
+/* Message in the notes flow's confirmation sheet. */
+"They stay in the vault's trash until you empty it." = "Elas ficam no lixo do cofre até você esvaziá-lo.";
+/* Message in the notes flow's confirmation sheet. */
+"It stays in the vault's trash until you empty it." = "Ela fica no lixo do cofre até você esvaziá-lo.";
+/* Accessibility label of a folder row's menu button. */
+"Folder options" = "Opções da pasta";

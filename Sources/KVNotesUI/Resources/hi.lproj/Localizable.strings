@@ -149,3 +149,9 @@
 "Teal" = "टील";
 /* Folder manager sheet on the notes list. */
 "Green" = "हरा";
+/* Message in the notes flow's confirmation sheet. */
+"They stay in the vault's trash until you empty it." = "वे वॉल्ट के ट्रैश में रहेंगे जब तक आप उसे खाली नहीं करते।";
+/* Message in the notes flow's confirmation sheet. */
+"It stays in the vault's trash until you empty it." = "यह वॉल्ट के ट्रैश में रहेगा जब तक आप उसे खाली नहीं करते।";
+/* Accessibility label of a folder row's menu button. */
+"Folder options" = "फ़ोल्डर विकल्प";

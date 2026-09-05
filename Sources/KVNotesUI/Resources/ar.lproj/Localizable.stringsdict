@@ -74,5 +74,29 @@
 			<string>تم تحديد %lld</string>
 		</dict>
 	</dict>
+	<key>%lld folders</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>zero</key>
+			<string>لا مجلدات</string>
+			<key>one</key>
+			<string>مجلد واحد</string>
+			<key>two</key>
+			<string>مجلدان</string>
+			<key>few</key>
+			<string>%lld مجلدات</string>
+			<key>many</key>
+			<string>%lld مجلدًا</string>
+			<key>other</key>
+			<string>%lld مجلد</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

@@ -149,3 +149,9 @@
 "Teal" = "Бирюзовый";
 /* Folder manager sheet on the notes list. */
 "Green" = "Зелёный";
+/* Message in the notes flow's confirmation sheet. */
+"They stay in the vault's trash until you empty it." = "Они останутся в корзине хранилища, пока вы её не очистите.";
+/* Message in the notes flow's confirmation sheet. */
+"It stays in the vault's trash until you empty it." = "Она останется в корзине хранилища, пока вы её не очистите.";
+/* Accessibility label of a folder row's menu button. */
+"Folder options" = "Параметры папки";

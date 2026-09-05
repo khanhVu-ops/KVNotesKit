@@ -91,9 +91,9 @@ public struct NotesListScreen: View {
                         folders: viewModel.state.index.folders,
                         isBusy: viewModel.state.isBusy,
                         theme: theme,
-                        onPin: { haptic(); viewModel.send(.batchPin) },
-                        onLock: { haptic(); viewModel.send(.batchLock) },
-                        onMoveToFolder: { viewModel.send(.batchMoveToFolder($0)) },
+                        onPin: { haptic(); listChange(.batchPin) },
+                        onLock: { haptic(); listChange(.batchLock) },
+                        onMoveToFolder: { listChange(.batchMoveToFolder($0)) },
                         onTrash: { viewModel.send(.requestBatchDiscard) }
                     )
                     .padding(.horizontal, theme.medium)
@@ -105,36 +105,30 @@ public struct NotesListScreen: View {
                 NoteMotion.mode(reduceMotion: reduceMotion),
                 value: viewModel.state.isSelecting
             )
-            .confirmationDialog(
-                Text(.notesKit("Move these notes to Recently Deleted?")),
+            .noteConfirmSheet(
                 isPresented: Binding(
                     get: { viewModel.state.pendingBatchDiscard },
                     set: { if !$0 { viewModel.send(.cancelBatchDiscard) } }
                 ),
-                titleVisibility: .visible
-            ) {
-                Button(.notesKit("Move to Trash"), role: .destructive) {
-                    viewModel.send(.confirmBatchDiscard)
-                }
-                Button(.notesKit("Cancel"), role: .cancel) {
-                    viewModel.send(.cancelBatchDiscard)
-                }
-            }
-            .confirmationDialog(
-                Text(.notesKit("Move this note to Recently Deleted?")),
+                title: .notesKit("Move these notes to Recently Deleted?"),
+                message: .notesKit("They stay in the vault's trash until you empty it."),
+                confirmTitle: .notesKit("Move to Trash"),
+                theme: theme,
+                onConfirm: { listChange(.confirmBatchDiscard) },
+                onCancel: { viewModel.send(.cancelBatchDiscard) }
+            )
+            .noteConfirmSheet(
                 isPresented: Binding(
                     get: { viewModel.state.pendingDiscard != nil },
                     set: { if !$0 { viewModel.send(.cancelDiscard) } }
                 ),
-                titleVisibility: .visible
-            ) {
-                Button(.notesKit("Move to Trash"), role: .destructive) {
-                    viewModel.send(.confirmDiscard)
-                }
-                Button(.notesKit("Cancel"), role: .cancel) {
-                    viewModel.send(.cancelDiscard)
-                }
-            }
+                title: .notesKit("Move this note to Recently Deleted?"),
+                message: .notesKit("It stays in the vault's trash until you empty it."),
+                confirmTitle: .notesKit("Move to Trash"),
+                theme: theme,
+                onConfirm: { listChange(.confirmDiscard) },
+                onCancel: { viewModel.send(.cancelDiscard) }
+            )
     }
 
     @ViewBuilder
@@ -150,6 +144,16 @@ public struct NotesListScreen: View {
             scroller { emptyFilter }
         case .loaded:
             rowList
+        }
+    }
+
+    /// Sends an action that moves, adds or removes rows, inside an animated transaction.
+    ///
+    /// The animation belongs to the change, not to the view: `List` knows how to slide one row
+    /// out and close the gap, and only needs to be told the change is animated.
+    private func listChange(_ action: NotesListViewModel.Action) {
+        withAnimation(NoteMotion.content(reduceMotion: reduceMotion)) {
+            viewModel.send(action)
         }
     }
 
@@ -176,6 +180,7 @@ public struct NotesListScreen: View {
             .padding(.horizontal, theme.small)
 
             if !viewModel.state.isSelecting {
+                title
                 countLine
                 searchField
                 if !viewModel.state.folderChips.isEmpty { folderRow }
@@ -197,9 +202,9 @@ public struct NotesListScreen: View {
         Group {
                 Button(action: onClose) {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(theme.primaryText)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 40, height: 40)
                         .background(theme.card, in: Circle())
                         .overlay { Circle().strokeBorder(theme.separator, lineWidth: 0.75) }
                 }
@@ -207,13 +212,7 @@ public struct NotesListScreen: View {
                 .frame(width: 44, height: 44)
                 .accessibilityLabel(Text(.notesKit("Back")))
 
-                Text(.notesKit("Private notes"))
-                    .font(theme.sectionFont)
-                    .textCase(.uppercase)
-                    .tracking(2.2)
-                    .foregroundStyle(theme.primaryText)
-
-                Spacer(minLength: theme.small)
+                Spacer(minLength: theme.xs)
 
                 sortMenu
 
@@ -301,7 +300,7 @@ public struct NotesListScreen: View {
         Menu {
             Section {
                 ForEach(NoteSortOrder.allCases, id: \.self) { order in
-                    Button { viewModel.send(.setSortOrder(order)) } label: {
+                    Button { listChange(.setSortOrder(order)) } label: {
                         Label {
                             Text(Self.sortTitle(order))
                         } icon: {
@@ -315,7 +314,7 @@ public struct NotesListScreen: View {
 
             Section {
                 ForEach(NoteFilter.allCases, id: \.self) { filter in
-                    Button { viewModel.send(.setFilter(filter)) } label: {
+                    Button { listChange(.setFilter(filter)) } label: {
                         Label {
                             Text(Self.filterTitle(filter))
                         } icon: {
@@ -360,6 +359,22 @@ public struct NotesListScreen: View {
         case .locked: .notesKit("Locked only")
         case .hasChecklist: .notesKit("With a checklist")
         }
+    }
+
+    /// The screen's name, on its own line and at title size.
+    ///
+    /// It used to sit between the back button and three controls, which capped it at a caption
+    /// and left the row looking like a toolbar with a label wedged into it. A title has the width
+    /// of the screen here, and the controls keep their own row.
+    private var title: some View {
+        Text(.notesKit("Private notes"))
+            .font(theme.titleFont)
+            .foregroundStyle(theme.primaryText)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, theme.medium)
+            .padding(.top, theme.xs)
+            .padding(.bottom, 2)
+            .accessibilityAddTraits(.isHeader)
     }
 
     private var countLine: some View {
@@ -523,15 +538,12 @@ public struct NotesListScreen: View {
         // leaves a band of empty background between the search field and the pinned header.
         .noteCompactSections(theme.small)
         .refreshable { viewModel.send(.refresh) }
-        // The pinned count is part of the value: pinning the first note adds a whole section, and
-        // a section that appears without being animated snaps the rows below it down the screen.
-        .animation(
-            NoteMotion.content(reduceMotion: reduceMotion),
-            value: NotesListState.Layout(
-                order: viewModel.state.visibleNotes.map(\.id),
-                pinnedCount: viewModel.state.pinnedCount
-            )
-        )
+        // No `.animation(value:)` here. That modifier animates the whole `List` as one view, and
+        // a row leaving on a swipe then cross-faded against everything around it instead of the
+        // row sliding out and its neighbours closing the gap. `List` animates its own rows
+        // correctly when the change arrives inside a transaction — `listChange` below wraps the
+        // sends that move or remove a row, which is exactly the set of changes that should
+        // animate, and leaves a reload from the store alone.
     }
 
     /// Deliberately not a `.headerProminence` default: the header has to read as the same
@@ -616,7 +628,7 @@ public struct NotesListScreen: View {
     private func pinButton(_ note: NoteDigest) -> some View {
         Button {
             haptic()
-            viewModel.send(.togglePin(note.id))
+            listChange(.togglePin(note.id))
         } label: {
             Label(
                 note.isPinned ? .notesKit("Unpin") : .notesKit("Pin"),
@@ -701,7 +713,7 @@ public struct NotesListScreen: View {
                     .font(theme.bodyFont).multilineTextAlignment(.center).foregroundStyle(theme.secondaryText)
             }
             if isFiltered {
-                Button(.notesKit("Show all notes")) { viewModel.send(.setFilter(.all)) }
+                Button(.notesKit("Show all notes")) { listChange(.setFilter(.all)) }
                     .font(theme.modeFont).textCase(.uppercase).tracking(1.4)
                     .foregroundStyle(theme.onAccent)
                     .padding(.horizontal, theme.large).frame(height: 44)

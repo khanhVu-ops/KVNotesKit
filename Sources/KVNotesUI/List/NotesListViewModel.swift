@@ -229,6 +229,11 @@ public final class NotesListViewModel {
         case .confirmDiscard:
             guard let id = state.pendingDiscard?.id else { return }
             state.pendingDiscard = nil
+            // Gone from the list on the same frame the user confirmed, like the pin moves on
+            // the tap: waiting for the write meant the row sat there, then vanished a beat
+            // later with no gesture attached to it. A failed write reloads and puts it back.
+            state.index.notes.removeAll { $0.id == id }
+            state.recompute()
             perform { try await self.store.discard(id); return nil }
         case .cancelDiscard:
             state.pendingDiscard = nil
@@ -279,7 +284,12 @@ public final class NotesListViewModel {
             state.pendingBatchDiscard = false
         case .confirmBatchDiscard:
             state.pendingBatchDiscard = false
-            batch { store, id in try await store.discard(id) }
+            // Ids first: the local removal below empties `selectedNotes`, which is derived from
+            // the notes the list is showing.
+            let discarding = state.selectedNotes.map(\.id)
+            state.index.notes.removeAll { discarding.contains($0.id) }
+            state.recompute()
+            batch(discarding) { store, id in try await store.discard(id) }
         }
     }
 
@@ -295,9 +305,10 @@ public final class NotesListViewModel {
     /// Selection ends when the batch does — leaving five rows ticked after they have all moved is
     /// a selection of things that are no longer where the user left them.
     private func batch(
+        _ ids: [NoteID]? = nil,
         _ operation: @escaping @Sendable (any NoteStore, NoteID) async throws -> Void
     ) {
-        let ids = state.selectedNotes.map(\.id)
+        let ids = ids ?? state.selectedNotes.map(\.id)
         guard !ids.isEmpty else { return }
         perform { [store] in
             for id in ids { try await operation(store, id) }

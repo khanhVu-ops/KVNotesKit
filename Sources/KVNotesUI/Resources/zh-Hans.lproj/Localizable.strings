@@ -149,3 +149,9 @@
 "Teal" = "青色";
 /* Folder manager sheet on the notes list. */
 "Green" = "绿色";
+/* Message in the notes flow's confirmation sheet. */
+"They stay in the vault's trash until you empty it." = "它们会留在保险库的废纸篓中，直到你清空。";
+/* Message in the notes flow's confirmation sheet. */
+"It stays in the vault's trash until you empty it." = "它会留在保险库的废纸篓中，直到你清空。";
+/* Accessibility label of a folder row's menu button. */
+"Folder options" = "文件夹选项";

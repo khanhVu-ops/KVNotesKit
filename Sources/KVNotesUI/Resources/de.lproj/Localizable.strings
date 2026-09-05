@@ -149,3 +149,9 @@
 "Teal" = "Petrol";
 /* Folder manager sheet on the notes list. */
 "Green" = "Grün";
+/* Message in the notes flow's confirmation sheet. */
+"They stay in the vault's trash until you empty it." = "Sie bleiben im Papierkorb des Tresors, bis du ihn leerst.";
+/* Message in the notes flow's confirmation sheet. */
+"It stays in the vault's trash until you empty it." = "Sie bleibt im Papierkorb des Tresors, bis du ihn leerst.";
+/* Accessibility label of a folder row's menu button. */
+"Folder options" = "Ordneroptionen";

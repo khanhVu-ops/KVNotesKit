@@ -149,3 +149,9 @@
 "Teal" = "ティール";
 /* Folder manager sheet on the notes list. */
 "Green" = "グリーン";
+/* Message in the notes flow's confirmation sheet. */
+"They stay in the vault's trash until you empty it." = "保管庫のゴミ箱を空にするまで残ります。";
+/* Message in the notes flow's confirmation sheet. */
+"It stays in the vault's trash until you empty it." = "保管庫のゴミ箱を空にするまで残ります。";
+/* Accessibility label of a folder row's menu button. */
+"Folder options" = "フォルダオプション";

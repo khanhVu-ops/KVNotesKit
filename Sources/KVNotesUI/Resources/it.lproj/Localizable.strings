@@ -149,3 +149,9 @@
 "Teal" = "Foglia di tè";
 /* Folder manager sheet on the notes list. */
 "Green" = "Verde";
+/* Message in the notes flow's confirmation sheet. */
+"They stay in the vault's trash until you empty it." = "Restano nel cestino della cassaforte finché non lo svuoti.";
+/* Message in the notes flow's confirmation sheet. */
+"It stays in the vault's trash until you empty it." = "Resta nel cestino della cassaforte finché non lo svuoti.";
+/* Accessibility label of a folder row's menu button. */
+"Folder options" = "Opzioni cartella";
