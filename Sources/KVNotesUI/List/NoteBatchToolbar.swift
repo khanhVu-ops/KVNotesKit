@@ -3,20 +3,20 @@ import SwiftUI
 
 /// The action dock shown while notes are selected.
 ///
-/// Same grammar as the photo grid's: a floating dock over the list, two named actions and a menu
-/// for the rest, disabled rather than hidden when nothing is selected — a dock that appears and
-/// disappears under the thumb moves every button the moment a row is ticked.
+/// Same grammar as the photo grid's: a floating dock over the list, two named actions and one more
+/// button for the rest, disabled rather than hidden when nothing is selected — a dock that appears
+/// and disappears under the thumb moves every button the moment a row is ticked.
 struct NoteBatchToolbar: View {
     let selectionCount: Int
     let wouldPin: Bool
     let wouldLock: Bool
-    let folders: [String]
     let isBusy: Bool
     let theme: NoteTheme
     let onPin: @MainActor @Sendable () -> Void
     let onLock: @MainActor @Sendable () -> Void
-    let onMoveToFolder: @MainActor @Sendable (String?) -> Void
-    let onTrash: @MainActor @Sendable () -> Void
+    /// Opens the rest of the batch actions. The dock names two verbs and hands the others to the
+    /// screen's option sheet rather than growing a third and a fourth 56pt button.
+    let onMore: @MainActor @Sendable () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -43,29 +43,10 @@ struct NoteBatchToolbar: View {
                 .background(theme.card, in: RoundedRectangle(cornerRadius: theme.smallRadius))
             }
 
-            Menu {
-                Section {
-                    Button { onMoveToFolder(nil) } label: {
-                        Label(.notesKit("No folder"), systemImage: "tray")
-                    }
-                    ForEach(folders, id: \.self) { name in
-                        Button { onMoveToFolder(name) } label: {
-                            Label(name, systemImage: "folder")
-                        }
-                    }
-                } header: {
-                    Text(.notesKit("Move to folder"))
-                }
-                Section {
-                    Button(role: .destructive, action: onTrash) {
-                        Label(.notesKit("Move to Trash"), systemImage: "trash")
-                    }
-                }
-            } label: {
+            Button(action: onMore) {
                 label(.notesKit("More"), icon: "ellipsis")
                     .background(theme.card, in: RoundedRectangle(cornerRadius: theme.smallRadius))
             }
-            .menuOrder(.fixed)
         }
         .buttonStyle(.plain)
         .foregroundStyle(theme.primaryText)
@@ -105,13 +86,11 @@ struct NoteBatchToolbar: View {
         selectionCount: 3,
         wouldPin: true,
         wouldLock: true,
-        folders: ["Banking", "Passwords"],
         isBusy: false,
         theme: .preview,
         onPin: {},
         onLock: {},
-        onMoveToFolder: { _ in },
-        onTrash: {}
+        onMore: {}
     )
     .padding()
     .background(NoteTheme.preview.background)

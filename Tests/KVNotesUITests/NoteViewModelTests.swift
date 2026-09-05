@@ -354,6 +354,43 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state.pinnedCount, 3)
     }
 
+    func testTheOptionSheetReadsTheNoteItIsAboutRatherThanACopy() async throws {
+        let store = InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies)
+        let viewModel = NotesListViewModel(store: store)
+        viewModel.send(.onAppear)
+        try await settle { viewModel.state.phase == .loaded }
+
+        viewModel.send(.openOptions(.note(NoteFixtures.bank.id)))
+        XCTAssertEqual(viewModel.state.optionSheetNote?.isPinned, false)
+
+        // The sheet stays open long enough to animate out after its own Pin was tapped, and in
+        // that window it must not still be offering to pin a note it has already pinned.
+        viewModel.send(.togglePin(NoteFixtures.bank.id))
+        XCTAssertEqual(viewModel.state.optionSheetNote?.isPinned, true)
+
+        // A confirmation replaces the options it was asked from rather than stacking on them.
+        viewModel.send(.requestDiscard(NoteFixtures.bank))
+        XCTAssertNil(viewModel.state.optionSheet)
+        XCTAssertNil(viewModel.state.optionSheetNote)
+        XCTAssertNotNil(viewModel.state.pendingDiscard)
+    }
+
+    func testLeavingSelectionClosesTheBatchOptions() async throws {
+        let store = InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies)
+        let viewModel = NotesListViewModel(store: store)
+        viewModel.send(.onAppear)
+        try await settle { viewModel.state.phase == .loaded }
+
+        viewModel.send(.startSelecting)
+        viewModel.send(.toggleSelection(NoteFixtures.bank.id))
+        viewModel.send(.openOptions(.batch))
+        XCTAssertEqual(viewModel.state.optionSheet, .batch)
+
+        // Batch options with nothing selected are a list of actions on nothing.
+        viewModel.send(.stopSelecting)
+        XCTAssertNil(viewModel.state.optionSheet)
+    }
+
     func testBatchActionsApplyToEverySelectedNoteAndThenEndTheSelection() async throws {
         let store = InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies)
         let viewModel = NotesListViewModel(store: store)

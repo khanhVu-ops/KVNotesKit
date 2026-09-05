@@ -21,6 +21,9 @@ struct NoteFolderManagerSheet: View {
     @State private var renaming: String?
     @State private var draftName = ""
     @State private var removing: String?
+    /// The folder whose options are open. An overlay, not a sheet: a sheet presented from a sheet
+    /// replaces the one under it, and this one is the screen the user is working in.
+    @State private var showingOptions: String?
     /// Only one row can be renaming, so one focus flag covers the sheet.
     @FocusState private var isNamingFolder: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -44,6 +47,22 @@ struct NoteFolderManagerSheet: View {
             guard !Task.isCancelled else { return }
             isNamingFolder = true
         }
+        .noteOptionOverlay(
+            isPresented: Binding(
+                get: { showingOptions != nil },
+                set: { if !$0 { closeOptions() } }
+            ),
+            theme: theme,
+            reduceMotion: reduceMotion,
+            sheet: NoteOptionSheetView(
+                title: .notesKit("Folder options"),
+                subtitle: showingOptions.map(NoteOptionTitle.verbatim),
+                groups: folderOptionGroups,
+                theme: theme,
+                haptic: haptic,
+                onDismiss: { closeOptions() }
+            )
+        )
         .noteConfirmOverlay(
             isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
             title: .notesKit("Remove this folder?"),
@@ -250,18 +269,9 @@ struct NoteFolderManagerSheet: View {
             }
             .transition(.opacity.combined(with: .scale(scale: 0.92)))
         } else {
-            Menu {
-                Button {
-                    draftName = folder
-                    renaming = folder
-                } label: {
-                    Label(.notesKit("Rename"), systemImage: "pencil")
-                }
-                Button(role: .destructive) {
-                    withAnimation(NoteMotion.mode(reduceMotion: reduceMotion)) { removing = folder }
-                } label: {
-                    Label(.notesKit("Remove folder"), systemImage: "folder.badge.minus")
-                }
+            Button {
+                haptic()
+                withAnimation(NoteMotion.mode(reduceMotion: reduceMotion)) { showingOptions = folder }
             } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 15, weight: .semibold))
@@ -270,6 +280,7 @@ struct NoteFolderManagerSheet: View {
                     .background(theme.elevatedCard, in: Circle())
                     .overlay { Circle().strokeBorder(theme.separator, lineWidth: 0.75) }
             }
+            .buttonStyle(NotePressButtonStyle())
             .accessibilityLabel(Text(.notesKit("Folder options")))
             .transition(.opacity)
         }
@@ -352,6 +363,36 @@ struct NoteFolderManagerSheet: View {
         case .teal: "Teal"
         case .green: "Green"
         }
+    }
+
+    private var folderOptionGroups: [NoteOptionGroup] {
+        guard let folder = showingOptions else { return [] }
+        return [
+            NoteOptionGroup(id: "actions", items: [
+                NoteOptionItem(
+                    id: "rename",
+                    title: .localized(.notesKit("Rename")),
+                    systemImage: "pencil"
+                ) {
+                    draftName = folder
+                    renaming = folder
+                },
+                NoteOptionItem(
+                    id: "remove",
+                    title: .localized(.notesKit("Remove folder")),
+                    systemImage: "folder.badge.minus",
+                    isDestructive: true
+                ) {
+                    // One overlay closes as the next opens, in the same transaction: two of them
+                    // on screen at once would dim the sheet twice.
+                    removing = folder
+                }
+            ])
+        ]
+    }
+
+    private func closeOptions() {
+        withAnimation(NoteMotion.mode(reduceMotion: reduceMotion)) { showingOptions = nil }
     }
 
     private func cancelRename() {

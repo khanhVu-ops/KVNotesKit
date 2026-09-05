@@ -112,13 +112,11 @@ public struct NotesListScreen: View {
                         selectionCount: viewModel.state.selection.count,
                         wouldPin: viewModel.state.batchWouldPin,
                         wouldLock: viewModel.state.batchWouldLock,
-                        folders: viewModel.state.index.folders,
                         isBusy: viewModel.state.isBusy,
                         theme: theme,
                         onPin: { haptic(); listChange(.batchPin) },
                         onLock: { haptic(); listChange(.batchLock) },
-                        onMoveToFolder: { listChange(.batchMoveToFolder($0)) },
-                        onTrash: { viewModel.send(.requestBatchDiscard) }
+                        onMore: { viewModel.send(.openOptions(.batch)) }
                     )
                     .padding(.horizontal, theme.medium)
                     .padding(.bottom, theme.small)
@@ -128,6 +126,13 @@ public struct NotesListScreen: View {
             .animation(
                 NoteMotion.mode(reduceMotion: reduceMotion),
                 value: viewModel.state.isSelecting
+            )
+            .noteOptionSheet(
+                isPresented: Binding(
+                    get: { viewModel.state.optionSheet != nil },
+                    set: { if !$0 { viewModel.send(.closeOptions) } }
+                ),
+                sheet: optionSheet
             )
             .noteConfirmSheet(
                 isPresented: Binding(
@@ -250,7 +255,7 @@ public struct NotesListScreen: View {
 
                 Spacer(minLength: theme.xs)
 
-                sortMenu
+                sortButton
 
                 layoutToggle
 
@@ -329,40 +334,15 @@ public struct NotesListScreen: View {
             .padding(.bottom, theme.small)
     }
 
-    /// Sort and filter in one menu rather than two controls.
+    /// Sort and filter behind one control rather than two.
     ///
     /// They answer the same question — "show me a different slice of this list" — and the header
     /// has room for one more 32pt circle, not two. The dot marks a list that is narrowed, because
     /// a filter left on looks exactly like a vault that lost its notes.
-    private var sortMenu: some View {
-        Menu {
-            Section {
-                ForEach(NoteSortOrder.allCases, id: \.self) { order in
-                    Button { listChange(.setSortOrder(order)) } label: {
-                        Label {
-                            Text(Self.sortTitle(order))
-                        } icon: {
-                            if viewModel.state.sortOrder == order { Image(systemName: "checkmark") }
-                        }
-                    }
-                }
-            } header: {
-                Text(.notesKit("Sort by"))
-            }
-
-            Section {
-                ForEach(NoteFilter.allCases, id: \.self) { filter in
-                    Button { listChange(.setFilter(filter)) } label: {
-                        Label {
-                            Text(Self.filterTitle(filter))
-                        } icon: {
-                            if viewModel.state.filter == filter { Image(systemName: "checkmark") }
-                        }
-                    }
-                }
-            } header: {
-                Text(.notesKit("Show"))
-            }
+    private var sortButton: some View {
+        Button {
+            haptic()
+            viewModel.send(.openOptions(.sortAndFilter))
         } label: {
             Image(systemName: "line.3.horizontal.decrease")
                 .font(.system(size: 14, weight: .medium))
@@ -376,10 +356,10 @@ public struct NotesListScreen: View {
                     )
                 }
         }
+        .buttonStyle(NotePressButtonStyle())
         .frame(width: 44, height: 44)
         .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: viewModel.state.isNarrowed)
         .accessibilityLabel(Text(.notesKit("Sort and filter")))
-
     }
 
     /// Rows or cards, one tap either way.
@@ -419,6 +399,28 @@ public struct NotesListScreen: View {
         case .all: .notesKit("All notes")
         case .locked: .notesKit("Locked only")
         case .hasChecklist: .notesKit("With a checklist")
+        }
+    }
+
+    /// Rows in a sheet have room for an icon where a menu's tick took the same slot. The icon says
+    /// what the choice is; the tick on the right says whether it is the one in force.
+    ///
+    /// Spelled with `return` rather than as expressions: `check-l10n.sh` reads `title: "…"` as a
+    /// piece of user-facing copy, and `case .title: "textformat.abc"` is exactly that shape.
+    private static func sortIcon(_ order: NoteSortOrder) -> String {
+        switch order {
+        case .lastEditedNewest: return "clock.arrow.circlepath"
+        case .lastEditedOldest: return "clock.arrow.2.circlepath"
+        case .createdNewest: return "calendar"
+        case .title: return "textformat.abc"
+        }
+    }
+
+    private static func filterIcon(_ filter: NoteFilter) -> String {
+        switch filter {
+        case .all: "tray.full"
+        case .locked: "lock"
+        case .hasChecklist: "checklist"
         }
     }
 
@@ -804,12 +806,12 @@ public struct NotesListScreen: View {
                     onOpenNote(note)
                 }
             },
-            actions: { noteActions(note) }
+            onOptions: { viewModel.send(.openOptions(.note(note.id))) }
         )
         // Short enough that a one-line note is still a card, tall enough that three lines of
         // preview do not have to fight for the space; a taller neighbour still wins the row.
         .frame(minHeight: 158)
-        .contextMenu { if isSelecting { EmptyView() } else { noteActions(note) } }
+        .simultaneousGesture(optionsLongPress(note, isSelecting: isSelecting))
     }
 
     /// Deliberately not a `.headerProminence` default: the header has to read as the same
@@ -874,51 +876,177 @@ public struct NotesListScreen: View {
                 }
             }
             .swipeActions(edge: .leading) { if !isSelecting { pinSwipeButton(note) } }
-            .contextMenu { if isSelecting { EmptyView() } else { noteActions(note) } }
+            // A long press instead of `.contextMenu`: the sheet it opens is the same one the grid
+            // card's button opens, and the row keeps the two verbs worth a swipe on either edge.
+            .simultaneousGesture(optionsLongPress(note, isSelecting: isSelecting))
+    }
+
+    /// Opens a row or card's options without stealing its tap.
+    ///
+    /// `simultaneousGesture` rather than `.onLongPressGesture`, which would swallow the tap that
+    /// opens the note; and 0.45s rather than the 0.5s default, which is long enough that people
+    /// let go first.
+    private func optionsLongPress(_ note: NoteDigest, isSelecting: Bool) -> some Gesture {
+        LongPressGesture(minimumDuration: 0.45).onEnded { _ in
+            guard !isSelecting else { return }
+            haptic()
+            viewModel.send(.openOptions(.note(note.id)))
+        }
     }
 
     /// Everything that can be done to one note, in the one place both layouts read it from.
     ///
     /// The grid has no swipe to hang these on, so this is not a convenience — it is where the
-    /// actions live once a card replaces a row, reached from the card's own menu button and from
-    /// the long press. Written once so the two layouts cannot drift into offering different verbs.
-    @ViewBuilder
-    private func noteActions(_ note: NoteDigest) -> some View {
-        pinMenuButton(note)
-        if !viewModel.state.index.folders.isEmpty || note.folder != nil {
-            Menu {
-                Button { viewModel.send(.moveToFolder(note.id, nil)) } label: {
-                    Label(.notesKit("No folder"), systemImage: note.folder == nil ? "checkmark" : "tray")
-                }
-                ForEach(viewModel.state.index.folders, id: \.self) { name in
-                    Button { viewModel.send(.moveToFolder(note.id, name)) } label: {
-                        Label(name, systemImage: note.folder == name ? "checkmark" : "folder")
-                    }
-                }
-            } label: {
-                Label(.notesKit("Move to folder"), systemImage: "folder")
+    /// actions live once a card replaces a row. Written once so the two layouts cannot drift into
+    /// offering different verbs.
+    ///
+    /// Folders sit in the same sheet rather than behind a "Move to folder" step. A sheet opened
+    /// from a sheet replaces the one under it, and one extra tap to reach four folder names buys
+    /// nothing — the list scrolls when a vault has more.
+    /// The one sheet all three option lists are drawn by.
+    ///
+    /// It is always built, presented or not: `.sheet` needs its content before it animates in, and
+    /// a nil case that renders nothing is cheaper than three separate sheet modifiers racing each
+    /// other for the one presentation slot SwiftUI gives a view.
+    private var optionSheet: NoteOptionSheetView {
+        switch viewModel.state.optionSheet {
+        case .sortAndFilter:
+            sheet(
+                title: .notesKit("Sort and filter"),
+                subtitle: nil,
+                groups: sortAndFilterGroups,
+                // Sort and filter are two questions. Closing after the first answer means opening
+                // the sheet twice to change how the list is shown.
+                dismissesOnSelection: false
+            )
+        case .note:
+            // Nil once the note has gone — trashed from this very sheet, or by a reload. The
+            // sheet is on its way out by then and an empty body is what should be behind it.
+            if let note = viewModel.state.optionSheetNote {
+                sheet(
+                    title: .notesKit("Note options"),
+                    subtitle: .verbatim(note.title.isEmpty ? "" : note.title),
+                    groups: noteOptionGroups(note)
+                )
+            } else {
+                sheet(title: .notesKit("Note options"), subtitle: nil, groups: [])
+            }
+        case .batch:
+            sheet(
+                title: .notesKit("Note options"),
+                subtitle: .localized(.notesKit(count: "\(viewModel.state.selection.count) selected")),
+                groups: batchOptionGroups
+            )
+        case nil:
+            sheet(title: .notesKit("Note options"), subtitle: nil, groups: [])
+        }
+    }
+
+    private func sheet(
+        title: LocalizedStringResource,
+        subtitle: NoteOptionTitle?,
+        groups: [NoteOptionGroup],
+        dismissesOnSelection: Bool = true
+    ) -> NoteOptionSheetView {
+        NoteOptionSheetView(
+            title: title,
+            subtitle: subtitle,
+            groups: groups,
+            dismissesOnSelection: dismissesOnSelection,
+            theme: theme,
+            haptic: haptic,
+            onDismiss: { viewModel.send(.closeOptions) }
+        )
+    }
+
+    private var sortAndFilterGroups: [NoteOptionGroup] {
+        [
+            NoteOptionGroup(id: "sort", heading: .notesKit("Sort by"), items: NoteSortOrder.allCases.map { order in
+                NoteOptionItem(
+                    id: "sort.\(order.rawValue)",
+                    title: .localized(Self.sortTitle(order)),
+                    systemImage: Self.sortIcon(order),
+                    isSelected: viewModel.state.sortOrder == order
+                ) { listChange(.setSortOrder(order)) }
+            }),
+            NoteOptionGroup(id: "filter", heading: .notesKit("Show"), items: NoteFilter.allCases.map { filter in
+                NoteOptionItem(
+                    id: "filter.\(filter.rawValue)",
+                    title: .localized(Self.filterTitle(filter)),
+                    systemImage: Self.filterIcon(filter),
+                    isSelected: viewModel.state.filter == filter
+                ) { listChange(.setFilter(filter)) }
+            })
+        ]
+    }
+
+    /// What the batch dock's third button opens, now that it is a sheet and not a menu.
+    private var batchOptionGroups: [NoteOptionGroup] {
+        var items = [
+            NoteOptionItem(
+                id: "folder.none",
+                title: .localized(.notesKit("No folder")),
+                systemImage: "tray"
+            ) { listChange(.batchMoveToFolder(nil)) }
+        ]
+        items += viewModel.state.index.folders.map { name in
+            NoteOptionItem(id: "folder.\(name)", title: .verbatim(name), systemImage: "folder") {
+                listChange(.batchMoveToFolder(name))
             }
         }
-        Button(role: .destructive) { viewModel.send(.requestDiscard(note)) } label: {
-            Label(.notesKit("Move to Trash"), systemImage: "trash")
-        }
+        return [
+            NoteOptionGroup(id: "actions", items: [
+                NoteOptionItem(
+                    id: "trash",
+                    title: .localized(.notesKit("Move to Trash")),
+                    systemImage: "trash",
+                    isDestructive: true
+                ) { viewModel.send(.requestBatchDiscard) }
+            ]),
+            NoteOptionGroup(id: "folders", heading: .notesKit("Move to folder"), items: items)
+        ]
     }
 
-    /// Pin from a menu, where nothing is mid-gesture and the move can start on the same frame.
-    private func pinMenuButton(_ note: NoteDigest) -> some View {
-        Button {
-            haptic()
-            listChange(.togglePin(note.id))
-        } label: {
-            pinLabel(note)
-        }
-    }
+    private func noteOptionGroups(_ note: NoteDigest) -> [NoteOptionGroup] {
+        var groups = [
+            NoteOptionGroup(id: "actions", items: [
+                NoteOptionItem(
+                    id: "pin",
+                    title: .localized(note.isPinned ? .notesKit("Unpin") : .notesKit("Pin")),
+                    systemImage: note.isPinned ? "pin.slash" : "pin"
+                ) { listChange(.togglePin(note.id)) },
+                NoteOptionItem(
+                    id: "trash",
+                    title: .localized(.notesKit("Move to Trash")),
+                    systemImage: "trash",
+                    isDestructive: true
+                ) { viewModel.send(.requestDiscard(note)) }
+            ])
+        ]
 
-    private func pinLabel(_ note: NoteDigest) -> some View {
-        Label(
-            note.isPinned ? .notesKit("Unpin") : .notesKit("Pin"),
-            systemImage: note.isPinned ? "pin.slash" : "pin"
-        )
+        if !viewModel.state.index.folders.isEmpty || note.folder != nil {
+            var items = [
+                NoteOptionItem(
+                    id: "folder.none",
+                    title: .localized(.notesKit("No folder")),
+                    systemImage: "tray",
+                    isSelected: note.folder == nil
+                ) { viewModel.send(.moveToFolder(note.id, nil)) }
+            ]
+            items += viewModel.state.index.folders.map { name in
+                NoteOptionItem(
+                    id: "folder.\(name)",
+                    title: .verbatim(name),
+                    systemImage: "folder",
+                    isSelected: note.folder == name
+                ) { viewModel.send(.moveToFolder(note.id, name)) }
+            }
+            groups.append(
+                NoteOptionGroup(id: "folders", heading: .notesKit("Move to folder"), items: items)
+            )
+        }
+
+        return groups
     }
 
     private func pinSwipeButton(_ note: NoteDigest) -> some View {
@@ -936,7 +1064,10 @@ public struct NotesListScreen: View {
                 listChange(.togglePin(note.id))
             }
         } label: {
-            pinLabel(note)
+            Label(
+                note.isPinned ? .notesKit("Unpin") : .notesKit("Pin"),
+                systemImage: note.isPinned ? "pin.slash" : "pin"
+            )
         }
         .tint(theme.accent)
     }

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Replace every `Menu` on the notes list with an option sheet: sort and filter, a note's actions,
+  the batch dock's More, and the folder manager's per-folder actions. The keyboard no longer rises
+  when one is opened.
+- A note's actions now list the folders inline rather than behind a submenu, and a list row opens
+  them on a long press where the grid card has a visible button.
+
 - Add a two-column grid layout to the notes list, toggled from the header and remembered in
   `NoteListPreferences`. Cards carry a visible menu button in place of the row's swipe actions.
 - `NoteListPreferences` decodes missing keys as defaults, so a blob written by 0.1.0 keeps the

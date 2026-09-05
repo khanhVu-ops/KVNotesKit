@@ -8,6 +8,17 @@ public struct NotesListState: Equatable, Sendable {
         let normalized: String
     }
     public enum Phase: Equatable, Sendable { case idle, loading, loaded, failed }
+    /// Which option sheet is open, if any.
+    ///
+    /// State rather than a one-shot present, for the same reason the alerts are: it survives a
+    /// rebuild, and "the options for note X are open" can be asserted without SwiftUI. The note is
+    /// held by id, not by value — a digest captured when the sheet opened would keep drawing the
+    /// old pin state after the write it triggered came back.
+    public enum OptionSheet: Equatable, Sendable {
+        case sortAndFilter
+        case note(NoteID)
+        case batch
+    }
     public struct FolderChip: Identifiable, Equatable, Sendable {
         public let name: String
         public let count: Int
@@ -36,6 +47,7 @@ public struct NotesListState: Equatable, Sendable {
     public var isBusy = false
     public var isSelecting = false
     public var showsFolderManager = false
+    public var optionSheet: OptionSheet?
     public var selection: Set<NoteID> = []
     private var normalizedSearchHaystacks: [NoteID: SearchHaystackCache] = [:]
 
@@ -53,6 +65,15 @@ public struct NotesListState: Equatable, Sendable {
     /// photo grid does with Favourite and what a person means by tapping Pin on five rows.
     public var batchWouldPin: Bool { selectedNotes.contains { !$0.isPinned } }
     public var batchWouldLock: Bool { selectedNotes.contains { !$0.requiresBiometricUnlock } }
+
+    /// The note an open note-options sheet is about, read fresh from the index every time.
+    ///
+    /// Derived rather than stored: a digest captured when the sheet opened would go on offering
+    /// "Pin" to a note the same sheet had just pinned.
+    public var optionSheetNote: NoteDigest? {
+        guard case .note(let id) = optionSheet else { return nil }
+        return index.notes.first { $0.id == id }
+    }
 
     public var isEmptyBecauseStoreIsEmpty: Bool { phase == .loaded && index.isEmpty }
     public var isEmptyBecauseOfFilter: Bool {
@@ -146,6 +167,8 @@ public final class NotesListViewModel {
         case cancelDiscard
         case openFolderManager
         case closeFolderManager
+        case openOptions(NotesListState.OptionSheet)
+        case closeOptions
         case renameFolder(String, to: String)
         case tintFolder(String, NoteFolderTint)
         case removeFolder(String)
@@ -229,6 +252,9 @@ public final class NotesListViewModel {
         case .moveToFolder(let id, let folder):
             perform { try await self.store.apply(NoteAttributePatch(folder: .set(folder)), to: id) }
         case .requestDiscard(let note):
+            // The question replaces the options it was asked from; leaving both open stacks a
+            // sheet on a sheet, and the one underneath is about to be answered anyway.
+            state.optionSheet = nil
             state.pendingDiscard = note
         case .confirmDiscard:
             guard let id = state.pendingDiscard?.id else { return }
@@ -245,6 +271,10 @@ public final class NotesListViewModel {
             state.showsFolderManager = true
         case .closeFolderManager:
             state.showsFolderManager = false
+        case .openOptions(let sheet):
+            state.optionSheet = sheet
+        case .closeOptions:
+            state.optionSheet = nil
         case .renameFolder(let name, let newName):
             // The folder the user is looking at is about to have a different name; a chip
             // filtering on the old one would show an empty list until the next tap.
@@ -261,6 +291,7 @@ public final class NotesListViewModel {
         case .stopSelecting:
             state.isSelecting = false
             state.selection = []
+            if state.optionSheet == .batch { state.optionSheet = nil }
         case .toggleSelection(let id):
             if state.selection.contains(id) {
                 state.selection.remove(id)
@@ -283,6 +314,7 @@ public final class NotesListViewModel {
             batch { store, id in _ = try await store.apply(NoteAttributePatch(folder: .set(folder)), to: id) }
         case .requestBatchDiscard:
             guard !state.selection.isEmpty else { return }
+            state.optionSheet = nil
             state.pendingBatchDiscard = true
         case .cancelBatchDiscard:
             state.pendingBatchDiscard = false

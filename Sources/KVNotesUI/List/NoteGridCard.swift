@@ -7,17 +7,18 @@ import SwiftUI
 /// The row's affordances do not survive the move to a grid: `LazyVGrid` has no `.swipeActions`,
 /// and a hand-rolled `DragGesture` would lose the full-swipe, the rubber band, the haptics and the
 /// VoiceOver actions the system gives a `List` row for free. So the card does not pretend to swipe.
-/// It carries the same actions on a menu that is *visible* — the button in the corner — as well as
-/// on the long press, and multi-select still does the rest. An affordance moved somewhere a person
-/// can see is a trade; one that quietly disappears is a regression.
-struct NoteGridCard<Actions: View>: View {
+/// It carries the same actions behind a button that is *visible* — the one in the corner — as well
+/// as on the long press, and multi-select still does the rest. An affordance moved somewhere a
+/// person can see is a trade; one that quietly disappears is a regression.
+struct NoteGridCard: View {
     let note: NoteDigest
     let theme: NoteTheme
     var isSelecting = false
     var isSelected = false
     let haptic: @MainActor @Sendable () -> Void
     let onOpen: () -> Void
-    @ViewBuilder let actions: () -> Actions
+    /// The card asks for the options; what they are is the screen's business.
+    let onOptions: @MainActor @Sendable () -> Void
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -32,15 +33,16 @@ struct NoteGridCard<Actions: View>: View {
             .accessibilityAddTraits(isSelecting ? [.isButton, .isSelected] : [.isButton])
             .accessibilityRemoveTraits(isSelecting && !isSelected ? [.isSelected] : [])
 
-            // Outside the button rather than inside its label: a `Menu` nested in a `Button`'s
+            // Outside the button rather than inside its label: a control nested in a `Button`'s
             // label never receives the tap, it just makes the whole card look pressable twice.
             if isSelecting {
                 marker
                     .padding(theme.small + 2)
                     .transition(.scale.combined(with: .opacity))
             } else {
-                Menu {
-                    actions()
+                Button {
+                    haptic()
+                    onOptions()
                 } label: {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 13, weight: .semibold))
@@ -48,6 +50,7 @@ struct NoteGridCard<Actions: View>: View {
                         .frame(width: 28, height: 28)
                         .background(theme.elevatedCard, in: Circle())
                 }
+                .buttonStyle(NotePressButtonStyle())
                 .padding(theme.small)
                 .accessibilityLabel(Text(.notesKit("Note options")))
             }
@@ -194,9 +197,7 @@ struct NoteGridCard<Actions: View>: View {
             // A locked note, a plain one and a long title: the three shapes a card has to hold
             // without any of them setting the height of the row.
             ForEach(NoteFixtures.all) { note in
-                NoteGridCard(note: note, theme: theme, haptic: {}, onOpen: {}) {
-                    Button(.notesKit("Pin")) {}
-                }
+                NoteGridCard(note: note, theme: theme, haptic: {}, onOpen: {}, onOptions: {})
             }
         }
         .padding(theme.medium)
