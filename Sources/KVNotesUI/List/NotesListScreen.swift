@@ -71,7 +71,10 @@ public struct NotesListScreen: View {
                 Text(.notesKit("Private notes")).font(theme.sectionFont).textCase(.uppercase).tracking(2.2)
                 Spacer()
                 Button(action: onCreateNote) {
-                    Image(systemName: "plus").frame(width: 32, height: 32).background(theme.accent, in: Circle())
+                    Image(systemName: "plus")
+                        .foregroundStyle(theme.onAccent)
+                        .frame(width: 32, height: 32)
+                        .background(theme.accent, in: Circle())
                 }.accessibilityLabel(Text(.notesKit("New note")))
             }
             .foregroundStyle(theme.primaryText).padding(.horizontal, theme.small)

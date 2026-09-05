@@ -79,12 +79,16 @@ public struct NoteEditorScreen: View {
     private var header: some View {
         HStack {
             Button { if viewModel.state.isDirty { viewModel.send(.save) }; onClose() } label: {
-                Image(systemName: "chevron.left").frame(width: 44, height: 44)
+                Image(systemName: "chevron.left")
+                    .foregroundStyle(theme.primaryText)
+                    .frame(width: 44, height: 44)
             }.accessibilityLabel(Text(.notesKit("Back")))
             Spacer()
             saveStatus
             Button { viewModel.send(.openOptions) } label: {
-                Image(systemName: "ellipsis").frame(width: 44, height: 44)
+                Image(systemName: "ellipsis")
+                    .foregroundStyle(theme.primaryText)
+                    .frame(width: 44, height: 44)
             }.accessibilityLabel(Text(.notesKit("Note options")))
         }.foregroundStyle(theme.primaryText).padding(.horizontal, theme.small)
     }
