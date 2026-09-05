@@ -29,7 +29,10 @@ let package = Package(
             name: "KVNotesTestingTests",
             dependencies: ["KVNotesCore", "KVNotesTesting"]
         ),
-        .testTarget(name: "KVNotesUITests", dependencies: ["KVNotesUI"])
+        .testTarget(
+            name: "KVNotesUITests",
+            dependencies: ["KVNotesCore", "KVNotesTesting", "KVNotesUI"]
+        )
     ],
     swiftLanguageModes: [.v6]
 )
