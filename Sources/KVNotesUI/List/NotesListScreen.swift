@@ -143,11 +143,9 @@ public struct NotesListScreen: View {
 
     private var countLine: some View {
         HStack(spacing: theme.small) {
-            HStack(spacing: 4) {
-                Text(viewModel.state.index.notes.count, format: .number)
-                    .contentTransition(.numericText())
-                Text(.notesKit("Notes")).textCase(.uppercase)
-            }
+            Text(.notesKit(count: "\(viewModel.state.index.notes.count) notes"))
+                .textCase(.uppercase)
+                .contentTransition(.numericText())
             Rectangle().fill(theme.secondaryText).frame(width: 16, height: 0.75)
             HStack(spacing: 4) {
                 Image(systemName: "lock").font(.system(size: 10, weight: .semibold))

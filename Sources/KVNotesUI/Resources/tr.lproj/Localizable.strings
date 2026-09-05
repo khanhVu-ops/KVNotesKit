@@ -35,7 +35,6 @@
 "Not unlocked" = "Açılmadı";
 "Unlock" = "Kilidi aç";
 "Use PIN instead" = "PIN kullan";
-"Characters" = "Karakter";
 "Clipboard clears in" = "Pano şu süre sonra temizlenir";
 "Pinned" = "Sabitlenenler";
 "Locked" = "Kilitli";
@@ -43,7 +42,6 @@
 "Monogram" = "Baş harf";
 "Move this note to Recently Deleted?" = "Bu notu Son Silinenler'e taşımak istiyor musunuz?";
 "Move to folder" = "Klasöre taşı";
-"Notes" = "Notlar";
 "Search" = "Ara";
 "Try again" = "Yeniden dene";
 "Unsaved" = "Kaydedilmedi";

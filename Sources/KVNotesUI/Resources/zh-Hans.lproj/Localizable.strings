@@ -35,7 +35,6 @@
 "Not unlocked" = "未能解锁";
 "Unlock" = "解锁";
 "Use PIN instead" = "改用 PIN";
-"Characters" = "字符";
 "Clipboard clears in" = "剪贴板将在";
 "Pinned" = "已置顶";
 "Locked" = "已锁定";
@@ -43,7 +42,6 @@
 "Monogram" = "首字母";
 "Move this note to Recently Deleted?" = "将这条笔记移到“最近删除”？";
 "Move to folder" = "移动到文件夹";
-"Notes" = "备忘录";
 "Search" = "搜索";
 "Try again" = "重试";
 "Unsaved" = "未保存";

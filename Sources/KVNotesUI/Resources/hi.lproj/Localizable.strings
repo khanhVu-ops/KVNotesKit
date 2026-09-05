@@ -35,7 +35,6 @@
 "Not unlocked" = "अनलॉक नहीं हुआ";
 "Unlock" = "अनलॉक";
 "Use PIN instead" = "PIN इस्तेमाल करें";
-"Characters" = "वर्ण";
 "Clipboard clears in" = "क्लिपबोर्ड साफ़ होगा";
 "Pinned" = "पिन किए गए";
 "Locked" = "लॉक";
@@ -43,7 +42,6 @@
 "Monogram" = "पहला अक्षर";
 "Move this note to Recently Deleted?" = "इस नोट को हाल ही में हटाए गए में ले जाएँ?";
 "Move to folder" = "फ़ोल्डर में ले जाएँ";
-"Notes" = "नोट्स";
 "Search" = "खोजें";
 "Try again" = "फिर कोशिश करें";
 "Unsaved" = "सेव नहीं किया";

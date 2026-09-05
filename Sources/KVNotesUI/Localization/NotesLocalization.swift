@@ -9,10 +9,18 @@ enum NotesLocalization {
     static var bundle: Bundle { .module }
 
     static func resource(_ key: String) -> LocalizedStringResource {
-        LocalizedStringResource(
-            String.LocalizationValue(key),
-            bundle: .atURL(Bundle.module.bundleURL)
-        )
+        value(String.LocalizationValue(key))
+    }
+
+    /// The interpolating form, for the counted strings whose plural rules live in
+    /// `Localizable.stringsdict`.
+    ///
+    /// Interpolation is what makes the count part of the key (`"\(n) notes"` looks up
+    /// `%lld notes`) and hands the number to the plural rule. A number drawn as its own `Text`
+    /// beside a fixed noun cannot do that: Russian needs three forms of "заметка" and Arabic
+    /// six, and English's own "1 notes" is the same bug in a language nobody would ship it in.
+    static func value(_ value: String.LocalizationValue) -> LocalizedStringResource {
+        LocalizedStringResource(value, bundle: .atURL(Bundle.module.bundleURL))
     }
 
     /// UIKit controls cannot carry a `LocalizedStringResource`, so resolve their title from the
@@ -31,5 +39,9 @@ enum NotesLocalization {
 extension LocalizedStringResource {
     static func notesKit(_ key: String) -> LocalizedStringResource {
         NotesLocalization.resource(key)
+    }
+
+    static func notesKit(count value: String.LocalizationValue) -> LocalizedStringResource {
+        NotesLocalization.value(value)
     }
 }

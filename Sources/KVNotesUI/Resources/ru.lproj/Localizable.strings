@@ -35,7 +35,6 @@
 "Not unlocked" = "Не разблокировано";
 "Unlock" = "Разблокировать";
 "Use PIN instead" = "Ввести PIN";
-"Characters" = "Символы";
 "Clipboard clears in" = "Буфер обмена очистится через";
 "Pinned" = "Закреплённые";
 "Locked" = "Заблокировано";
@@ -43,7 +42,6 @@
 "Monogram" = "Монограмма";
 "Move this note to Recently Deleted?" = "Переместить эту заметку в «Недавно удалённые»?";
 "Move to folder" = "Переместить в папку";
-"Notes" = "Заметки";
 "Search" = "Поиск";
 "Try again" = "Повторить";
 "Unsaved" = "Не сохранено";

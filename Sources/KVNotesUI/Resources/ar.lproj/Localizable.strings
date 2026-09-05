@@ -35,7 +35,6 @@
 "Not unlocked" = "لم يتم الفتح";
 "Unlock" = "فتح";
 "Use PIN instead" = "استخدم رمز PIN";
-"Characters" = "أحرف";
 "Clipboard clears in" = "تُمحى الحافظة بعد";
 "Pinned" = "مثبّتة";
 "Locked" = "مقفلة";
@@ -43,7 +42,6 @@
 "Monogram" = "الحرف الأول";
 "Move this note to Recently Deleted?" = "نقل هذه الملاحظة إلى المحذوفات مؤخرًا؟";
 "Move to folder" = "نقل إلى مجلد";
-"Notes" = "ملاحظات";
 "Search" = "بحث";
 "Try again" = "حاول مرة أخرى";
 "Unsaved" = "غير محفوظة";

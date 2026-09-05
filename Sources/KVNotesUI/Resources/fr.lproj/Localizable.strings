@@ -35,7 +35,6 @@
 "Not unlocked" = "Non déverrouillée";
 "Unlock" = "Déverrouiller";
 "Use PIN instead" = "Utiliser le code PIN";
-"Characters" = "Caractères";
 "Clipboard clears in" = "Le presse-papiers s’efface dans";
 "Pinned" = "Épinglées";
 "Locked" = "Verrouillée";
@@ -43,7 +42,6 @@
 "Monogram" = "Monogramme";
 "Move this note to Recently Deleted?" = "Déplacer cette note vers Supprimés récemment ?";
 "Move to folder" = "Déplacer vers un dossier";
-"Notes" = "Notes";
 "Search" = "Rechercher";
 "Try again" = "Réessayer";
 "Unsaved" = "Non enregistré";

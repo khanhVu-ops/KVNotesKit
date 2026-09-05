@@ -155,8 +155,7 @@ public struct NoteEditorScreen: View {
             Circle().fill(saveTone).frame(width: 6, height: 6)
             switch viewModel.state.saveStatus {
             case .idle:
-                Text(viewModel.state.characterCount, format: .number)
-                Text(.notesKit("Characters"))
+                Text(.notesKit(count: "\(viewModel.state.characterCount) characters"))
             case .unsaved:
                 Text(.notesKit("Unsaved"))
             case .saving:

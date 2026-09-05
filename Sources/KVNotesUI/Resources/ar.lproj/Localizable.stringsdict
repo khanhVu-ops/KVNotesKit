@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>%lld notes</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>zero</key>
+			<string>%lld ملاحظة</string>
+			<key>one</key>
+			<string>ملاحظة واحدة</string>
+			<key>two</key>
+			<string>ملاحظتان</string>
+			<key>few</key>
+			<string>%lld ملاحظات</string>
+			<key>many</key>
+			<string>%lld ملاحظة</string>
+			<key>other</key>
+			<string>%lld ملاحظة</string>
+		</dict>
+	</dict>
+	<key>%lld characters</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>zero</key>
+			<string>%lld حرف</string>
+			<key>one</key>
+			<string>حرف واحد</string>
+			<key>two</key>
+			<string>حرفان</string>
+			<key>few</key>
+			<string>%lld أحرف</string>
+			<key>many</key>
+			<string>%lld حرفًا</string>
+			<key>other</key>
+			<string>%lld حرف</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

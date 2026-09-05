@@ -35,7 +35,6 @@
 "Not unlocked" = "未能解鎖";
 "Unlock" = "解鎖";
 "Use PIN instead" = "改用 PIN";
-"Characters" = "字元";
 "Clipboard clears in" = "剪貼板將在";
 "Pinned" = "已置頂";
 "Locked" = "已鎖定";
@@ -43,7 +42,6 @@
 "Monogram" = "首字母";
 "Move this note to Recently Deleted?" = "將這則筆記移到「最近刪除」？";
 "Move to folder" = "移動到資料夾";
-"Notes" = "備忘錄";
 "Search" = "搜尋";
 "Try again" = "重試";
 "Unsaved" = "未儲存";

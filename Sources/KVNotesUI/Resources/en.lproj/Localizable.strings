@@ -35,7 +35,6 @@
 "Not unlocked" = "Not unlocked";
 "Unlock" = "Unlock";
 "Use PIN instead" = "Use PIN instead";
-"Characters" = "Characters";
 "Clipboard clears in" = "Clipboard clears in";
 "Pinned" = "Pinned";
 "Locked" = "Locked";
@@ -43,7 +42,6 @@
 "Monogram" = "Monogram";
 "Move this note to Recently Deleted?" = "Move this note to Recently Deleted?";
 "Move to folder" = "Move to folder";
-"Notes" = "Notes";
 "Search" = "Search";
 "Try again" = "Try again";
 "Unsaved" = "Unsaved";

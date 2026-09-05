@@ -35,7 +35,6 @@
 "Not unlocked" = "ปลดล็อกไม่สำเร็จ";
 "Unlock" = "ปลดล็อก";
 "Use PIN instead" = "ใช้ PIN แทน";
-"Characters" = "อักขระ";
 "Clipboard clears in" = "คลิปบอร์ดจะถูกล้างใน";
 "Pinned" = "ปักหมุดแล้ว";
 "Locked" = "ล็อกอยู่";
@@ -43,7 +42,6 @@
 "Monogram" = "อักษรย่อ";
 "Move this note to Recently Deleted?" = "ย้ายบันทึกนี้ไปที่ลบเมื่อเร็ว ๆ นี้?";
 "Move to folder" = "ย้ายไปโฟลเดอร์";
-"Notes" = "โน้ต";
 "Search" = "ค้นหา";
 "Try again" = "ลองอีกครั้ง";
 "Unsaved" = "ยังไม่บันทึก";

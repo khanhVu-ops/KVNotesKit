@@ -35,7 +35,6 @@
 "Not unlocked" = "잠금 해제되지 않음";
 "Unlock" = "잠금 해제";
 "Use PIN instead" = "PIN 사용";
-"Characters" = "문자";
 "Clipboard clears in" = "클립보드 삭제까지";
 "Pinned" = "고정됨";
 "Locked" = "잠김";
@@ -43,7 +42,6 @@
 "Monogram" = "이니셜";
 "Move this note to Recently Deleted?" = "이 메모를 최근 삭제된 항목으로 이동할까요?";
 "Move to folder" = "폴더로 이동";
-"Notes" = "메모";
 "Search" = "검색";
 "Try again" = "다시 시도";
 "Unsaved" = "저장 안 됨";
