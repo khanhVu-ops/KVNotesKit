@@ -30,24 +30,25 @@ final class NotesHeaderCollapse {
     /// How far the list has been scrolled from the top of its own content.
     ///
     /// The header is a `safeAreaInset`, so it *is* the scroll view's top content inset and
-    /// `contentOffset.y` rests at `-headerHeight` rather than at zero. That offset means nothing
-    /// on its own, and the number it is re-based against is the one thing worth getting right.
+    /// `contentOffset.y` rests at `-headerHeight` rather than at zero. Adding the inset back is
+    /// what turns that into a distance, and it is the right sum for two separate reasons.
     ///
-    /// It has to be the **live** inset, not a remembered resting one, and that is the opposite of
-    /// what Vault Home does. Folding shrinks the header; UIKit moves `contentOffset.y` by the same
-    /// amount to keep the content where the reader is looking, so the *sum* is exactly invariant
-    /// under the fold while either term alone is not. Re-basing on anything else leaves the header
-    /// feeding on its own output: a fold of F points against a distance of D adds F/D of progress
-    /// for free, and the loop settles at `p / (1 - F/D)` — 1.75× the intended rate on Vault Home,
-    /// whose 32pt of chrome over 56pt of travel keeps the gain under one, and straight to fully
-    /// pinned here, where the title and count line are worth more than 56pt. Measured, not
-    /// reasoned: this header snapped shut on a 20pt drag until the base became the live inset.
-    private static func scrolled(offsetY: CGFloat, insetTop: CGFloat) -> CGFloat {
-        offsetY + insetTop
-    }
-
+    /// It needs no resting height, so there is nothing to hard-code and nothing to be wrong about
+    /// at a text size other than the author's. Vault Home hard-codes 131 and is wrong for everyone
+    /// who has changed theirs.
+    ///
+    /// And it is invariant under a header that changes height, because UIKit moves
+    /// `contentOffset.y` by whatever the inset loses. That mattered enormously when this header
+    /// folded itself: re-based on a constant instead, a fold of F points over a travel distance of
+    /// D added F/D of progress for free and settled at `p / (1 - F/D)` — 1.75x the intended rate
+    /// on Vault Home, and divergent here, where the title and count line were worth more than the
+    /// 56pt of travel. Measured, not reasoned: the header snapped shut on a 20pt drag.
+    ///
+    /// It matters much less now, and that is the point. Nothing this returns can change the height
+    /// of the pinned header any more — the part that folds is content inside the scroll view, and
+    /// progress only reaches opacity. See `NotesListTitleBlock` for why that had to change.
     func scrolled(offsetY: CGFloat, insetTop: CGFloat) {
-        let scrolled = Self.scrolled(offsetY: offsetY, insetTop: insetTop)
+        let scrolled = offsetY + insetTop
         let next = min(max(Double(scrolled / Self.distance), 0), 1)
         // Observation fires on assignment and not on change, and this runs on every frame of
         // every scroll: without the guard a list resting at the top would redraw the header a

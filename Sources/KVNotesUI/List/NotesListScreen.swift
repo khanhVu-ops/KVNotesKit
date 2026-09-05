@@ -152,17 +152,54 @@ public struct NotesListScreen: View {
             )
     }
 
-    @ViewBuilder
+    /// One scroll view, for every state the screen can be in.
+    ///
+    /// It used to be five — a `scroller` per placeholder and the board's own — and each of them
+    /// had to be told about the header separately. One is not tidiness: the title block at the top
+    /// is the part of the header that scrolls away, so it has to be inside whichever scroll view
+    /// the reader is actually touching, and "whichever" is a word worth designing out.
     private var content: some View {
+        ScrollView {
+            // `pinnedViews` on this stack and not on the grid inside it: pinning is per container,
+            // and the grid's own "Pinned"/"All notes" headers are captions over cards rather than
+            // a table's index — sticking them to the top would stack two of them under the search.
+            LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                if !viewModel.state.isSelecting {
+                    NotesListTitleBlock(
+                        theme: theme,
+                        noteCount: viewModel.state.index.notes.count,
+                        progress: collapse.progress
+                    )
+                }
+                Section {
+                    phaseContent
+                        .padding(.bottom, theme.extraLarge)
+                } header: {
+                    if !viewModel.state.isSelecting { filterBar }
+                }
+            }
+        }
+        .scrollIndicators(.hidden)
+        .refreshable { viewModel.send(.refresh) }
+        .notesHeaderCollapse(collapse)
+        // No `.animation(value:)` here. That modifier sets the animation for this whole subtree
+        // when its value changes and clears it when it does not, so one placed here would wipe
+        // the transaction `listChange` opens for a card leaving or moving. The layout switch and
+        // every card change arrive inside their own `withAnimation`, which is the granularity
+        // that matters, and a reload from the store is left alone.
+    }
+
+    @ViewBuilder
+    private var phaseContent: some View {
         switch viewModel.state.phase {
         case .idle, .loading:
-            scroller { skeleton }
+            placeholder { skeleton }
         case .failed:
-            scroller { failure }
+            placeholder { failure }
         case .loaded where viewModel.state.isEmptyBecauseStoreIsEmpty:
-            scroller { emptyVault }
+            placeholder { emptyVault }
         case .loaded where viewModel.state.isEmptyBecauseOfFilter:
-            scroller { emptyFilter }
+            placeholder { emptyFilter }
         case .loaded:
             // One view for both layouts. Not a `switch` on `layout`: two branches would be two
             // views in one slot, and the switch between them could only ever cross-fade.
@@ -184,14 +221,8 @@ public struct NotesListScreen: View {
         }
     }
 
-    private func scroller<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        ScrollView {
-            content()
-                .padding(.horizontal, theme.medium)
-                .padding(.bottom, theme.extraLarge)
-        }
-        .scrollIndicators(.hidden)
-        .refreshable { viewModel.send(.refresh) }
+    private func placeholder<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content().padding(.horizontal, theme.medium)
     }
 
     /// The header, and the one place `collapse` is handed to anything.
@@ -203,17 +234,12 @@ public struct NotesListScreen: View {
         NotesListHeader(
             collapse: collapse,
             theme: theme,
-            searchText: $searchText,
             isSelecting: viewModel.state.isSelecting,
             isEverythingSelected: viewModel.state.isEverythingSelected,
             selectionCount: viewModel.state.selection.count,
-            noteCount: viewModel.state.index.notes.count,
             hasVisibleNotes: !viewModel.state.visibleNotes.isEmpty,
             isNarrowed: viewModel.state.isNarrowed,
             layout: viewModel.state.layout,
-            folderChips: viewModel.state.folderChips,
-            folderTints: viewModel.state.index.folderTints,
-            selectedFolder: viewModel.state.selectedFolder,
             haptic: haptic,
             onClose: onClose,
             onCreateNote: onCreateNote,
@@ -228,7 +254,25 @@ public struct NotesListScreen: View {
                 withAnimation(NoteMotion.layout(reduceMotion: reduceMotion)) {
                     viewModel.send(.setLayout(next))
                 }
-            },
+            }
+        )
+    }
+
+    /// Pinned from inside the scroll view, not from the `safeAreaInset`.
+    ///
+    /// A `safeAreaInset` sits above everything in the scroll view, and the title has to sit
+    /// between the control row and the search field — where it has always been. Pinning this as a
+    /// section header is what lets the title scroll up past it and away.
+    private var filterBar: some View {
+        NotesListFilterBar(
+            theme: theme,
+            searchText: $searchText,
+            noteCount: viewModel.state.index.notes.count,
+            folderChips: viewModel.state.folderChips,
+            folderTints: viewModel.state.index.folderTints,
+            selectedFolder: viewModel.state.selectedFolder,
+            progress: collapse.progress,
+            haptic: haptic,
             onSelectFolder: { viewModel.send(.selectFolder($0)) },
             onOpenFolderManager: { viewModel.send(.openFolderManager) }
         )
@@ -288,48 +332,37 @@ public struct NotesListScreen: View {
     /// Sections rather than a flat sequence with header rows: a header in a two-column grid has
     /// to span both columns, and a flat sequence would hand it one cell.
     private var noteBoard: some View {
-        ScrollView {
-            LazyVGrid(columns: columns, spacing: theme.small) {
-                if viewModel.state.pinnedCount > 0 {
+        LazyVGrid(columns: columns, spacing: theme.small) {
+            if viewModel.state.pinnedCount > 0 {
+                Section {
+                    ForEach(entries(viewModel.state.pinnedNotes, group: .pinned)) { entry in
+                        noteCard(entry.note)
+                    }
+                } header: {
+                    sectionHeader(Text(.notesKit("Pinned")), icon: "pin.fill")
+                }
+
+                if viewModel.state.pinnedCount < viewModel.state.visibleNotes.count {
                     Section {
-                        ForEach(entries(viewModel.state.pinnedNotes, group: .pinned)) { entry in
+                        ForEach(entries(viewModel.state.timelineNotes, group: .timeline)) { entry in
                             noteCard(entry.note)
                         }
                     } header: {
-                        sectionHeader(Text(.notesKit("Pinned")), icon: "pin.fill")
-                    }
-
-                    if viewModel.state.pinnedCount < viewModel.state.visibleNotes.count {
-                        Section {
-                            ForEach(entries(viewModel.state.timelineNotes, group: .timeline)) { entry in
-                                noteCard(entry.note)
-                            }
-                        } header: {
-                            sectionHeader(
-                                Text(.notesKit("All notes")),
-                                icon: nil,
-                                topPadding: theme.small + 4
-                            )
-                        }
-                    }
-                } else {
-                    ForEach(entries(viewModel.state.visibleNotes[...], group: .timeline)) { entry in
-                        noteCard(entry.note)
+                        sectionHeader(
+                            Text(.notesKit("All notes")),
+                            icon: nil,
+                            topPadding: theme.small + 4
+                        )
                     }
                 }
+            } else {
+                ForEach(entries(viewModel.state.visibleNotes[...], group: .timeline)) { entry in
+                    noteCard(entry.note)
+                }
             }
-            .padding(.horizontal, theme.medium)
-            .padding(.top, theme.xs)
-            .padding(.bottom, theme.extraLarge)
         }
-        .scrollIndicators(.hidden)
-        .refreshable { viewModel.send(.refresh) }
-        .notesHeaderCollapse(collapse)
-        // No `.animation(value:)` here. That modifier sets the animation for this whole subtree
-        // when its value changes and clears it when it does not, so one placed here would wipe
-        // the transaction `listChange` opens for a card leaving or moving. The layout switch and
-        // every row change arrive inside their own `withAnimation`, which is the granularity
-        // that matters, and a reload from the store is left alone.
+        .padding(.horizontal, theme.medium)
+        .padding(.top, theme.xs)
     }
 
     /// One column or two. The only difference between the two layouts, as far as this screen is

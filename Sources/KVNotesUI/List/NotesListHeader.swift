@@ -1,32 +1,28 @@
 import KVNotesCore
 import SwiftUI
 
-/// Everything above the notes list: the control row, the title, the count line, the search
-/// field and the folder chips.
+/// The control row that stays above the notes list: back, the inline title, and the four
+/// controls — or Cancel and Select All while a selection is live.
 ///
-/// Its own view rather than a `@ViewBuilder` on the screen, and the reason is the fold. The
-/// header is the one part of this screen that changes while the list is being scrolled, and a
-/// property on the screen changes the screen — every row, every sheet, the whole body. Reading
-/// the fold here means a fold redraws a header.
+/// This is the only part of the chrome that is a `safeAreaInset`, and its height does not depend
+/// on scrolling. That is deliberate and it is load-bearing: a `safeAreaInset` *is* the scroll
+/// view's top content inset, so a header that resizes itself from the scroll offset closes a loop
+/// through UIKit. `NotesListTitleBlock` carries the full account of what that cost. Everything
+/// here that reacts to scrolling reacts with opacity, which cannot change a size.
 ///
-/// Values and closures, never the ViewModel: the header is drawn from eleven facts, and taking
-/// them one by one is what makes it previewable in both states without a store behind it.
+/// Values and closures, never the ViewModel: taking the facts one by one is what makes the row
+/// previewable in both its states without a store behind it.
 struct NotesListHeader: View {
     /// The one reference the header holds, and the one thing it is allowed to read while the
     /// list is moving.
     let collapse: NotesHeaderCollapse
     let theme: NoteTheme
-    @Binding var searchText: String
     let isSelecting: Bool
     let isEverythingSelected: Bool
     let selectionCount: Int
-    let noteCount: Int
     let hasVisibleNotes: Bool
     let isNarrowed: Bool
     let layout: NoteListLayout
-    let folderChips: [NotesListState.FolderChip]
-    let folderTints: [String: NoteFolderTint]
-    let selectedFolder: String?
     let haptic: @MainActor @Sendable () -> Void
     let onClose: @MainActor @Sendable () -> Void
     let onCreateNote: @MainActor @Sendable () -> Void
@@ -35,18 +31,8 @@ struct NotesListHeader: View {
     let onSelectAllOrNone: @MainActor @Sendable () -> Void
     let onOpenSortAndFilter: @MainActor @Sendable () -> Void
     let onToggleLayout: @MainActor @Sendable () -> Void
-    let onSelectFolder: @MainActor @Sendable (String?) -> Void
-    let onOpenFolderManager: @MainActor @Sendable () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    /// The natural height of the block that folds away, measured rather than assumed.
-    ///
-    /// Vault Home can write `18.0 * (1 - p)` because its totals row is one line of a fixed size.
-    /// This block is a title and a count line in Dynamic Type fonts, so its height belongs to the
-    /// reader, not to the source. `nil` until the first measurement, which is also what tells the
-    /// frame below to leave the block at its natural height for that first pass.
-    @State private var foldingBlockHeight: CGFloat?
 
     /// Everything about the header that is allowed to animate, behind one value.
     ///
@@ -63,46 +49,20 @@ struct NotesListHeader: View {
     private struct Shape: Equatable {
         let isSelecting: Bool
         let isNarrowed: Bool
-        let selectedFolder: String?
-        let noteCount: Int
         let selectionCount: Int
-        let hasSearchText: Bool
     }
 
     private var shape: Shape {
-        Shape(
-            isSelecting: isSelecting,
-            isNarrowed: isNarrowed,
-            selectedFolder: selectedFolder,
-            noteCount: noteCount,
-            selectionCount: selectionCount,
-            hasSearchText: !searchText.isEmpty
-        )
+        Shape(isSelecting: isSelecting, isNarrowed: isNarrowed, selectionCount: selectionCount)
     }
 
     // MARK: - Interpolation
 
     private var p: Double { min(max(collapse.progress, 0), 1) }
 
-    /// Gone by 60%, so the words have finished leaving before the row that takes their place
-    /// starts arriving. Two titles fading through each other reads as a double image.
-    private var foldingOpacity: Double { p >= 0.6 ? 0 : 1 - p / 0.6 }
-
-    /// And the inline one arrives after that, on Vault Home's ramp.
+    /// The inline title arrives once the large one is on its way out, on Vault Home's ramp.
     private var inlineTitleOpacity: Double { min(max((p - 0.55) * 2.3, 0), 1) }
 
-    /// The large title loses a little size on the way out, so it reads as the same words
-    /// shrinking into the row rather than as one label swapped for another.
-    private var foldingScale: Double { 1 - 0.14 * p }
-
-    private var foldingHeight: CGFloat? {
-        guard let foldingBlockHeight else { return nil }
-        return foldingBlockHeight * (1 - p)
-    }
-
-    /// Invisible at rest and drawn once there is content behind it — a separator over nothing is
-    /// a line for its own sake.
-    private var hairlineOpacity: Double { p }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -117,21 +77,17 @@ struct NotesListHeader: View {
             .padding(.horizontal, theme.small)
 
             if !isSelecting {
-                foldingBlock
-                // Both stay. The search field and the folder chips are how the list is narrowed,
-                // and a control that leaves the moment you scroll is a control you have to scroll
-                // back for — Vault Home keeps its category rail pinned for the same reason.
-                searchField
-                if !folderChips.isEmpty { folderRow }
+                EmptyView()
             } else {
                 selectionCountLine
-            }
 
-            Rectangle()
-                .fill(theme.separator)
-                .frame(height: 0.75)
-                .opacity(hairlineOpacity)
-                .padding(.top, theme.xs)
+                // The filter bar carries the separator while browsing, and it is not on screen
+                // while selecting. Cards scroll under this row either way, so the line that says
+                // where the chrome ends has to come from whichever row is on top.
+                Rectangle()
+                    .fill(theme.separator)
+                    .frame(height: 0.75)
+            }
         }
         .background(theme.background)
         .animation(NoteMotion.header(reduceMotion: reduceMotion), value: shape)
@@ -285,63 +241,6 @@ struct NotesListHeader: View {
         .accessibilityLabel(Text(isGrid ? .notesKit("List view") : .notesKit("Grid view")))
     }
 
-    /// The title and the count line, folding together as one block.
-    ///
-    /// Height and opacity rather than an `if`, which is the difference between the header
-    /// following the finger and the header springing between two states once the finger has
-    /// already stopped. `.top` alignment matters as much as the height does: the block has to be
-    /// clipped from the bottom as it closes, not slide its baseline upward.
-    private var foldingBlock: some View {
-        VStack(spacing: 0) {
-            title
-            countLine
-        }
-        .frame(height: foldingHeight, alignment: .top)
-        .clipped()
-        .opacity(foldingOpacity)
-        .scaleEffect(foldingScale, anchor: .topLeading)
-        .background(alignment: .top) { foldingBlockMeasurement }
-    }
-
-    /// A second copy of the block, laid out as if nothing were folded, purely to be measured.
-    ///
-    /// `fixedSize` is what makes it worth having: a background is offered its host's size, so
-    /// without it this would report the folded height back as the natural one and the block would
-    /// close itself the moment it started. Backgrounds take no part in layout, so the copy costs
-    /// two `Text`s and changes nothing on screen.
-    private var foldingBlockMeasurement: some View {
-        VStack(spacing: 0) {
-            title
-            countLine
-        }
-        .fixedSize(horizontal: false, vertical: true)
-        .hidden()
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-        .onGeometryChange(for: CGFloat.self) { proxy in
-            proxy.size.height
-        } action: { height in
-            guard height > 0, abs(height - (foldingBlockHeight ?? 0)) > 0.5 else { return }
-            foldingBlockHeight = height
-        }
-    }
-
-    /// The screen's name, on its own line and at title size.
-    ///
-    /// It used to sit between the back button and three controls, which capped it at a caption
-    /// and left the row looking like a toolbar with a label wedged into it. A title has the width
-    /// of the screen here, and the controls keep their own row.
-    private var title: some View {
-        Text(.notesKit("Private notes"))
-            .font(theme.titleFont)
-            .foregroundStyle(theme.primaryText)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, theme.medium)
-            .padding(.top, theme.xs)
-            .padding(.bottom, 2)
-            .accessibilityAddTraits(.isHeader)
-    }
-
     /// The title once the header has folded: same words, row size, beside the back button.
     ///
     /// Always in the row and never inserted into it, which is what lets it fade in without the
@@ -360,24 +259,60 @@ struct NotesListHeader: View {
             .accessibilityHidden(inlineTitleOpacity < 0.5)
             .accessibilityAddTraits(.isHeader)
     }
+}
 
-    private var countLine: some View {
-        HStack(spacing: theme.small) {
-            Text(.notesKit(count: "\(noteCount) notes"))
-                .textCase(.uppercase)
-                .contentTransition(.numericText())
-            Rectangle().fill(theme.secondaryText).frame(width: 16, height: 0.75)
-            HStack(spacing: 4) {
-                Image(systemName: "lock").font(.system(size: 10, weight: .semibold))
-                Text(verbatim: "AES-256")
-            }
+/// The search field and the folder chips, pinned under the control row while the list moves.
+///
+/// A `Section` header inside the scroll view rather than part of the `safeAreaInset`, and the
+/// reason is the order things are drawn in. A `safeAreaInset` is always above the content, so
+/// anything pinned that way sits above the title — and the title has to be *below* the control
+/// row and *above* the search, which is the order the design has always had. Pinning it from
+/// inside the scroll is what lets the title scroll away past it while it stays put.
+///
+/// It could have gone in the header and folded away with the title. It should not: the search
+/// field and the chips are how the list is narrowed, and a control that leaves the moment you
+/// scroll is a control you have to scroll back for. Vault Home pins its category rail for the
+/// same reason.
+struct NotesListFilterBar: View {
+    let theme: NoteTheme
+    @Binding var searchText: String
+    let noteCount: Int
+    let folderChips: [NotesListState.FolderChip]
+    let folderTints: [String: NoteFolderTint]
+    let selectedFolder: String?
+    /// Only the hairline reads this, and only to fade with.
+    let progress: Double
+    let haptic: @MainActor @Sendable () -> Void
+    let onSelectFolder: @MainActor @Sendable (String?) -> Void
+    let onOpenFolderManager: @MainActor @Sendable () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private struct Shape: Equatable {
+        let selectedFolder: String?
+        let hasSearchText: Bool
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            searchField
+            if !folderChips.isEmpty { folderRow }
+
+            // Invisible at rest and drawn once there is content behind it — a separator over
+            // nothing is a line for its own sake.
+            Rectangle()
+                .fill(theme.separator)
+                .frame(height: 0.75)
+                .opacity(min(max(progress, 0), 1))
+                .padding(.top, theme.xs)
         }
-        .font(theme.metadataFont)
-        .tracking(1.4)
-        .foregroundStyle(theme.secondaryText)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, theme.medium)
-        .padding(.bottom, theme.small)
+        // Opaque, and not optional: cards scroll underneath this, and a translucent bar over
+        // moving text reads as a rendering fault rather than as a design.
+        .background(theme.background)
+        .animation(
+            NoteMotion.header(reduceMotion: reduceMotion),
+            value: Shape(selectedFolder: selectedFolder, hasSearchText: !searchText.isEmpty)
+        )
     }
 
     private var searchField: some View {
@@ -492,28 +427,122 @@ struct NotesListHeader: View {
     }
 }
 
-#Preview("Header") {
+#Preview("Filter bar") {
     @Previewable @State var searchText = ""
-    @Previewable @State var collapse = NotesHeaderCollapse()
 
     VStack(spacing: 0) {
-        NotesListHeader(
-            collapse: collapse,
+        NotesListFilterBar(
             theme: .preview,
             searchText: $searchText,
-            isSelecting: false,
-            isEverythingSelected: false,
-            selectionCount: 0,
             noteCount: 12,
-            hasVisibleNotes: true,
-            isNarrowed: false,
-            layout: .list,
             folderChips: [
                 NotesListState.FolderChip(name: "Work", count: 4),
                 NotesListState.FolderChip(name: "Travel", count: 2)
             ],
             folderTints: ["Work": .teal],
             selectedFolder: nil,
+            progress: 1,
+            haptic: {},
+            onSelectFolder: { _ in },
+            onOpenFolderManager: {}
+        )
+        Spacer()
+    }
+    .background(NoteTheme.preview.background)
+}
+
+/// The screen's name and its count line — scrolling content, not header.
+///
+/// This is the whole fix for a header that flickered on a slow scroll and locked up a device.
+///
+/// The header is a `safeAreaInset`, so its height *is* the scroll view's top content inset. A
+/// header that changes height in response to the scroll offset is therefore a closed loop through
+/// UIKit: fold a little, the inset shrinks, the scroll view reports new geometry, that geometry
+/// changes the fold. Whether the loop settles or runs away is a question about gain and about how
+/// consistently the two terms arrive in the same frame — and the honest answer is that it is not
+/// worth betting a screen on either. Damped it reads as flicker under a slow finger, which is
+/// exactly what it felt like; undamped it never reaches a fixed point and the frame never
+/// finishes, which is a screen that opens and hangs.
+///
+/// So nothing about the pinned header's height depends on scrolling any more. The part that
+/// leaves is ordinary content at the top of the list, and it leaves by being scrolled, at exactly
+/// the speed of the finger, because that is what scrolling is. Progress still exists, but it only
+/// drives opacity now — the inline title in the row, the hairline — and opacity cannot change a
+/// layout, so it cannot come back round.
+///
+/// Vault Home has the loop this removes. Its chrome shrinks 32pt against a 56pt travel distance,
+/// a gain of 0.57, so it converges instead of hanging — and runs at 1.75x the rate its own
+/// constant claims. It should be moved to this shape too.
+struct NotesListTitleBlock: View {
+    let theme: NoteTheme
+    let noteCount: Int
+    /// Only to fade with. It must never reach anything that decides a size.
+    let progress: Double
+
+    private var p: Double { min(max(progress, 0), 1) }
+
+    /// Gone by 60%, so the words have finished leaving before the row that takes their place
+    /// starts arriving. Two titles legible at once reads as a double image.
+    private var opacity: Double { p >= 0.6 ? 0 : 1 - p / 0.6 }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // The screen's name, on its own line and at title size. It used to sit between the
+            // back button and three controls, which capped it at a caption and left the row
+            // looking like a toolbar with a label wedged into it.
+            Text(.notesKit("Private notes"))
+                .font(theme.titleFont)
+                .foregroundStyle(theme.primaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, theme.xs)
+                .padding(.bottom, 2)
+                .accessibilityAddTraits(.isHeader)
+
+            countLine
+        }
+        .padding(.horizontal, theme.medium)
+        .padding(.bottom, theme.small)
+        .opacity(opacity)
+    }
+
+    private var countLine: some View {
+        HStack(spacing: theme.small) {
+            Text(.notesKit(count: "\(noteCount) notes"))
+                .textCase(.uppercase)
+                .contentTransition(.numericText())
+            Rectangle().fill(theme.secondaryText).frame(width: 16, height: 0.75)
+            HStack(spacing: 4) {
+                Image(systemName: "lock").font(.system(size: 10, weight: .semibold))
+                Text(verbatim: "AES-256")
+            }
+        }
+        .font(theme.metadataFont)
+        .tracking(1.4)
+        .foregroundStyle(theme.secondaryText)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+#Preview("Title block") {
+    VStack(spacing: 0) {
+        NotesListTitleBlock(theme: .preview, noteCount: 12, progress: 0)
+        NotesListTitleBlock(theme: .preview, noteCount: 12, progress: 0.35)
+        Spacer()
+    }
+    .background(NoteTheme.preview.background)
+}
+
+#Preview("Header") {
+    VStack(spacing: 0) {
+        NotesListHeader(
+            collapse: NotesHeaderCollapse(),
+            theme: .preview,
+            isSelecting: false,
+            isEverythingSelected: false,
+            selectionCount: 0,
+            hasVisibleNotes: true,
+            isNarrowed: false,
+            layout: .list,
             haptic: {},
             onClose: {},
             onCreateNote: {},
@@ -521,9 +550,7 @@ struct NotesListHeader: View {
             onStopSelecting: {},
             onSelectAllOrNone: {},
             onOpenSortAndFilter: {},
-            onToggleLayout: {},
-            onSelectFolder: { _ in },
-            onOpenFolderManager: {}
+            onToggleLayout: {}
         )
         Spacer()
     }
