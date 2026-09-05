@@ -38,25 +38,30 @@ struct NotesListHeader: View {
     let onSelectFolder: @MainActor @Sendable (String?) -> Void
     let onOpenFolderManager: @MainActor @Sendable () -> Void
 
-    /// Ties the large title and the folded one together so the words travel between them
-    /// instead of one disappearing while the other appears somewhere else.
-    @Namespace private var headerTitle
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private static let titleGeometry = "notes.title"
+    /// The natural height of the block that folds away, measured rather than assumed.
+    ///
+    /// Vault Home can write `18.0 * (1 - p)` because its totals row is one line of a fixed size.
+    /// This block is a title and a count line in Dynamic Type fonts, so its height belongs to the
+    /// reader, not to the source. `nil` until the first measurement, which is also what tells the
+    /// frame below to leave the block at its natural height for that first pass.
+    @State private var foldingBlockHeight: CGFloat?
 
     /// Everything about the header that is allowed to animate, behind one value.
     ///
-    /// One `.animation(_:value:)` for the whole header and not six scattered through it, which
-    /// is not tidiness. The modifier sets the animation for its subtree when its own value
-    /// changed and clears it when it did not, so a second one nested underneath cancels the
-    /// first for its own subtree: the header carried one watching the selection and one watching
-    /// the fold, and each folded change had its animation wiped by the other. That is why the
-    /// fold arrived as a jump. Collecting the facts into one value is what makes the whole
-    /// header move on one curve.
+    /// One `.animation(_:value:)` for the whole header and not six scattered through it, which is
+    /// not tidiness. The modifier sets the animation for its subtree when its own value changed
+    /// and clears it when it did not, so a second one nested underneath cancels the first for its
+    /// own subtree — two of them here used to wipe each other, which is why the fold arrived as a
+    /// jump.
+    ///
+    /// `progress` is deliberately not in here. It must *not* animate: it is already a smooth
+    /// function of where the finger is, and putting a curve on top of a value that is being
+    /// driven directly is what makes a header lag behind the scroll it is supposed to follow.
+    /// Clearing the transaction for everything else is exactly what this modifier does anyway.
     private struct Shape: Equatable {
         let isSelecting: Bool
-        let isCollapsed: Bool
         let isNarrowed: Bool
         let selectedFolder: String?
         let noteCount: Int
@@ -67,7 +72,6 @@ struct NotesListHeader: View {
     private var shape: Shape {
         Shape(
             isSelecting: isSelecting,
-            isCollapsed: isCollapsed,
             isNarrowed: isNarrowed,
             selectedFolder: selectedFolder,
             noteCount: noteCount,
@@ -76,7 +80,29 @@ struct NotesListHeader: View {
         )
     }
 
-    private var isCollapsed: Bool { collapse.isCollapsed }
+    // MARK: - Interpolation
+
+    private var p: Double { min(max(collapse.progress, 0), 1) }
+
+    /// Gone by 60%, so the words have finished leaving before the row that takes their place
+    /// starts arriving. Two titles fading through each other reads as a double image.
+    private var foldingOpacity: Double { p >= 0.6 ? 0 : 1 - p / 0.6 }
+
+    /// And the inline one arrives after that, on Vault Home's ramp.
+    private var inlineTitleOpacity: Double { min(max((p - 0.55) * 2.3, 0), 1) }
+
+    /// The large title loses a little size on the way out, so it reads as the same words
+    /// shrinking into the row rather than as one label swapped for another.
+    private var foldingScale: Double { 1 - 0.14 * p }
+
+    private var foldingHeight: CGFloat? {
+        guard let foldingBlockHeight else { return nil }
+        return foldingBlockHeight * (1 - p)
+    }
+
+    /// Invisible at rest and drawn once there is content behind it — a separator over nothing is
+    /// a line for its own sake.
+    private var hairlineOpacity: Double { p }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -91,12 +117,12 @@ struct NotesListHeader: View {
             .padding(.horizontal, theme.small)
 
             if !isSelecting {
-                if !isCollapsed {
-                    title
-                    countLine
-                }
+                foldingBlock
+                // Both stay. The search field and the folder chips are how the list is narrowed,
+                // and a control that leaves the moment you scroll is a control you have to scroll
+                // back for — Vault Home keeps its category rail pinned for the same reason.
                 searchField
-                if !folderChips.isEmpty, !isCollapsed { folderRow }
+                if !folderChips.isEmpty { folderRow }
             } else {
                 selectionCountLine
             }
@@ -104,6 +130,7 @@ struct NotesListHeader: View {
             Rectangle()
                 .fill(theme.separator)
                 .frame(height: 0.75)
+                .opacity(hairlineOpacity)
                 .padding(.top, theme.xs)
         }
         .background(theme.background)
@@ -125,7 +152,7 @@ struct NotesListHeader: View {
             .frame(width: 44, height: 44)
             .accessibilityLabel(Text(.notesKit("Back")))
 
-            if isCollapsed { foldedTitle }
+            inlineTitle
 
             Spacer(minLength: theme.xs)
 
@@ -258,6 +285,47 @@ struct NotesListHeader: View {
         .accessibilityLabel(Text(isGrid ? .notesKit("List view") : .notesKit("Grid view")))
     }
 
+    /// The title and the count line, folding together as one block.
+    ///
+    /// Height and opacity rather than an `if`, which is the difference between the header
+    /// following the finger and the header springing between two states once the finger has
+    /// already stopped. `.top` alignment matters as much as the height does: the block has to be
+    /// clipped from the bottom as it closes, not slide its baseline upward.
+    private var foldingBlock: some View {
+        VStack(spacing: 0) {
+            title
+            countLine
+        }
+        .frame(height: foldingHeight, alignment: .top)
+        .clipped()
+        .opacity(foldingOpacity)
+        .scaleEffect(foldingScale, anchor: .topLeading)
+        .background(alignment: .top) { foldingBlockMeasurement }
+    }
+
+    /// A second copy of the block, laid out as if nothing were folded, purely to be measured.
+    ///
+    /// `fixedSize` is what makes it worth having: a background is offered its host's size, so
+    /// without it this would report the folded height back as the natural one and the block would
+    /// close itself the moment it started. Backgrounds take no part in layout, so the copy costs
+    /// two `Text`s and changes nothing on screen.
+    private var foldingBlockMeasurement: some View {
+        VStack(spacing: 0) {
+            title
+            countLine
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .hidden()
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+        .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.height
+        } action: { height in
+            guard height > 0, abs(height - (foldingBlockHeight ?? 0)) > 0.5 else { return }
+            foldingBlockHeight = height
+        }
+    }
+
     /// The screen's name, on its own line and at title size.
     ///
     /// It used to sit between the back button and three controls, which capped it at a caption
@@ -267,46 +335,30 @@ struct NotesListHeader: View {
         Text(.notesKit("Private notes"))
             .font(theme.titleFont)
             .foregroundStyle(theme.primaryText)
-            // On the Text itself, not on the padded row: the anchor has to be where the glyphs
-            // start, or the title lands a `medium` short of the back button.
-            .matchedGeometryEffect(
-                id: Self.titleGeometry,
-                in: headerTitle,
-                properties: .position,
-                anchor: .leading,
-                isSource: !isCollapsed
-            )
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, theme.medium)
             .padding(.top, theme.xs)
             .padding(.bottom, 2)
             .accessibilityAddTraits(.isHeader)
-            // Position comes from the geometry match, so the transition only has to cross-fade
-            // the two sizes. A `move` on top of it would pull the title off its own path.
-            .transition(.opacity)
     }
 
     /// The title once the header has folded: same words, row size, beside the back button.
     ///
-    /// The geometry match carries the position and not the frame. Matching the frame as well
-    /// squeezes the large title's glyphs into this one's box on the way up, and the two type
-    /// sizes are exactly what the cross-fade is for.
-    private var foldedTitle: some View {
+    /// Always in the row and never inserted into it, which is what lets it fade in without the
+    /// controls beside it jumping to make room. Its width comes out of the `Spacer`, not out of
+    /// the buttons, so at rest it is invisible and costs nothing anyone can see. It is hidden
+    /// from VoiceOver until it is actually legible — two headers reading the same words is one
+    /// too many.
+    private var inlineTitle: some View {
         Text(.notesKit("Private notes"))
             .font(theme.sectionFont)
             .foregroundStyle(theme.primaryText)
             .lineLimit(1)
             .minimumScaleFactor(0.8)
-            .matchedGeometryEffect(
-                id: Self.titleGeometry,
-                in: headerTitle,
-                properties: .position,
-                anchor: .leading,
-                isSource: isCollapsed
-            )
+            .opacity(inlineTitleOpacity)
             .padding(.leading, theme.xs)
+            .accessibilityHidden(inlineTitleOpacity < 0.5)
             .accessibilityAddTraits(.isHeader)
-            .transition(.opacity)
     }
 
     private var countLine: some View {
@@ -326,9 +378,6 @@ struct NotesListHeader: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, theme.medium)
         .padding(.bottom, theme.small)
-        // Nothing catches this line on the way out, so it leaves the way the header folds:
-        // upward, behind the row that is taking the title.
-        .transition(.move(edge: .top).combined(with: .opacity))
     }
 
     private var searchField: some View {
@@ -406,9 +455,6 @@ struct NotesListHeader: View {
             .padding(.bottom, 2)
         }
         .scrollIndicators(.hidden)
-        // The chips leave with the rest of the fold rather than on their own curve; a second
-        // animation here would be a second `.animation(_:value:)` cancelling the first.
-        .transition(.move(edge: .top).combined(with: .opacity))
     }
 
     private func chip(
@@ -448,10 +494,11 @@ struct NotesListHeader: View {
 
 #Preview("Header") {
     @Previewable @State var searchText = ""
+    @Previewable @State var collapse = NotesHeaderCollapse()
 
     VStack(spacing: 0) {
         NotesListHeader(
-            collapse: NotesHeaderCollapse(),
+            collapse: collapse,
             theme: .preview,
             searchText: $searchText,
             isSelecting: false,

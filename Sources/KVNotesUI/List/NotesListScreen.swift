@@ -5,12 +5,12 @@ public struct NotesListScreen: View {
     @State private var viewModel: NotesListViewModel
     @State private var searchText = ""
     @State private var searchTask: Task<Void, Never>?
-    /// Whether the title, the count line and the folder chips are folded away.
+    /// How far the header has folded, from 0 to 1.
     ///
-    /// They fold while reading and come back on the way up — on a phone the header was eating a
-    /// third of the screen before the first note. An object and not a `@State` flag: the scroll
-    /// bookkeeping behind the decision is written on every frame of every scroll, and writing
-    /// `@State` at 120 Hz rebuilds this body 120 times a second. Only the header reads it.
+    /// The title and the count line fold away as the list is scrolled — on a phone the header was
+    /// eating a third of the screen before the first note. An object and not `@State`: progress is
+    /// written on every frame of every scroll, and writing `@State` at 120 Hz rebuilds this body
+    /// 120 times a second. Only `NotesListHeader` reads it.
     @State private var collapse = NotesHeaderCollapse()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -59,19 +59,6 @@ public struct NotesListScreen: View {
             .onChange(of: refreshToken) { viewModel.send(.refresh) }
             .onChange(of: viewModel.state.isSelecting) { _, isSelecting in
                 onSelectionChange(isSelecting)
-            }
-            // One column becoming two halves the content's height under a finger that is not
-            // touching the screen, and the scroll view adjusts its own offset to cope. Read as a
-            // scroll that is a flick, and it would fold the header in the middle of the morph.
-            .onChange(of: viewModel.state.layout) { _, _ in
-                collapse.rebase()
-                collapse.holdSteady()
-            }
-            // A header folded over a placeholder folds over nothing: the empty and failed states
-            // are not scrollable lists, so nothing would ever unfold it again.
-            .onChange(of: viewModel.state.visibleNotes.isEmpty) { _, isEmpty in
-                guard isEmpty else { return }
-                collapse.expand(animation: NoteMotion.header(reduceMotion: reduceMotion))
             }
             .onDisappear { onSelectionChange(false) }
             .onChange(of: searchText) { _, query in
@@ -188,10 +175,10 @@ public struct NotesListScreen: View {
     /// The animation belongs to the change, not to the view: `List` knows how to slide one row
     /// out and close the gap, and only needs to be told the change is animated.
     private func listChange(_ action: NotesListViewModel.Action) {
-        // Rows moving or leaving shifts the list's own content offset, and the header decides to
-        // fold from offset deltas. Without this a pinned row sliding to the top folded the header
-        // underneath it, which resizes the list mid-move — the jump the animation exists to avoid.
-        collapse.holdSteady()
+        // No guard against the header reacting to this. A card leaving shifts the list's content
+        // offset, and progress is a function of that offset, so the header simply follows it by
+        // the right amount — which is the correct answer and used to need a 400ms hold to fake,
+        // back when the fold was inferred from the direction of travel.
         withAnimation(NoteMotion.reorder(reduceMotion: reduceMotion)) {
             viewModel.send(action)
         }
@@ -237,8 +224,7 @@ public struct NotesListScreen: View {
             onToggleLayout: {
                 let next: NoteListLayout = viewModel.state.layout == .grid ? .list : .grid
                 // Its own curve, not `reorder`: nothing is moving anywhere, one view is becoming
-                // another one. `collapse.rebase()` runs from `onChange` — the scroll view this
-                // replaces is about to stop reporting, and the new one starts from its own zero.
+                // another one.
                 withAnimation(NoteMotion.layout(reduceMotion: reduceMotion)) {
                     viewModel.send(.setLayout(next))
                 }
@@ -338,7 +324,7 @@ public struct NotesListScreen: View {
         }
         .scrollIndicators(.hidden)
         .refreshable { viewModel.send(.refresh) }
-        .notesHeaderCollapse(collapse, animation: NoteMotion.header(reduceMotion: reduceMotion))
+        .notesHeaderCollapse(collapse)
         // No `.animation(value:)` here. That modifier sets the animation for this whole subtree
         // when its value changes and clears it when it does not, so one placed here would wipe
         // the transaction `listChange` opens for a card leaving or moving. The layout switch and
