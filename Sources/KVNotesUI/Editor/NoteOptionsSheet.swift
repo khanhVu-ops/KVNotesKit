@@ -35,7 +35,6 @@ struct NoteOptionsSheet: View {
         .safeAreaInset(edge: .top, spacing: 0) { header }
         .presentationDetents([.medium, .large])
         .presentationBackground(theme.sheet)
-        .presentationDragIndicator(.visible)
     }
 
     private var header: some View {

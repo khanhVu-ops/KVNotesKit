@@ -148,7 +148,6 @@ extension View {
                 onCancel: onCancel
             )
             .presentationDetents([.height(380)])
-            .presentationDragIndicator(.visible)
         }
     }
 }

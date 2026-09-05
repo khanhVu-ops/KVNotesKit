@@ -221,7 +221,10 @@ public final class NotesListViewModel {
             // rather than as a move; a failed write reloads and puts it back.
             state.index.notes[index].isPinned = pinned
             state.recompute()
-            perform { try await self.store.apply(NoteAttributePatch(isPinned: pinned), to: id) }
+            // Deliberately not `perform`: that reloads the whole index when the write returns,
+            // and the list then animated a second time about half a second after the row had
+            // already moved. One write, one digest back, one row updated in place.
+            update(id) { try await self.store.apply(NoteAttributePatch(isPinned: pinned), to: id) }
         case .moveToFolder(let id, let folder):
             perform { try await self.store.apply(NoteAttributePatch(folder: .set(folder)), to: id) }
         case .requestDiscard(let note):
@@ -316,6 +319,33 @@ public final class NotesListViewModel {
         }
         state.isSelecting = false
         state.selection = []
+    }
+
+    /// Runs one write and folds its result back into the note it belongs to.
+    ///
+    /// The list is already showing the outcome; a full reload would replay it as a second
+    /// animation, which is what made a pinned row appear to move twice.
+    private func update(
+        _ id: NoteID,
+        _ operation: @escaping @Sendable () async throws -> NoteDigest
+    ) {
+        guard !state.isBusy else { return }
+        state.isBusy = true
+        mutationTask = Task { [weak self] in
+            guard let self else { return }
+            defer { state.isBusy = false }
+            do {
+                let digest = try await operation()
+                if let index = state.index.notes.firstIndex(where: { $0.id == id }) {
+                    state.index.notes[index] = digest
+                    state.recompute()
+                }
+                onChange()
+            } catch {
+                // The optimistic change was wrong; the reload is what puts it back.
+                load()
+            }
+        }
     }
 
     private func load() {

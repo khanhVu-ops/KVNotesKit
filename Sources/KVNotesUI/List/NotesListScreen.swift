@@ -5,6 +5,16 @@ public struct NotesListScreen: View {
     @State private var viewModel: NotesListViewModel
     @State private var searchText = ""
     @State private var searchTask: Task<Void, Never>?
+    /// True once the list has been scrolled past the first few points.
+    ///
+    /// The title, the count line and the folder chips fold away while reading and come back on
+    /// the way up — on a phone the header was eating a third of the screen before the first note.
+    @State private var isHeaderCollapsed = false
+    @State private var lastScrollOffset: CGFloat = 0
+    /// Geometry reported while the header is still resizing is about the header, not about the
+    /// finger; folding changes the list's top inset, and reacting to that is how a header ends up
+    /// flapping between the two states.
+    @State private var headerSettlesAt: Date = .distantPast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let theme: NoteTheme
@@ -80,7 +90,6 @@ public struct NotesListScreen: View {
                     onDismiss: { viewModel.send(.closeFolderManager) }
                 )
                 .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
             }
             .overlay(alignment: .bottom) {
                 if viewModel.state.isSelecting {
@@ -180,10 +189,12 @@ public struct NotesListScreen: View {
             .padding(.horizontal, theme.small)
 
             if !viewModel.state.isSelecting {
-                title
-                countLine
+                if !isHeaderCollapsed {
+                    title
+                    countLine
+                }
                 searchField
-                if !viewModel.state.folderChips.isEmpty { folderRow }
+                if !viewModel.state.folderChips.isEmpty, !isHeaderCollapsed { folderRow }
             } else {
                 selectionCount
             }
@@ -195,6 +206,7 @@ public struct NotesListScreen: View {
         }
         .background(theme.background)
         .animation(NoteMotion.mode(reduceMotion: reduceMotion), value: viewModel.state.isSelecting)
+        .animation(NoteMotion.mode(reduceMotion: reduceMotion), value: isHeaderCollapsed)
     }
 
     @ViewBuilder
@@ -375,6 +387,11 @@ public struct NotesListScreen: View {
             .padding(.top, theme.xs)
             .padding(.bottom, 2)
             .accessibilityAddTraits(.isHeader)
+            // Both halves are asymmetric: leaving is a slide up out of the way, arriving is the
+            // same slide back. A fade alone reads as the title blinking rather than folding.
+            .transition(
+                .move(edge: .top).combined(with: .opacity)
+            )
     }
 
     private var countLine: some View {
@@ -510,6 +527,24 @@ public struct NotesListScreen: View {
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
+    /// Folds on the way down and unfolds on the way up, from the direction of travel rather than
+    /// from a fixed offset.
+    ///
+    /// An absolute threshold cannot work here: the header lives in a `safeAreaInset`, so folding
+    /// it changes the list's own top inset, which changes the offset that decided to fold it. The
+    /// first version latched collapsed for that reason. Direction is immune to the resize, and a
+    /// short settling window keeps the resize itself from being read as a scroll.
+    private func updateHeaderCollapse(for offset: CGFloat) {
+        defer { lastScrollOffset = offset }
+        guard Date() >= headerSettlesAt else { return }
+        let delta = offset - lastScrollOffset
+        guard abs(delta) > 8 else { return }
+        let collapsed = delta > 0
+        guard collapsed != isHeaderCollapsed else { return }
+        isHeaderCollapsed = collapsed
+        headerSettlesAt = Date().addingTimeInterval(0.35)
+    }
+
     private var rowList: some View {
         List {
             if viewModel.state.pinnedCount > 0 {
@@ -538,6 +573,11 @@ public struct NotesListScreen: View {
         // leaves a band of empty background between the search field and the pinned header.
         .noteCompactSections(theme.small)
         .refreshable { viewModel.send(.refresh) }
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            geometry.contentOffset.y + geometry.contentInsets.top
+        } action: { _, offset in
+            updateHeaderCollapse(for: offset)
+        }
         // No `.animation(value:)` here. That modifier animates the whole `List` as one view, and
         // a row leaving on a swipe then cross-faded against everything around it instead of the
         // row sliding out and its neighbours closing the gap. `List` animates its own rows
@@ -628,7 +668,15 @@ public struct NotesListScreen: View {
     private func pinButton(_ note: NoteDigest) -> some View {
         Button {
             haptic()
-            listChange(.togglePin(note.id))
+            // A swipe action's row is still collapsing when the action runs, and `List` will not
+            // move a cell that is mid-gesture: the gap opened in the pinned section immediately
+            // while the row itself stayed put, then snapped up when the collapse finished. Let
+            // the collapse finish first, then animate the move — the wait is the animation the
+            // user is already watching, not an added delay.
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(260))
+                listChange(.togglePin(note.id))
+            }
         } label: {
             Label(
                 note.isPinned ? .notesKit("Unpin") : .notesKit("Pin"),

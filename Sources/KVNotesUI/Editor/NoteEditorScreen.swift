@@ -81,7 +81,6 @@ public struct NoteEditorScreen: View {
                     onCancel: { showsGenerator = false }
                 )
                 .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
             }
     }
 
