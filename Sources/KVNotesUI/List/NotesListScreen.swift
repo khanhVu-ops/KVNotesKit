@@ -15,7 +15,12 @@ public struct NotesListScreen: View {
     /// finger; folding changes the list's top inset, and reacting to that is how a header ends up
     /// flapping between the two states.
     @State private var headerSettlesAt: Date = .distantPast
+    /// Ties the large title and the folded one together so the words travel between them instead
+    /// of one disappearing while the other appears somewhere else.
+    @Namespace private var headerTitle
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private static let titleGeometry = "notes.title"
 
     private let theme: NoteTheme
     private let refreshToken: Int
@@ -90,6 +95,9 @@ public struct NotesListScreen: View {
                     onDismiss: { viewModel.send(.closeFolderManager) }
                 )
                 .presentationDetents([.medium, .large])
+                // Two detents make the system draw a grabber by default. This sheet has its own
+                // title and its own Done button, and the grabber only competes with them.
+                .presentationDragIndicator(.hidden)
             }
             .overlay(alignment: .bottom) {
                 if viewModel.state.isSelecting {
@@ -161,7 +169,11 @@ public struct NotesListScreen: View {
     /// The animation belongs to the change, not to the view: `List` knows how to slide one row
     /// out and close the gap, and only needs to be told the change is animated.
     private func listChange(_ action: NotesListViewModel.Action) {
-        withAnimation(NoteMotion.content(reduceMotion: reduceMotion)) {
+        // Rows moving or leaving shifts the list's own content offset, and the header decides to
+        // fold from offset deltas. Without this a pinned row sliding to the top folded the header
+        // underneath it, which resizes the list mid-move — the jump the animation exists to avoid.
+        headerSettlesAt = Date().addingTimeInterval(0.6)
+        withAnimation(NoteMotion.reorder(reduceMotion: reduceMotion)) {
             viewModel.send(action)
         }
     }
@@ -223,6 +235,8 @@ public struct NotesListScreen: View {
                 .buttonStyle(NotePressButtonStyle())
                 .frame(width: 44, height: 44)
                 .accessibilityLabel(Text(.notesKit("Back")))
+
+                if isHeaderCollapsed { foldedTitle }
 
                 Spacer(minLength: theme.xs)
 
@@ -382,16 +396,46 @@ public struct NotesListScreen: View {
         Text(.notesKit("Private notes"))
             .font(theme.titleFont)
             .foregroundStyle(theme.primaryText)
+            // On the Text itself, not on the padded row: the anchor has to be where the glyphs
+            // start, or the title lands a `medium` short of the back button.
+            .matchedGeometryEffect(
+                id: Self.titleGeometry,
+                in: headerTitle,
+                properties: .position,
+                anchor: .leading,
+                isSource: !isHeaderCollapsed
+            )
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, theme.medium)
             .padding(.top, theme.xs)
             .padding(.bottom, 2)
             .accessibilityAddTraits(.isHeader)
-            // Both halves are asymmetric: leaving is a slide up out of the way, arriving is the
-            // same slide back. A fade alone reads as the title blinking rather than folding.
-            .transition(
-                .move(edge: .top).combined(with: .opacity)
+            // Position comes from the geometry match, so the transition only has to cross-fade
+            // the two sizes. A `move` on top of it would pull the title off its own path.
+            .transition(.opacity)
+    }
+
+    /// The title once the header has folded: same words, row size, beside the back button.
+    ///
+    /// The geometry match carries the position and not the frame. Matching the frame as well
+    /// squeezes the large title's glyphs into this one's box on the way up, and the two type
+    /// sizes are exactly what the cross-fade is for.
+    private var foldedTitle: some View {
+        Text(.notesKit("Private notes"))
+            .font(theme.sectionFont)
+            .foregroundStyle(theme.primaryText)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .matchedGeometryEffect(
+                id: Self.titleGeometry,
+                in: headerTitle,
+                properties: .position,
+                anchor: .leading,
+                isSource: isHeaderCollapsed
             )
+            .padding(.leading, theme.xs)
+            .accessibilityAddTraits(.isHeader)
+            .transition(.opacity)
     }
 
     private var countLine: some View {
@@ -412,6 +456,9 @@ public struct NotesListScreen: View {
         .padding(.horizontal, theme.medium)
         .padding(.bottom, theme.small)
         .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: viewModel.state.index.notes.count)
+        // Nothing catches this line on the way out, so it leaves the way the header folds:
+        // upward, behind the row that is taking the title.
+        .transition(.move(edge: .top).combined(with: .opacity))
     }
 
     private var searchField: some View {
@@ -536,6 +583,16 @@ public struct NotesListScreen: View {
     /// short settling window keeps the resize itself from being read as a scroll.
     private func updateHeaderCollapse(for offset: CGFloat) {
         defer { lastScrollOffset = offset }
+        // The top is the one place direction cannot decide. A flick that ends at the first row
+        // travels upward the whole way and still leaves the last delta pointing down, or gets
+        // absorbed by the rubber band entirely — either way the header stayed folded over a list
+        // that had nothing above it, which is the state it is supposed to fold *out* of.
+        if offset <= 4 {
+            guard isHeaderCollapsed else { return }
+            isHeaderCollapsed = false
+            headerSettlesAt = Date().addingTimeInterval(0.35)
+            return
+        }
         guard Date() >= headerSettlesAt else { return }
         let delta = offset - lastScrollOffset
         guard abs(delta) > 8 else { return }
@@ -545,33 +602,59 @@ public struct NotesListScreen: View {
         headerSettlesAt = Date().addingTimeInterval(0.35)
     }
 
+    /// The whole list as one flat sequence, headers included.
+    ///
+    /// Not two `Section`s, and that is the difference between a pinned row sliding and a pinned
+    /// row blinking. Across sections a pin is a delete on one side and an insert on the other, so
+    /// `List` cross-fades it; worse, the first pin in an unpinned vault swapped a bare `ForEach`
+    /// for two sections, which rebuilt every row on screen. In one `ForEach` the same change is a
+    /// move of a row that keeps its identity, which is the animation `List` does properly.
+    ///
+    /// The cost is that the headers scroll away instead of pinning to the top. They are two words
+    /// of metadata over cards on a plain background, not a table's index.
+    private enum ListRow: Identifiable {
+        case pinnedHeader
+        case timelineHeader
+        case note(NoteDigest)
+
+        var id: AnyHashable {
+            switch self {
+            case .pinnedHeader: AnyHashable("notes.header.pinned")
+            case .timelineHeader: AnyHashable("notes.header.timeline")
+            case .note(let note): AnyHashable(note.id)
+            }
+        }
+    }
+
+    private var listRows: [ListRow] {
+        let state = viewModel.state
+        guard state.pinnedCount > 0 else { return state.visibleNotes.map(ListRow.note) }
+        var rows: [ListRow] = [.pinnedHeader]
+        rows += state.pinnedNotes.map(ListRow.note)
+        if state.pinnedCount < state.visibleNotes.count {
+            rows.append(.timelineHeader)
+            rows += state.timelineNotes.map(ListRow.note)
+        }
+        return rows
+    }
+
     private var rowList: some View {
         List {
-            if viewModel.state.pinnedCount > 0 {
-                Section {
-                    ForEach(viewModel.state.pinnedNotes) { note in row(note) }
-                } header: {
+            ForEach(listRows) { item in
+                switch item {
+                case .pinnedHeader:
                     sectionHeader(Text(.notesKit("Pinned")), icon: "pin.fill")
+                case .timelineHeader:
+                    sectionHeader(Text(.notesKit("All notes")), icon: nil, topPadding: theme.small + 4)
+                case .note(let note):
+                    row(note)
                 }
-
-                if viewModel.state.pinnedCount < viewModel.state.visibleNotes.count {
-                    Section {
-                        ForEach(viewModel.state.timelineNotes) { note in row(note) }
-                    } header: {
-                        sectionHeader(Text(.notesKit("All notes")), icon: nil)
-                    }
-                }
-            } else {
-                ForEach(viewModel.state.visibleNotes) { note in row(note) }
             }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .scrollIndicators(.hidden)
         .environment(\.defaultMinListRowHeight, 0)
-        // The default section spacing is sized for grouped tables with opaque headers; here it
-        // leaves a band of empty background between the search field and the pinned header.
-        .noteCompactSections(theme.small)
         .refreshable { viewModel.send(.refresh) }
         .onScrollGeometryChange(for: CGFloat.self) { geometry in
             geometry.contentOffset.y + geometry.contentInsets.top
@@ -588,7 +671,7 @@ public struct NotesListScreen: View {
 
     /// Deliberately not a `.headerProminence` default: the header has to read as the same
     /// typographic family as the count line above the list, not as a grouped-table caption.
-    private func sectionHeader(_ title: Text, icon: String?) -> some View {
+    private func sectionHeader(_ title: Text, icon: String?, topPadding: CGFloat = 0) -> some View {
         HStack(spacing: 5) {
             if let icon {
                 Image(systemName: icon).font(.system(size: 9, weight: .semibold))
@@ -599,6 +682,7 @@ public struct NotesListScreen: View {
         .foregroundStyle(theme.secondaryText)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, theme.medium)
+        .padding(.top, topPadding)
         .padding(.bottom, theme.xs)
         .listRowInsets(EdgeInsets())
         .listRowBackground(Color.clear)
@@ -669,12 +753,14 @@ public struct NotesListScreen: View {
         Button {
             haptic()
             // A swipe action's row is still collapsing when the action runs, and `List` will not
-            // move a cell that is mid-gesture: the gap opened in the pinned section immediately
-            // while the row itself stayed put, then snapped up when the collapse finished. Let
-            // the collapse finish first, then animate the move — the wait is the animation the
-            // user is already watching, not an added delay.
+            // move a cell that is mid-gesture: the gap opened above immediately while the row
+            // itself stayed put, then snapped up when the collapse finished. Let the collapse
+            // finish first, then animate the move — the wait is the animation the user is already
+            // watching, not an added delay. The number is the system's own swipe-close duration;
+            // there is no callback for it, and undershooting it is what the jump looked like.
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(260))
+                guard !Task.isCancelled else { return }
                 listChange(.togglePin(note.id))
             }
         } label: {

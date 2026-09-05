@@ -304,6 +304,26 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state.find.currentNumber, 2)
     }
 
+    func testASecondWriteQueuesBehindTheFirstRatherThanBeingDropped() async throws {
+        let store = InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies)
+        let viewModel = NotesListViewModel(store: store)
+        viewModel.send(.onAppear)
+        try await settle { viewModel.state.phase == .loaded }
+
+        // Two swipes in the same breath. Both rows have already moved on screen, so a write
+        // refused for arriving while the first one was still in flight would leave the second
+        // note pinned in the list and unpinned in the vault until something reloaded it.
+        viewModel.send(.togglePin(NoteFixtures.bank.id))
+        viewModel.send(.togglePin(NoteFixtures.journal.id))
+        XCTAssertTrue(viewModel.state.isBusy)
+        try await settle { !viewModel.state.isBusy }
+
+        let index = await store.index()
+        XCTAssertTrue(index.notes.first { $0.id == NoteFixtures.bank.id }?.isPinned == true)
+        XCTAssertTrue(index.notes.first { $0.id == NoteFixtures.journal.id }?.isPinned == true)
+        XCTAssertEqual(viewModel.state.pinnedCount, 3)
+    }
+
     func testBatchActionsApplyToEverySelectedNoteAndThenEndTheSelection() async throws {
         let store = InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies)
         let viewModel = NotesListViewModel(store: store)

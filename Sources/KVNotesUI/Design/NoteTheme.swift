@@ -159,16 +159,6 @@ extension View {
         #endif
     }
 
-    /// Section spacing sized for cards on a plain background rather than for grouped tables.
-    @ViewBuilder
-    func noteCompactSections(_ spacing: CGFloat) -> some View {
-        #if os(iOS)
-        listSectionSpacing(spacing)
-        #else
-        self
-        #endif
-    }
-
     /// `textSelection` takes two different types for on and off, so a ternary cannot express it.
     @ViewBuilder
     func noteTextSelection(enabled: Bool) -> some View {

@@ -20,6 +20,18 @@ enum NoteMotion {
             ? .easeInOut(duration: 0.18)
             : .spring(response: 0.44, dampingFraction: 0.92)
     }
+
+    /// A row changing places in a list.
+    ///
+    /// Quicker and stiffer than `content`: a row that travels the length of the list on a 0.44s
+    /// spring reads as the list thinking about it, and any overshoot at the end looks like the
+    /// row bouncing off the one above. Fully damped, and short enough to still belong to the
+    /// swipe that asked for it.
+    static func reorder(reduceMotion: Bool) -> Animation {
+        reduceMotion
+            ? .easeInOut(duration: 0.18)
+            : .spring(response: 0.34, dampingFraction: 1)
+    }
 }
 
 struct NotePressButtonStyle: ButtonStyle {

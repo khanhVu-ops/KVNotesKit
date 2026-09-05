@@ -173,6 +173,7 @@ public final class NotesListViewModel {
     @ObservationIgnored private let onChange: @MainActor @Sendable () -> Void
     @ObservationIgnored private var loadTask: Task<Void, Never>?
     @ObservationIgnored private var mutationTask: Task<Void, Never>?
+    @ObservationIgnored private var queuedWrites = 0
 
     public init(
         store: any NoteStore,
@@ -329,11 +330,8 @@ public final class NotesListViewModel {
         _ id: NoteID,
         _ operation: @escaping @Sendable () async throws -> NoteDigest
     ) {
-        guard !state.isBusy else { return }
-        state.isBusy = true
-        mutationTask = Task { [weak self] in
+        enqueue { [weak self] in
             guard let self else { return }
-            defer { state.isBusy = false }
             do {
                 let digest = try await operation()
                 if let index = state.index.notes.firstIndex(where: { $0.id == id }) {
@@ -372,11 +370,8 @@ public final class NotesListViewModel {
     }
 
     private func perform(_ operation: @escaping @Sendable () async throws -> NoteDigest?) {
-        guard !state.isBusy else { return }
-        state.isBusy = true
-        mutationTask = Task { [weak self] in
+        enqueue { [weak self] in
             guard let self else { return }
-            defer { state.isBusy = false }
             do {
                 _ = try await operation()
                 onChange()
@@ -384,6 +379,32 @@ public final class NotesListViewModel {
             } catch {
                 state.phase = .failed
             }
+        }
+    }
+
+    /// Runs one write after the write before it has finished.
+    ///
+    /// These all re-encrypt the same vault, so they cannot overlap. The previous version refused
+    /// the second write instead of queueing it — `guard !state.isBusy else { return }` — and the
+    /// screen had already moved the row optimistically by then, so pinning two notes in quick
+    /// succession left the second one pinned on screen and unpinned in the vault until something
+    /// reloaded the list and pulled it back down. Dropping a write the user has already been
+    /// shown the result of is not backpressure, it is a lie.
+    private func enqueue(_ work: @escaping @MainActor () async -> Void) {
+        let previous = mutationTask
+        // Counted, and raised here rather than inside the task: `isBusy` disables the folder
+        // sheet and the batch dock, and a flag that only goes up once the write actually starts
+        // leaves both live for the frame in which the user could press the same button again.
+        queuedWrites += 1
+        state.isBusy = true
+        mutationTask = Task { [weak self] in
+            await previous?.value
+            guard let self else { return }
+            defer {
+                queuedWrites -= 1
+                state.isBusy = queuedWrites > 0
+            }
+            await work()
         }
     }
 }

@@ -97,9 +97,15 @@ extension View {
         onCancel: @escaping @MainActor @Sendable () -> Void
     ) -> some View {
         overlay {
-            if isPresented.wrappedValue {
-                ZStack(alignment: .bottom) {
-                    Color.black.opacity(0.35)
+            // The `if` sits inside the `ZStack`, not around it, and that is the whole animation.
+            // Wrapping the stack made the question one inserted view, so SwiftUI ran the
+            // container's own default transition and the scrim and the card arrived together as
+            // a single fade — the transitions written on them below never got a chance. With the
+            // stack always present, each half is its own insertion: the scrim dims, the card
+            // rises from the bottom edge.
+            ZStack(alignment: .bottom) {
+                if isPresented.wrappedValue {
+                    Color.black.opacity(0.45)
                         .ignoresSafeArea()
                         .onTapGesture(perform: onCancel)
                         .transition(.opacity)
@@ -116,8 +122,13 @@ extension View {
                     )
                     .frame(maxHeight: 380)
                     .clipShape(RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous))
+                    .shadow(color: .black.opacity(0.4), radius: 24, y: 10)
                     .padding(theme.small)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(
+                        .move(edge: .bottom)
+                            .combined(with: .opacity)
+                            .combined(with: .scale(scale: 0.96, anchor: .bottom))
+                    )
                 }
             }
         }
