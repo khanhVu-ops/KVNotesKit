@@ -6,6 +6,9 @@ struct NoteMarkdownView: View {
     let theme: NoteTheme
     let clipboardLifetime: TimeInterval
     let copy: @MainActor @Sendable (String) -> Void
+    /// `nil` while the note is read-only to this screen — a task cannot be ticked on a body that
+    /// has not been decrypted, and the checkbox must not pretend otherwise.
+    var toggleTask: (@MainActor @Sendable (Int) -> Void)?
 
     var body: some View {
         ScrollView {
@@ -46,6 +49,10 @@ struct NoteMarkdownView: View {
                     .foregroundStyle(theme.primaryText)
                     .textSelection(.enabled)
             }
+        case .task(let task):
+            TaskRow(task: task, theme: theme, isEnabled: toggleTask != nil) {
+                toggleTask?(task.lineIndex)
+            }
         case .code(let value):
             CopyableValueRow(
                 value: value,
@@ -63,6 +70,44 @@ struct NoteMarkdownView: View {
 
     private func inline(_ text: String) -> AttributedString {
         (try? AttributedString(markdown: text)) ?? AttributedString(text)
+    }
+}
+
+/// A checkbox that writes to the note.
+///
+/// The strikethrough and the fill move on the tap rather than after the save returns: the write
+/// is local, ordered behind whatever save is in flight, and a checkbox that waits for storage
+/// feels broken on the second tap.
+private struct TaskRow: View {
+    let task: NoteMarkdownBlock.Task
+    let theme: NoteTheme
+    let isEnabled: Bool
+    let onToggle: @MainActor @Sendable () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(alignment: .firstTextBaseline, spacing: theme.small) {
+                Image(systemName: task.isDone ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(task.isDone ? theme.accent : theme.secondaryText)
+                    .frame(width: 18)
+
+                Text(verbatim: task.text)
+                    .font(theme.bodyFont)
+                    .strikethrough(task.isDone, color: theme.disabledText)
+                    .foregroundStyle(task.isDone ? theme.disabledText : theme.primaryText)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.vertical, 3)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(NotePressButtonStyle())
+        .disabled(!isEnabled)
+        .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: task.isDone)
+        .accessibilityAddTraits(task.isDone ? [.isSelected] : [])
+        .accessibilityLabel(Text(verbatim: task.text))
     }
 }
 

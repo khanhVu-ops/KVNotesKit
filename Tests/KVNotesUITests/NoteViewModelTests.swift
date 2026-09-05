@@ -169,6 +169,28 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(third.state.filter, .all)
     }
 
+    func testTickingATaskWritesThroughTheOrdinarySavePipeline() async throws {
+        let store = InMemoryNoteStore()
+        let viewModel = NoteEditorViewModel(store: store, unlockAuthority: UnlockAuthority())
+
+        viewModel.send(.setBody("Packing\n- [ ] charger"))
+        viewModel.send(.save)
+        try await settle { viewModel.state.note != nil }
+
+        viewModel.send(.toggleTask(line: 1))
+        XCTAssertEqual(viewModel.state.body, "Packing\n- [x] charger")
+        try await settle { viewModel.state.saveStatus != .saving && viewModel.state.saveStatus != .unsaved }
+
+        let id = try XCTUnwrap(viewModel.state.note?.id)
+        let stored = try await store.body(id)
+        XCTAssertEqual(stored, "Packing\n- [x] charger")
+
+        // A locked note has no body loaded, so a tap that somehow arrived must do nothing.
+        viewModel.send(.sessionLocked)
+        viewModel.send(.toggleTask(line: 1))
+        XCTAssertEqual(viewModel.state.body, "")
+    }
+
     private func settle(
         until condition: @escaping @MainActor () -> Bool,
         file: StaticString = #filePath,

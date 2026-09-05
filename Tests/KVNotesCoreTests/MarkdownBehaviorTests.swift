@@ -71,4 +71,37 @@ final class MarkdownBehaviorTests: XCTestCase {
             ).hasChecklist
         )
     }
+
+    func testTaskBlocksCarryTheirSourceLine() {
+        let markdown = "Packing\n- [ ] charger\ntext\n- [x] socks"
+        let blocks = NoteMarkdownBlock.blocks(of: markdown)
+
+        XCTAssertEqual(blocks.count, 4)
+        guard case .task(let first) = blocks[1], case .task(let second) = blocks[3] else {
+            return XCTFail("Expected two task blocks, got \(blocks)")
+        }
+        XCTAssertEqual(first, NoteMarkdownBlock.Task(isDone: false, text: "charger", lineIndex: 1))
+        XCTAssertEqual(second, NoteMarkdownBlock.Task(isDone: true, text: "socks", lineIndex: 3))
+    }
+
+    func testTogglingATaskRewritesOnlyThatBox() {
+        let markdown = "- [ ] repeat\n- [ ] repeat"
+
+        let first = NoteMarkdownBlock.togglingTask(atLine: 0, in: markdown)
+        XCTAssertEqual(first, "- [x] repeat\n- [ ] repeat")
+        XCTAssertEqual(NoteMarkdownBlock.togglingTask(atLine: 1, in: first), "- [x] repeat\n- [x] repeat")
+        // Ticking twice is unticking, and indentation and marker survive both directions.
+        XCTAssertEqual(
+            NoteMarkdownBlock.togglingTask(atLine: 0, in: "  + [X] socks"),
+            "  + [ ] socks"
+        )
+    }
+
+    /// The body can have been edited between the render and the tap; rewriting a line that is now
+    /// prose would corrupt the note silently.
+    func testTogglingANonTaskLineChangesNothing() {
+        XCTAssertEqual(NoteMarkdownBlock.togglingTask(atLine: 0, in: "just text"), "just text")
+        XCTAssertEqual(NoteMarkdownBlock.togglingTask(atLine: 9, in: "- [ ] one"), "- [ ] one")
+        XCTAssertEqual(NoteMarkdownBlock.togglingTask(atLine: 0, in: "- [draft] no"), "- [draft] no")
+    }
 }

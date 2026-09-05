@@ -47,6 +47,7 @@ public final class NoteEditorViewModel {
         case setBody(String)
         case setMode(NoteEditorState.Mode)
         case insert(MarkdownToken, Range<Int>)
+        case toggleTask(line: Int)
         case caretApplied
         case save
         case setFolder(String?)
@@ -122,6 +123,17 @@ public final class NoteEditorViewModel {
             state.body = result.text
             state.pendingCaretOffset = result.caretOffset
             dirty()
+        case .toggleTask(let line):
+            // Read mode becomes a write path here, and it takes the same one every other change
+            // takes: mutate the body, then `save()`, which serialises behind an in-flight save
+            // and queues a second tap rather than racing it. A note whose gate has not opened has
+            // no body loaded, so there is nothing to toggle.
+            guard !state.isLocked, !state.isLoading else { return }
+            let toggled = NoteMarkdownBlock.togglingTask(atLine: line, in: state.body)
+            guard toggled != state.body else { return }
+            state.body = toggled
+            state.saveStatus = .unsaved
+            save()
         case .caretApplied:
             state.pendingCaretOffset = nil
         case .save:

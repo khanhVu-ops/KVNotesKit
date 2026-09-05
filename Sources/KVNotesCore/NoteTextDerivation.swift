@@ -47,19 +47,7 @@ public enum NoteTextDerivation {
     /// Deliberately strict about the trailing space so a note that merely mentions `- [x]` inside
     /// a sentence, or a line reading `- [draft]`, is not counted.
     public static func containsChecklist(_ markdown: String) -> Bool {
-        markdown.split(whereSeparator: \.isNewline).contains { line in
-            var rest = Substring(line).drop { $0 == " " || $0 == "\t" }
-            guard let marker = rest.first, marker == "-" || marker == "*" || marker == "+" else {
-                return false
-            }
-            rest = rest.dropFirst().drop { $0 == " " }
-            guard rest.first == "[" else { return false }
-            rest = rest.dropFirst()
-            guard let box = rest.first, box == " " || box == "x" || box == "X" else { return false }
-            rest = rest.dropFirst()
-            guard rest.first == "]" else { return false }
-            return rest.dropFirst().first == " "
-        }
+        markdown.components(separatedBy: .newlines).contains { NoteMarkdownBlock.boxRange(in: $0) != nil }
     }
 
     public static func normalizedFolder(_ folder: String?) -> String? {

@@ -248,10 +248,13 @@ public struct NoteEditorScreen: View {
         NoteMarkdownView(
             markdown: viewModel.state.body,
             theme: theme,
-            clipboardLifetime: secretPolicy.transientCopyLifetime
-        ) {
-            secretPolicy.copyTransient($0)
-        }
+            clipboardLifetime: secretPolicy.transientCopyLifetime,
+            copy: { secretPolicy.copyTransient($0) },
+            toggleTask: viewModel.state.isLocked || viewModel.state.isLoading ? nil : { line in
+                haptic()
+                viewModel.send(.toggleTask(line: line))
+            }
+        )
     }
 
     @ViewBuilder
