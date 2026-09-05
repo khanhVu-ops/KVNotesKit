@@ -71,3 +71,7 @@
 "No note in this vault matches the filter you have on." = "Không ghi chú nào trong két khớp với bộ lọc đang bật.";
 /* Button that clears the notes list filter. */
 "Show all notes" = "Hiện tất cả ghi chú";
+/* Accessibility label of the editor toolbar's undo key. */
+"Undo" = "Hoàn tác";
+/* Accessibility label of the editor toolbar's redo key. */
+"Redo" = "Làm lại";

@@ -71,3 +71,7 @@
 "No note in this vault matches the filter you have on." = "ไม่มีโน้ตในตู้นิรภัยนี้ที่ตรงกับตัวกรองที่เปิดอยู่";
 /* Button that clears the notes list filter. */
 "Show all notes" = "แสดงโน้ตทั้งหมด";
+/* Accessibility label of the editor toolbar's undo key. */
+"Undo" = "เลิกทำ";
+/* Accessibility label of the editor toolbar's redo key. */
+"Redo" = "ทำซ้ำ";

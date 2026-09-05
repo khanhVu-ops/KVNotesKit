@@ -71,3 +71,7 @@
 "No note in this vault matches the filter you have on." = "適用中のフィルタに一致するメモはこの保管庫にありません。";
 /* Button that clears the notes list filter. */
 "Show all notes" = "すべてのメモを表示";
+/* Accessibility label of the editor toolbar's undo key. */
+"Undo" = "取り消す";
+/* Accessibility label of the editor toolbar's redo key. */
+"Redo" = "やり直す";

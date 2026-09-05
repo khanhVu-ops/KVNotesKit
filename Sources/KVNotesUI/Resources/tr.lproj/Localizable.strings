@@ -71,3 +71,7 @@
 "No note in this vault matches the filter you have on." = "Bu kasada, açık olan filtreyle eşleşen not yok.";
 /* Button that clears the notes list filter. */
 "Show all notes" = "Tüm notları göster";
+/* Accessibility label of the editor toolbar's undo key. */
+"Undo" = "Geri al";
+/* Accessibility label of the editor toolbar's redo key. */
+"Redo" = "Yinele";

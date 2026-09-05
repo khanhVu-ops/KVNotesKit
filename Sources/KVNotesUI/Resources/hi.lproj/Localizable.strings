@@ -71,3 +71,7 @@
 "No note in this vault matches the filter you have on." = "इस वॉल्ट का कोई नोट आपके चालू फ़िल्टर से मेल नहीं खाता।";
 /* Button that clears the notes list filter. */
 "Show all notes" = "सभी नोट दिखाएँ";
+/* Accessibility label of the editor toolbar's undo key. */
+"Undo" = "पूर्ववत करें";
+/* Accessibility label of the editor toolbar's redo key. */
+"Redo" = "फिर से करें";

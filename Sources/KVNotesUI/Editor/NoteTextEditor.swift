@@ -13,7 +13,16 @@ struct NoteTextEditor: UIViewRepresentable {
     let theme: NoteTheme
     let onCaretApplied: @MainActor @Sendable () -> Void
     let onInsert: @MainActor @Sendable (MarkdownToken) -> Void
+    let onUndo: @MainActor @Sendable () -> Void
+    let onRedo: @MainActor @Sendable () -> Void
+    let canUndo: Bool
+    let canRedo: Bool
+    /// False while read mode is on top. The view stays in the hierarchy — it keeps the caret and
+    /// the scroll position across the switch — but it must not hold the keyboard.
+    let isActive: Bool
     let doneTitle: String
+    let undoTitle: String
+    let redoTitle: String
     let haptic: @MainActor @Sendable () -> Void
 
     func makeUIView(context: Context) -> UITextView {
@@ -47,6 +56,8 @@ struct NoteTextEditor: UIViewRepresentable {
     func updateUIView(_ view: UITextView, context: Context) {
         context.coordinator.parent = self
         if view.text != text { view.text = text }
+        context.coordinator.updateHistoryKeys(canUndo: canUndo, canRedo: canRedo)
+        if !isActive, view.isFirstResponder { view.resignFirstResponder() }
         view.textColor = UIColor(theme.primaryText)
         view.tintColor = UIColor(theme.primaryText)
         view.font = Self.font
@@ -72,10 +83,20 @@ struct NoteTextEditor: UIViewRepresentable {
     final class Coordinator: NSObject, UITextViewDelegate {
         var parent: NoteTextEditor
         private weak var textView: UITextView?
+        private weak var undoKey: UIButton?
+        private weak var redoKey: UIButton?
 
         init(parent: NoteTextEditor) { self.parent = parent }
 
         func attach(_ view: UITextView) { textView = view }
+
+        /// Dim rather than hide: keys that come and go move every other key under the thumb.
+        func updateHistoryKeys(canUndo: Bool, canRedo: Bool) {
+            undoKey?.isEnabled = canUndo
+            redoKey?.isEnabled = canRedo
+            undoKey?.alpha = canUndo ? 1 : 0.4
+            redoKey?.alpha = canRedo ? 1 : 0.4
+        }
 
         func makeAccessoryBar() -> UIView {
             let bar = UIView(frame: CGRect(x: 0, y: 0, width: 0, height: 46))
@@ -86,9 +107,25 @@ struct NoteTextEditor: UIViewRepresentable {
             hairline.backgroundColor = UIColor(parent.theme.separator)
             hairline.translatesAutoresizingMaskIntoConstraints = false
 
-            let keys = UIStackView(arrangedSubviews: MarkdownToken.allCases.enumerated().map { index, token in
-                key(titled: token.keyTitle, tag: index, action: #selector(insertTapped(_:)))
-            })
+            let undo = key(symbol: "arrow.uturn.backward", action: #selector(undoTapped))
+            undo.accessibilityLabel = parent.undoTitle
+            undoKey = undo
+
+            let redo = key(symbol: "arrow.uturn.forward", action: #selector(redoTapped))
+            redo.accessibilityLabel = parent.redoTitle
+            redoKey = redo
+            updateHistoryKeys(canUndo: parent.canUndo, canRedo: parent.canRedo)
+
+            let separator = UIView()
+            separator.backgroundColor = UIColor(parent.theme.separator)
+            separator.translatesAutoresizingMaskIntoConstraints = false
+            separator.widthAnchor.constraint(equalToConstant: 0.75).isActive = true
+            separator.heightAnchor.constraint(equalToConstant: 20).isActive = true
+
+            let keys = UIStackView(arrangedSubviews: [undo, redo, separator]
+                + MarkdownToken.allCases.enumerated().map { index, token in
+                    key(titled: token.keyTitle, tag: index, action: #selector(insertTapped(_:)))
+                })
             keys.spacing = parent.theme.xs
             keys.alignment = .center
             keys.translatesAutoresizingMaskIntoConstraints = false
@@ -133,6 +170,15 @@ struct NoteTextEditor: UIViewRepresentable {
             return bar
         }
 
+        private func key(symbol: String, action: Selector) -> UIButton {
+            let button = key(titled: "", tag: -2, action: action)
+            button.configuration?.image = UIImage(
+                systemName: symbol,
+                withConfiguration: UIImage.SymbolConfiguration(pointSize: 13, weight: .medium)
+            )
+            return button
+        }
+
         private func key(titled title: String, tag: Int, action: Selector) -> UIButton {
             var configuration = UIButton.Configuration.plain()
             configuration.title = title
@@ -174,6 +220,16 @@ struct NoteTextEditor: UIViewRepresentable {
 
         @objc private func doneTapped() { textView?.resignFirstResponder() }
 
+        @objc private func undoTapped() {
+            parent.haptic()
+            parent.onUndo()
+        }
+
+        @objc private func redoTapped() {
+            parent.haptic()
+            parent.onRedo()
+        }
+
         func textViewDidChange(_ textView: UITextView) {
             self.textView = textView
             parent.text = textView.text
@@ -203,7 +259,14 @@ struct NoteTextEditor: View {
     let theme: NoteTheme
     let onCaretApplied: @MainActor @Sendable () -> Void
     let onInsert: @MainActor @Sendable (MarkdownToken) -> Void
+    let onUndo: @MainActor @Sendable () -> Void
+    let onRedo: @MainActor @Sendable () -> Void
+    let canUndo: Bool
+    let canRedo: Bool
+    let isActive: Bool
     let doneTitle: String
+    let undoTitle: String
+    let redoTitle: String
     let haptic: @MainActor @Sendable () -> Void
 
     var body: some View {

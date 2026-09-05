@@ -71,3 +71,7 @@
 "No note in this vault matches the filter you have on." = "Tidak ada catatan di brankas ini yang cocok dengan filter yang aktif.";
 /* Button that clears the notes list filter. */
 "Show all notes" = "Tampilkan semua catatan";
+/* Accessibility label of the editor toolbar's undo key. */
+"Undo" = "Urungkan";
+/* Accessibility label of the editor toolbar's redo key. */
+"Redo" = "Ulangi";

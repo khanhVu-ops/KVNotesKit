@@ -49,6 +49,19 @@ struct NoteMarkdownView: View {
                     .foregroundStyle(theme.primaryText)
                     .textSelection(.enabled)
             }
+        case .quote(let text):
+            HStack(alignment: .top, spacing: theme.small) {
+                Rectangle()
+                    .fill(theme.accent.opacity(0.55))
+                    .frame(width: 2)
+                Text(inline(text))
+                    .font(theme.bodyFont)
+                    .italic()
+                    .foregroundStyle(theme.secondaryText)
+                    .textSelection(.enabled)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.vertical, 2)
         case .task(let task):
             TaskRow(task: task, theme: theme, isEnabled: toggleTask != nil) {
                 toggleTask?(task.lineIndex)

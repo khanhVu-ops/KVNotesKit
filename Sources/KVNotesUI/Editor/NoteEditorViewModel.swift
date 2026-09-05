@@ -22,6 +22,8 @@ public struct NoteEditorState: Equatable, Sendable {
     public var showOptions = false
     public var showSavedToast = false
     public var pendingCaretOffset: Int?
+    public var canUndo = false
+    public var canRedo = false
 
     public var isAuthenticating: Bool { unlockPhase == .authenticating }
     public var authenticationDenied: Bool { unlockPhase == .denied }
@@ -41,12 +43,27 @@ public struct NoteEditorState: Equatable, Sendable {
 @Observable
 public final class NoteEditorViewModel {
     public static let autosaveDelay: Duration = .milliseconds(1_200)
+    /// Typing inside this window folds into the previous undo entry, so one undo removes a word
+    /// rather than a keystroke. Anything else — a toolbar key, a ticked checkbox, a pause — opens
+    /// a new entry.
+    static let undoCoalescingWindow: TimeInterval = 0.8
+    /// Enough history to walk back through a session's edits; the cap is what keeps a long note
+    /// from holding dozens of copies of itself in memory.
+    static let undoLimit = 60
+
+    /// One point the editor can return to.
+    private struct EditorSnapshot: Equatable {
+        var body: String
+        var title: String
+    }
     public enum Action: Sendable {
         case onAppear
         case setTitle(String)
         case setBody(String)
         case setMode(NoteEditorState.Mode)
         case insert(MarkdownToken, Range<Int>)
+        case undo
+        case redo
         case toggleTask(line: Int)
         case caretApplied
         case save
@@ -72,6 +89,9 @@ public final class NoteEditorViewModel {
     @ObservationIgnored private var saveTask: Task<Void, Never>?
     @ObservationIgnored private var attributeTask: Task<Void, Never>?
     @ObservationIgnored private var queuedSave = false
+    @ObservationIgnored private var undoStack: [EditorSnapshot] = []
+    @ObservationIgnored private var redoStack: [EditorSnapshot] = []
+    @ObservationIgnored private var lastTypingSnapshotAt: Date?
 
     public init(
         note: NoteDigest? = nil,
@@ -110,15 +130,18 @@ public final class NoteEditorViewModel {
             if !state.isLocked { loadBody() }
         case .setTitle(let title):
             guard title != state.title else { return }
+            recordUndoSnapshot(coalescingTyping: true)
             state.title = title; dirty()
         case .setBody(let body):
             guard body != state.body else { return }
+            recordUndoSnapshot(coalescingTyping: true)
             state.body = body; dirty()
         case .setMode(let mode):
             guard mode != state.mode else { return }
             if state.isDirty { save() }
             state.mode = mode
         case .insert(let token, let selection):
+            recordUndoSnapshot(coalescingTyping: false)
             let result = MarkdownInsertion.apply(token, to: state.body, selection: selection)
             state.body = result.text
             state.pendingCaretOffset = result.caretOffset
@@ -131,9 +154,14 @@ public final class NoteEditorViewModel {
             guard !state.isLocked, !state.isLoading else { return }
             let toggled = NoteMarkdownBlock.togglingTask(atLine: line, in: state.body)
             guard toggled != state.body else { return }
+            recordUndoSnapshot(coalescingTyping: false)
             state.body = toggled
             state.saveStatus = .unsaved
             save()
+        case .undo:
+            step(undoing: true)
+        case .redo:
+            step(undoing: false)
         case .caretApplied:
             state.pendingCaretOffset = nil
         case .save:
@@ -184,7 +212,58 @@ public final class NoteEditorViewModel {
             state.unlockPhase = .waiting
             state.saveStatus = .idle
             state.showSavedToast = false
+            // History is plaintext by another name: every entry holds a copy of the note. It goes
+            // when the session does, for the same reason `body` does.
+            undoStack.removeAll()
+            redoStack.removeAll()
+            lastTypingSnapshotAt = nil
+            state.canUndo = false
+            state.canRedo = false
         }
+    }
+
+    /// Undo is owned here rather than by the `UITextView`, and that is a decision NK-210 had to
+    /// make either way.
+    ///
+    /// UIKit's own stack is destroyed by assigning `.text`, which is exactly what a toolbar
+    /// insertion and a ticked checkbox do — so the UIKit route would have left undo silently
+    /// dead right after the formatting keys this task adds. One stack in the ViewModel covers
+    /// typing, the toolbar and the checkboxes at once, survives the read/edit switch by
+    /// construction, and can be tested without a simulator.
+    private func recordUndoSnapshot(coalescingTyping: Bool) {
+        let now = Date()
+        if coalescingTyping,
+           let last = lastTypingSnapshotAt,
+           now.timeIntervalSince(last) < Self.undoCoalescingWindow,
+           !undoStack.isEmpty {
+            lastTypingSnapshotAt = now
+            return
+        }
+        undoStack.append(EditorSnapshot(body: state.body, title: state.title))
+        if undoStack.count > Self.undoLimit { undoStack.removeFirst() }
+        redoStack.removeAll()
+        lastTypingSnapshotAt = coalescingTyping ? now : nil
+        refreshHistoryFlags()
+    }
+
+    /// One method rather than two `inout` stacks: passing both arrays of the same object as
+    /// `inout` is overlapping exclusive access, and Swift 6 traps on it at runtime.
+    private func step(undoing: Bool) {
+        guard let snapshot = undoing ? undoStack.popLast() : redoStack.popLast() else { return }
+        let current = EditorSnapshot(body: state.body, title: state.title)
+        if undoing { redoStack.append(current) } else { undoStack.append(current) }
+        state.body = snapshot.body
+        state.title = snapshot.title
+        // The caret would otherwise stay where it was in text that no longer exists.
+        state.pendingCaretOffset = min(state.pendingCaretOffset ?? snapshot.body.count, snapshot.body.count)
+        lastTypingSnapshotAt = nil
+        refreshHistoryFlags()
+        dirty()
+    }
+
+    private func refreshHistoryFlags() {
+        state.canUndo = !undoStack.isEmpty
+        state.canRedo = !redoStack.isEmpty
     }
 
     private func dirty() {

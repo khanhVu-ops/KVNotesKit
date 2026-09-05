@@ -23,6 +23,7 @@ public enum NoteMarkdownBlock: Equatable, Sendable {
     case heading(level: Int, text: String)
     case paragraph(String)
     case bullet(String)
+    case quote(String)
     case task(Task)
     case code(String)
     case divider
@@ -57,6 +58,8 @@ public enum NoteMarkdownBlock: Equatable, Sendable {
                 blocks.append(.heading(level: 1, text: strip(line, "#")))
             } else if isSingleBacktickedValue(line) {
                 blocks.append(.code(String(line.dropFirst().dropLast())))
+            } else if line.hasPrefix("> ") {
+                blocks.append(.quote(strip(line, ">")))
             } else if let task = task(in: line, lineIndex: lineIndex) {
                 blocks.append(.task(task))
             } else if let bullet = ["- ", "* ", "+ "].first(where: line.hasPrefix) {

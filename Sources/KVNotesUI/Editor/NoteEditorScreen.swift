@@ -75,10 +75,18 @@ public struct NoteEditorScreen: View {
     private var editor: some View {
         VStack(spacing: 0) {
             header
-            if viewModel.state.mode == .edit {
-                editBody.transition(.opacity)
-            } else {
-                readBody.transition(.opacity)
+            // Both surfaces stay in the hierarchy across the switch. Rebuilding the text view
+            // every time the user previews a note would throw away the caret and the scroll
+            // position, and read mode's own state with them.
+            ZStack {
+                editBody
+                    .opacity(viewModel.state.mode == .edit ? 1 : 0)
+                    .allowsHitTesting(viewModel.state.mode == .edit)
+                    .accessibilityHidden(viewModel.state.mode != .edit)
+                readBody
+                    .opacity(viewModel.state.mode == .read ? 1 : 0)
+                    .allowsHitTesting(viewModel.state.mode == .read)
+                    .accessibilityHidden(viewModel.state.mode != .read)
             }
         }
         .background(theme.background)
@@ -239,7 +247,14 @@ public struct NoteEditorScreen: View {
             theme: theme,
             onCaretApplied: { viewModel.send(.caretApplied) },
             onInsert: { viewModel.send(.insert($0, selection)) },
+            onUndo: { viewModel.send(.undo) },
+            onRedo: { viewModel.send(.redo) },
+            canUndo: viewModel.state.canUndo,
+            canRedo: viewModel.state.canRedo,
+            isActive: viewModel.state.mode == .edit,
             doneTitle: NotesLocalization.string("Done", locale: locale),
+            undoTitle: NotesLocalization.string("Undo", locale: locale),
+            redoTitle: NotesLocalization.string("Redo", locale: locale),
             haptic: haptic
         )
     }

@@ -71,3 +71,7 @@
 "No note in this vault matches the filter you have on." = "Keine Notiz in diesem Tresor entspricht dem aktiven Filter.";
 /* Button that clears the notes list filter. */
 "Show all notes" = "Alle Notizen anzeigen";
+/* Accessibility label of the editor toolbar's undo key. */
+"Undo" = "Widerrufen";
+/* Accessibility label of the editor toolbar's redo key. */
+"Redo" = "Wiederholen";

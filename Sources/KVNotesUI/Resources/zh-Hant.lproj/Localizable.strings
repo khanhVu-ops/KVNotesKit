@@ -71,3 +71,7 @@
 "No note in this vault matches the filter you have on." = "此保險庫中沒有符合目前篩選條件的備忘錄。";
 /* Button that clears the notes list filter. */
 "Show all notes" = "顯示全部備忘錄";
+/* Accessibility label of the editor toolbar's undo key. */
+"Undo" = "還原";
+/* Accessibility label of the editor toolbar's redo key. */
+"Redo" = "重做";

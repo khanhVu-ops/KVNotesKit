@@ -71,3 +71,7 @@
 "No note in this vault matches the filter you have on." = "No note in this vault matches the filter you have on.";
 /* Button that clears the notes list filter. */
 "Show all notes" = "Show all notes";
+/* Accessibility label of the editor toolbar's undo key. */
+"Undo" = "Undo";
+/* Accessibility label of the editor toolbar's redo key. */
+"Redo" = "Redo";

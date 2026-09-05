@@ -191,6 +191,52 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state.body, "")
     }
 
+    func testUndoCoversTypingTheToolbarAndTheCheckboxes() async throws {
+        let store = InMemoryNoteStore()
+        let viewModel = NoteEditorViewModel(store: store, unlockAuthority: UnlockAuthority())
+
+        XCTAssertFalse(viewModel.state.canUndo)
+        viewModel.send(.setBody("milk"))
+        XCTAssertTrue(viewModel.state.canUndo)
+
+        // A toolbar key opens its own entry, so one undo takes the formatting off and leaves the
+        // typing — the thing UIKit's own stack could not do, because assigning `.text` clears it.
+        viewModel.send(.insert(.bold, 0..<4))
+        XCTAssertEqual(viewModel.state.body, "**milk**")
+        viewModel.send(.undo)
+        XCTAssertEqual(viewModel.state.body, "milk")
+        XCTAssertTrue(viewModel.state.canRedo)
+        viewModel.send(.redo)
+        XCTAssertEqual(viewModel.state.body, "**milk**")
+
+        // Typing after an undo abandons the redo branch rather than leaving a stale future.
+        viewModel.send(.undo)
+        viewModel.send(.setBody("bread"))
+        XCTAssertFalse(viewModel.state.canRedo)
+
+        // And a ticked checkbox is undoable like anything else.
+        viewModel.send(.setBody("- [ ] milk"))
+        viewModel.send(.save)
+        try await settle { viewModel.state.note != nil }
+        viewModel.send(.toggleTask(line: 0))
+        XCTAssertEqual(viewModel.state.body, "- [x] milk")
+        viewModel.send(.undo)
+        XCTAssertEqual(viewModel.state.body, "- [ ] milk")
+    }
+
+    func testHistoryDiesWithTheSession() async throws {
+        let viewModel = NoteEditorViewModel(store: InMemoryNoteStore(), unlockAuthority: UnlockAuthority())
+
+        viewModel.send(.setBody("recovery phrase"))
+        viewModel.send(.sessionLocked)
+
+        // Every entry holds a copy of the note, so history is plaintext by another name.
+        XCTAssertFalse(viewModel.state.canUndo)
+        XCTAssertFalse(viewModel.state.canRedo)
+        viewModel.send(.undo)
+        XCTAssertEqual(viewModel.state.body, "")
+    }
+
     private func settle(
         until condition: @escaping @MainActor () -> Bool,
         file: StaticString = #filePath,

@@ -71,3 +71,7 @@
 "No note in this vault matches the filter you have on." = "لا توجد ملاحظة في هذه الخزنة تطابق عامل التصفية المفعّل.";
 /* Button that clears the notes list filter. */
 "Show all notes" = "إظهار كل الملاحظات";
+/* Accessibility label of the editor toolbar's undo key. */
+"Undo" = "تراجع";
+/* Accessibility label of the editor toolbar's redo key. */
+"Redo" = "إعادة";

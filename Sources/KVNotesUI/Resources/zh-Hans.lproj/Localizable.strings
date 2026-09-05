@@ -71,3 +71,7 @@
 "No note in this vault matches the filter you have on." = "此保险库中没有符合当前筛选条件的笔记。";
 /* Button that clears the notes list filter. */
 "Show all notes" = "显示全部笔记";
+/* Accessibility label of the editor toolbar's undo key. */
+"Undo" = "撤销";
+/* Accessibility label of the editor toolbar's redo key. */
+"Redo" = "重做";

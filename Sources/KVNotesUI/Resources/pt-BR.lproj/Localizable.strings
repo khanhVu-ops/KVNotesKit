@@ -71,3 +71,7 @@
 "No note in this vault matches the filter you have on." = "Nenhuma nota deste cofre corresponde ao filtro ativo.";
 /* Button that clears the notes list filter. */
 "Show all notes" = "Mostrar todas as notas";
+/* Accessibility label of the editor toolbar's undo key. */
+"Undo" = "Desfazer";
+/* Accessibility label of the editor toolbar's redo key. */
+"Redo" = "Refazer";

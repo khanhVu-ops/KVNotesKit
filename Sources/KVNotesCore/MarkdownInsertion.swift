@@ -3,9 +3,13 @@ import Foundation
 public enum MarkdownToken: String, CaseIterable, Identifiable, Sendable {
     case heading1
     case heading2
+    case heading3
     case bold
     case italic
+    case strikethrough
     case bulletList
+    case checklist
+    case quote
     case inlineCode
     case thematicBreak
 
@@ -15,8 +19,9 @@ public enum MarkdownToken: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .bold: "**"
         case .italic: "*"
+        case .strikethrough: "~~"
         case .inlineCode: "`"
-        case .heading1, .heading2, .bulletList, .thematicBreak: nil
+        case .heading1, .heading2, .heading3, .bulletList, .checklist, .quote, .thematicBreak: nil
         }
     }
 
@@ -24,8 +29,11 @@ public enum MarkdownToken: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .heading1: "# "
         case .heading2: "## "
+        case .heading3: "### "
         case .bulletList: "- "
-        case .bold, .italic, .inlineCode, .thematicBreak: nil
+        case .checklist: "- [ ] "
+        case .quote: "> "
+        case .bold, .italic, .strikethrough, .inlineCode, .thematicBreak: nil
         }
     }
 
@@ -33,9 +41,13 @@ public enum MarkdownToken: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .heading1: "H1"
         case .heading2: "H2"
+        case .heading3: "H3"
         case .bold: "B"
         case .italic: "I"
+        case .strikethrough: "S̶"
         case .bulletList: "•"
+        case .checklist: "☑"
+        case .quote: "❯"
         case .inlineCode: "`"
         case .thematicBreak: "—"
         }
@@ -137,7 +149,9 @@ public enum MarkdownInsertion {
     }
 
     private static func existingPrefixLength(in text: String, atLineStart offset: Int) -> Int {
-        let markers = ["### ", "## ", "# ", "- ", "* ", "+ "]
+        // Longest first: on `- [ ] milk` the bullet marker also matches, and stripping only the
+        // `- ` would leave the box behind as `[ ] milk`.
+        let markers = ["- [ ] ", "- [x] ", "- [X] ", "### ", "## ", "# ", "> ", "- ", "* ", "+ "]
         let line = text[index(text, offset)...].prefix { !$0.isNewline }
         return markers.first(where: line.hasPrefix)?.count ?? 0
     }

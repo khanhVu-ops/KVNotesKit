@@ -71,3 +71,7 @@
 "No note in this vault matches the filter you have on." = "Ни одна заметка в этом хранилище не подходит под включённый фильтр.";
 /* Button that clears the notes list filter. */
 "Show all notes" = "Показать все заметки";
+/* Accessibility label of the editor toolbar's undo key. */
+"Undo" = "Отменить";
+/* Accessibility label of the editor toolbar's redo key. */
+"Redo" = "Повторить";

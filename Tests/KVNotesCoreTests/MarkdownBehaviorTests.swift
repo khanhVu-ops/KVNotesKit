@@ -10,12 +10,16 @@ final class MarkdownBehaviorTests: XCTestCase {
         `8492`
         ---
         > keep this text
+        :: not syntax we know
         """), [
             .heading(level: 1, text: "Wallet"),
             .bullet("Recovery phrase"),
             .code("8492"),
             .divider,
-            .paragraph("> keep this text")
+            // A quote since NK-210 added the key that writes one; the line below still shows
+            // that an unrecognised marker survives as the author typed it.
+            .quote("keep this text"),
+            .paragraph(":: not syntax we know")
         ])
     }
 
@@ -103,5 +107,27 @@ final class MarkdownBehaviorTests: XCTestCase {
         XCTAssertEqual(NoteMarkdownBlock.togglingTask(atLine: 0, in: "just text"), "just text")
         XCTAssertEqual(NoteMarkdownBlock.togglingTask(atLine: 9, in: "- [ ] one"), "- [ ] one")
         XCTAssertEqual(NoteMarkdownBlock.togglingTask(atLine: 0, in: "- [draft] no"), "- [draft] no")
+    }
+
+    func testNewTokensPrefixAndWrapTheirLines() {
+        XCTAssertEqual(MarkdownInsertion.apply(.heading3, to: "title", selection: 0..<0).text, "### title")
+        XCTAssertEqual(MarkdownInsertion.apply(.quote, to: "said", selection: 0..<0).text, "> said")
+        XCTAssertEqual(MarkdownInsertion.apply(.checklist, to: "milk", selection: 0..<0).text, "- [ ] milk")
+        XCTAssertEqual(MarkdownInsertion.apply(.strikethrough, to: "gone", selection: 0..<4).text, "~~gone~~")
+        // Tapping the same line key twice takes the marker back off.
+        XCTAssertEqual(MarkdownInsertion.apply(.quote, to: "> said", selection: 2..<2).text, "said")
+    }
+
+    /// The bullet marker also matches the head of a task line, so a shorter marker matched first
+    /// would leave `[ ] milk` behind as prose.
+    func testSwitchingAChecklistLineToABulletRemovesTheWholeBox() {
+        XCTAssertEqual(
+            MarkdownInsertion.apply(.bulletList, to: "- [ ] milk", selection: 6..<6).text,
+            "- milk"
+        )
+    }
+
+    func testQuoteLinesRenderAsQuotesRatherThanProse() {
+        XCTAssertEqual(NoteMarkdownBlock.blocks(of: "> said"), [.quote("said")])
     }
 }
