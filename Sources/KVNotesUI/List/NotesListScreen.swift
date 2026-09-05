@@ -16,7 +16,6 @@ public struct NotesListScreen: View {
 
     private let theme: NoteTheme
     private let refreshToken: Int
-    private let onClose: @MainActor @Sendable () -> Void
     private let onOpenNote: @MainActor @Sendable (NoteDigest) -> Void
     private let onCreateNote: @MainActor @Sendable () -> Void
     private let onSelectionChange: @MainActor @Sendable (Bool) -> Void
@@ -27,7 +26,6 @@ public struct NotesListScreen: View {
         theme: NoteTheme,
         preferences: (any NoteListPreferencesStore)? = nil,
         refreshToken: Int = 0,
-        onClose: @escaping @MainActor @Sendable () -> Void,
         onOpenNote: @escaping @MainActor @Sendable (NoteDigest) -> Void,
         onCreateNote: @escaping @MainActor @Sendable () -> Void,
         onChange: @escaping @MainActor @Sendable () -> Void = {},
@@ -43,7 +41,6 @@ public struct NotesListScreen: View {
         ))
         self.theme = theme
         self.refreshToken = refreshToken
-        self.onClose = onClose
         self.onOpenNote = onOpenNote
         self.onCreateNote = onCreateNote
         self.onSelectionChange = onSelectionChange
@@ -53,8 +50,15 @@ public struct NotesListScreen: View {
     public var body: some View {
         content
             .background(theme.background)
-            .safeAreaInset(edge: .top, spacing: 0) { header }
-            .noteNavigationChrome()
+            // The navigation bar is shown, not hidden, and that is what buys the system back
+            // swipe — see `NotesListToolbar`. The title stays empty: the large one scrolls in the
+            // content and the inline one is a `.principal` item that fades in behind it.
+            .navigationTitle("")
+            .noteInlineNavigationTitle()
+            // Only while selecting, where Cancel takes that corner. Hiding it costs the back
+            // swipe for as long as a selection is live, which is the intended trade.
+            .noteHidesBackButton(viewModel.state.isSelecting)
+            .toolbar { toolbar }
             .onAppear { viewModel.send(.onAppear) }
             .onChange(of: refreshToken) { viewModel.send(.refresh) }
             .onChange(of: viewModel.state.isSelecting) { _, isSelecting in
@@ -225,13 +229,12 @@ public struct NotesListScreen: View {
         content().padding(.horizontal, theme.medium)
     }
 
-    /// The header, and the one place `collapse` is handed to anything.
+    /// The chrome, and the one place `collapse` is handed to anything.
     ///
-    /// A view of its own taking values, not a `@ViewBuilder` reading `viewModel.state`: the fold
-    /// happens while the list is being scrolled, and a fold that lives on this screen redraws
-    /// this screen — every row, every option sheet, every folder group.
-    private var header: some View {
-        NotesListHeader(
+    /// Items in the host's navigation bar rather than a header this screen draws: values and
+    /// closures in, UIKit owning the bar, the back button and the swipe.
+    private var toolbar: some ToolbarContent {
+        NotesListToolbar(
             collapse: collapse,
             theme: theme,
             isSelecting: viewModel.state.isSelecting,
@@ -241,11 +244,22 @@ public struct NotesListScreen: View {
             isNarrowed: viewModel.state.isNarrowed,
             layout: viewModel.state.layout,
             haptic: haptic,
-            onClose: onClose,
             onCreateNote: onCreateNote,
-            onStartSelecting: { viewModel.send(.startSelecting) },
-            onStopSelecting: { viewModel.send(.stopSelecting) },
-            onSelectAllOrNone: { viewModel.send(.selectAllOrNone) },
+            onStartSelecting: {
+                withAnimation(NoteMotion.mode(reduceMotion: reduceMotion)) {
+                    viewModel.send(.startSelecting)
+                }
+            },
+            onStopSelecting: {
+                withAnimation(NoteMotion.mode(reduceMotion: reduceMotion)) {
+                    viewModel.send(.stopSelecting)
+                }
+            },
+            onSelectAllOrNone: {
+                withAnimation(NoteMotion.selection(reduceMotion: reduceMotion)) {
+                    viewModel.send(.selectAllOrNone)
+                }
+            },
             onOpenSortAndFilter: { viewModel.send(.openOptions(.sortAndFilter)) },
             onToggleLayout: {
                 let next: NoteListLayout = viewModel.state.layout == .grid ? .list : .grid
@@ -406,7 +420,9 @@ public struct NotesListScreen: View {
                 // While selecting, a tap ticks the card. Opening a note from here would lose the
                 // selection the user is halfway through building.
                 if isSelecting {
-                    viewModel.send(.toggleSelection(note.id))
+                    withAnimation(NoteMotion.selection(reduceMotion: reduceMotion)) {
+                        viewModel.send(.toggleSelection(note.id))
+                    }
                 } else {
                     onOpenNote(note)
                 }

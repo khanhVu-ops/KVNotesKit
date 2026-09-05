@@ -1,20 +1,24 @@
 import KVNotesCore
 import SwiftUI
 
-/// The control row that stays above the notes list: back, the inline title, and the four
-/// controls — or Cancel and Select All while a selection is live.
+/// The notes list's chrome, as items in the host's own navigation bar.
 ///
-/// This is the only part of the chrome that is a `safeAreaInset`, and its height does not depend
-/// on scrolling. That is deliberate and it is load-bearing: a `safeAreaInset` *is* the scroll
-/// view's top content inset, so a header that resizes itself from the scroll offset closes a loop
-/// through UIKit. `NotesListTitleBlock` carries the full account of what that cost. Everything
-/// here that reacts to scrolling reacts with opacity, which cannot change a size.
+/// It used to be a `safeAreaInset` drawn by hand, above a hidden navigation bar. That is why the
+/// back swipe on this screen was never the system one: UIKit refuses `interactivePopGestureRecognizer`
+/// while the bar is hidden — not by disabling it, which KVRouterKit already forces back on, but
+/// through the delegate it installs on it, which `isEnabled` cannot overrule. The workaround was to
+/// push the screen on a router transition so it brought its own edge recogniser, and that recogniser
+/// is a plain pan: anything under the finger that pans beats it, which cost the swipe over the
+/// folder chips.
 ///
-/// Values and closures, never the ViewModel: taking the facts one by one is what makes the row
-/// previewable in both its states without a store behind it.
-struct NotesListHeader: View {
-    /// The one reference the header holds, and the one thing it is allowed to read while the
-    /// list is moving.
+/// Showing the bar and putting the controls in it is the fix, and it is the smaller thing to
+/// maintain. UIKit owns the push, the back button and the swipe; nothing here is a re-implementation
+/// of navigation.
+///
+/// `ToolbarContent` rather than a `View`, because that is what `.toolbar` takes — but the rule is
+/// unchanged: values and closures, never the ViewModel.
+struct NotesListToolbar: ToolbarContent {
+    /// Read only by `NotesInlineTitle`, so a scroll redraws a label and not this whole bar.
     let collapse: NotesHeaderCollapse
     let theme: NoteTheme
     let isSelecting: Bool
@@ -24,7 +28,6 @@ struct NotesListHeader: View {
     let isNarrowed: Bool
     let layout: NoteListLayout
     let haptic: @MainActor @Sendable () -> Void
-    let onClose: @MainActor @Sendable () -> Void
     let onCreateNote: @MainActor @Sendable () -> Void
     let onStartSelecting: @MainActor @Sendable () -> Void
     let onStopSelecting: @MainActor @Sendable () -> Void
@@ -32,170 +35,86 @@ struct NotesListHeader: View {
     let onOpenSortAndFilter: @MainActor @Sendable () -> Void
     let onToggleLayout: @MainActor @Sendable () -> Void
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// `topBar*` is iOS-only and this package also builds for macOS, where the same two corners
+    /// are named by role rather than by edge.
+    #if os(iOS)
+    private static let leading: ToolbarItemPlacement = .topBarLeading
+    private static let trailing: ToolbarItemPlacement = .topBarTrailing
+    #else
+    private static let leading: ToolbarItemPlacement = .cancellationAction
+    private static let trailing: ToolbarItemPlacement = .primaryAction
+    #endif
 
-    /// Everything about the header that is allowed to animate, behind one value.
-    ///
-    /// One `.animation(_:value:)` for the whole header and not six scattered through it, which is
-    /// not tidiness. The modifier sets the animation for its subtree when its own value changed
-    /// and clears it when it did not, so a second one nested underneath cancels the first for its
-    /// own subtree — two of them here used to wipe each other, which is why the fold arrived as a
-    /// jump.
-    ///
-    /// `progress` is deliberately not in here. It must *not* animate: it is already a smooth
-    /// function of where the finger is, and putting a curve on top of a value that is being
-    /// driven directly is what makes a header lag behind the scroll it is supposed to follow.
-    /// Clearing the transaction for everything else is exactly what this modifier does anyway.
-    private struct Shape: Equatable {
-        let isSelecting: Bool
-        let isNarrowed: Bool
-        let selectionCount: Int
-    }
-
-    private var shape: Shape {
-        Shape(isSelecting: isSelecting, isNarrowed: isNarrowed, selectionCount: selectionCount)
-    }
-
-    // MARK: - Interpolation
-
-    private var p: Double { min(max(collapse.progress, 0), 1) }
-
-    /// The inline title arrives once the large one is on its way out, on Vault Home's ramp.
-    private var inlineTitleOpacity: Double { min(max((p - 0.55) * 2.3, 0), 1) }
-
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 2) {
-                if isSelecting {
-                    selectionChrome
-                } else {
-                    browsingChrome
+    @ToolbarContentBuilder
+    var body: some ToolbarContent {
+        if isSelecting {
+            // Cancel stands where Back would, and the screen hides the system back button while a
+            // selection is live: leaving both would offer two different ways out of two different
+            // things. The back swipe goes with it, which is the right trade — a swipe that threw
+            // away a half-built selection is not a shortcut anyone wants.
+            ToolbarItem(placement: Self.leading) {
+                Button(action: onStopSelecting) {
+                    Text(.notesKit("Cancel"))
+                        .font(theme.modeFont)
+                        .textCase(.uppercase)
+                        .tracking(1.0)
+                        .foregroundStyle(theme.primaryText)
+                        .lineLimit(1)
+                        .fixedSize()
                 }
+                .buttonStyle(NotePressButtonStyle())
+                .fixedSize()
+                .layoutPriority(1)
             }
-            .frame(height: 44)
-            .padding(.horizontal, theme.small)
 
-            if !isSelecting {
-                EmptyView()
-            } else {
-                selectionCountLine
-
-                // The filter bar carries the separator while browsing, and it is not on screen
-                // while selecting. Cards scroll under this row either way, so the line that says
-                // where the chrome ends has to come from whichever row is on top.
-                Rectangle()
-                    .fill(theme.separator)
-                    .frame(height: 0.75)
-            }
-        }
-        .background(theme.background)
-        .animation(NoteMotion.header(reduceMotion: reduceMotion), value: shape)
-    }
-
-    @ViewBuilder
-    private var browsingChrome: some View {
-        Group {
-            Button(action: onClose) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(theme.primaryText)
-                    .frame(width: 40, height: 40)
-                    .background(theme.card, in: Circle())
-                    .overlay { Circle().strokeBorder(theme.separator, lineWidth: 0.75) }
-            }
-            .buttonStyle(NotePressButtonStyle())
-            .frame(width: 44, height: 44)
-            .accessibilityLabel(Text(.notesKit("Back")))
-
-            inlineTitle
-
-            Spacer(minLength: theme.xs)
-
-            sortButton
-
-            layoutToggle
-
-            Button {
-                haptic()
-                onStartSelecting()
-            } label: {
-                Image(systemName: "checkmark.circle")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(theme.primaryText)
-                    .frame(width: 32, height: 32)
-                    .background(theme.card, in: Circle())
-                    .overlay { Circle().strokeBorder(theme.separator, lineWidth: 0.75) }
-            }
-            .buttonStyle(NotePressButtonStyle())
-            .frame(width: 44, height: 44)
-            .disabled(!hasVisibleNotes)
-            .accessibilityLabel(Text(.notesKit("Select notes")))
-
-            Button(action: onCreateNote) {
-                Image(systemName: "plus")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(theme.onAccent)
-                    .frame(width: 32, height: 32)
-                    .background(theme.accent, in: Circle())
-            }
-            .buttonStyle(NotePressButtonStyle())
-            .frame(width: 44, height: 44)
-            .accessibilityLabel(Text(.notesKit("New note")))
-        }
-    }
-
-    /// Cancel on the left, Select All on the right, count underneath: the same shape Vault Home
-    /// and the trash already use, so selecting notes is not a second thing to learn.
-    @ViewBuilder
-    private var selectionChrome: some View {
-        Group {
-            Button(action: onStopSelecting) {
-                Text(.notesKit("Cancel"))
-                    .font(theme.modeFont)
+            ToolbarItem(placement: .principal) {
+                Text(.notesKit(count: "\(selectionCount) selected"))
+                    .font(theme.metadataFont)
                     .textCase(.uppercase)
                     .tracking(1.2)
-                    .foregroundStyle(theme.primaryText)
+                    .foregroundStyle(theme.secondaryText)
+                    .contentTransition(.numericText())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            .buttonStyle(NotePressButtonStyle())
-            .padding(.leading, theme.small)
 
-            Spacer(minLength: theme.small)
-
-            Button {
-                haptic()
-                onSelectAllOrNone()
-            } label: {
-                Text(isEverythingSelected
-                    ? .notesKit("Deselect All")
-                    : .notesKit("Select All"))
-                    .font(theme.modeFont)
-                    .textCase(.uppercase)
-                    .tracking(1.2)
-                    .foregroundStyle(theme.primaryText)
+            ToolbarItem(placement: Self.trailing) {
+                Button {
+                    haptic()
+                    onSelectAllOrNone()
+                } label: {
+                    Text(isEverythingSelected
+                        ? .notesKit("Deselect All")
+                        : .notesKit("Select All"))
+                        .font(theme.modeFont)
+                        .textCase(.uppercase)
+                        .tracking(1.0)
+                        .foregroundStyle(theme.primaryText)
+                        .lineLimit(1)
+                        .fixedSize()
+                }
+                .buttonStyle(NotePressButtonStyle())
+                .fixedSize()
             }
-            .buttonStyle(NotePressButtonStyle())
-            .padding(.trailing, theme.small)
+        } else {
+            ToolbarItem(placement: .principal) {
+                NotesInlineTitle(collapse: collapse, theme: theme)
+            }
+
+            ToolbarItemGroup(placement: Self.trailing) {
+                sortButton
+                layoutToggle
+                selectButton
+                createButton
+            }
         }
-    }
-
-    private var selectionCountLine: some View {
-        Text(.notesKit(count: "\(selectionCount) selected"))
-            .font(theme.metadataFont)
-            .textCase(.uppercase)
-            .tracking(1.4)
-            .foregroundStyle(theme.secondaryText)
-            .contentTransition(.numericText())
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, theme.medium)
-            .padding(.bottom, theme.small)
     }
 
     /// Sort and filter behind one control rather than two.
     ///
-    /// They answer the same question — "show me a different slice of this list" — and the header
-    /// has room for one more 32pt circle, not two. The dot marks a list that is narrowed, because
-    /// a filter left on looks exactly like a vault that lost its notes.
+    /// They answer the same question — "show me a different slice of this list" — and the bar has
+    /// room for one more circle, not two. The fill marks a list that is narrowed, because a filter
+    /// left on looks exactly like a vault that lost its notes.
     private var sortButton: some View {
         Button {
             haptic()
@@ -214,14 +133,13 @@ struct NotesListHeader: View {
                 }
         }
         .buttonStyle(NotePressButtonStyle())
-        .frame(width: 44, height: 44)
         .accessibilityLabel(Text(.notesKit("Sort and filter")))
     }
 
     /// Rows or cards, one tap either way.
     ///
-    /// The icon names the layout the tap will *produce*, not the one on screen — the same
-    /// grammar as the Photos grid density control, and the reason it needs no label beside it.
+    /// The icon names the layout the tap will *produce*, not the one on screen — the same grammar
+    /// as the Photos grid density control, and the reason it needs no label beside it.
     private var layoutToggle: some View {
         let isGrid = layout == .grid
         return Button {
@@ -237,26 +155,67 @@ struct NotesListHeader: View {
                 .contentTransition(.symbolEffect(.replace))
         }
         .buttonStyle(NotePressButtonStyle())
-        .frame(width: 44, height: 44)
         .accessibilityLabel(Text(isGrid ? .notesKit("List view") : .notesKit("Grid view")))
     }
 
-    /// The title once the header has folded: same words, row size, beside the back button.
-    ///
-    /// Always in the row and never inserted into it, which is what lets it fade in without the
-    /// controls beside it jumping to make room. Its width comes out of the `Spacer`, not out of
-    /// the buttons, so at rest it is invisible and costs nothing anyone can see. It is hidden
-    /// from VoiceOver until it is actually legible — two headers reading the same words is one
-    /// too many.
-    private var inlineTitle: some View {
+    private var selectButton: some View {
+        Button {
+            haptic()
+            onStartSelecting()
+        } label: {
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(theme.primaryText)
+                .frame(width: 32, height: 32)
+                .background(theme.card, in: Circle())
+                .overlay { Circle().strokeBorder(theme.separator, lineWidth: 0.75) }
+        }
+        .buttonStyle(NotePressButtonStyle())
+        .disabled(!hasVisibleNotes)
+        .accessibilityLabel(Text(.notesKit("Select notes")))
+    }
+
+    private var createButton: some View {
+        Button(action: onCreateNote) {
+            Image(systemName: "plus")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(theme.onAccent)
+                .frame(width: 32, height: 32)
+                .background(theme.accent, in: Circle())
+        }
+        .buttonStyle(NotePressButtonStyle())
+        .accessibilityLabel(Text(.notesKit("New note")))
+    }
+}
+
+/// The title in the navigation bar: absent at rest, arriving as the large one scrolls away.
+///
+/// Its own view so that the scroll redraws this label and nothing else. Reading `progress` from
+/// the screen would put a per-frame write back into the body that builds the whole list.
+///
+/// Not `.navigationTitle`, which would show the words permanently and repeat the large title six
+/// points below itself.
+struct NotesInlineTitle: View {
+    let collapse: NotesHeaderCollapse
+    let theme: NoteTheme
+
+    /// Arrives after the large title has finished leaving — two titles legible at once reads as a
+    /// double image. Vault Home's ramp.
+    private var opacity: Double {
+        let p = min(max(collapse.progress, 0), 1)
+        return min(max((p - 0.55) * 2.3, 0), 1)
+    }
+
+    var body: some View {
         Text(.notesKit("Private notes"))
             .font(theme.sectionFont)
             .foregroundStyle(theme.primaryText)
             .lineLimit(1)
             .minimumScaleFactor(0.8)
-            .opacity(inlineTitleOpacity)
-            .padding(.leading, theme.xs)
-            .accessibilityHidden(inlineTitleOpacity < 0.5)
+            .opacity(opacity)
+            // Hidden from VoiceOver until it is actually legible: two headers reading the same
+            // words is one too many.
+            .accessibilityHidden(opacity < 0.5)
             .accessibilityAddTraits(.isHeader)
     }
 }
@@ -532,27 +491,3 @@ struct NotesListTitleBlock: View {
     .background(NoteTheme.preview.background)
 }
 
-#Preview("Header") {
-    VStack(spacing: 0) {
-        NotesListHeader(
-            collapse: NotesHeaderCollapse(),
-            theme: .preview,
-            isSelecting: false,
-            isEverythingSelected: false,
-            selectionCount: 0,
-            hasVisibleNotes: true,
-            isNarrowed: false,
-            layout: .list,
-            haptic: {},
-            onClose: {},
-            onCreateNote: {},
-            onStartSelecting: {},
-            onStopSelecting: {},
-            onSelectAllOrNone: {},
-            onOpenSortAndFilter: {},
-            onToggleLayout: {}
-        )
-        Spacer()
-    }
-    .background(NoteTheme.preview.background)
-}

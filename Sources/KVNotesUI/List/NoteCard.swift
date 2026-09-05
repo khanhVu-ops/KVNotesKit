@@ -65,6 +65,7 @@ struct NoteCard: View {
                 }
                 .buttonStyle(NotePressButtonStyle())
                 .padding(theme.small)
+                .transition(.scale.combined(with: .opacity))
                 .accessibilityLabel(Text(.notesKit("Note options")))
             }
         }
@@ -238,6 +239,7 @@ struct NoteCard: View {
             .font(.system(size: 20, weight: .regular))
             .foregroundStyle(isSelected ? theme.accent : theme.disabledText)
             .background(Circle().fill(theme.card).padding(2))
+            .contentTransition(.symbolEffect(.replace))
     }
 
     private var dot: some View { Circle().fill(theme.disabledText).frame(width: 2.5, height: 2.5) }

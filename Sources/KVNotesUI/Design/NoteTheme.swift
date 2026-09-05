@@ -174,6 +174,16 @@ extension View {
         #endif
     }
 
+    /// Hides the system back button, on the platforms that have one.
+    @ViewBuilder
+    func noteHidesBackButton(_ hidden: Bool) -> some View {
+        #if os(iOS)
+        navigationBarBackButtonHidden(hidden)
+        #else
+        self
+        #endif
+    }
+
     @ViewBuilder
     func noteInlineNavigationTitle() -> some View {
         #if os(iOS)

@@ -15,7 +15,6 @@ private struct PreviewSecretPolicy: NoteSecretPolicy {
     NotesListScreen(
         store: InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies),
         theme: .preview,
-        onClose: {},
         onOpenNote: { _ in },
         onCreateNote: {}
     )
