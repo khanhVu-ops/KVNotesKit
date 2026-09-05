@@ -13,6 +13,7 @@ public struct NoteEditorState: Equatable, Sendable {
     public var folder: String?
     public var icon: String?
     public var requiresBiometricUnlock = false
+    public var hidesPreview = false
     public var mode: Mode = .edit
     public var saveStatus: SaveStatus = .idle
     public var folders: [String] = []
@@ -103,6 +104,7 @@ public final class NoteEditorViewModel {
         case setFolder(String?)
         case setIcon(String?)
         case toggleBiometricLock
+        case toggleHiddenPreview
         case openOptions
         case dismissOptions
         case dismissToast
@@ -141,6 +143,7 @@ public final class NoteEditorViewModel {
         state.folder = note?.folder
         state.icon = note?.icon
         state.requiresBiometricUnlock = note?.requiresBiometricUnlock ?? false
+        state.hidesPreview = note?.hidesPreview ?? false
         state.mode = note == nil ? .edit : .read
         state.isLoading = note != nil
         state.isLocked = note?.requiresBiometricUnlock ?? false
@@ -251,6 +254,13 @@ public final class NoteEditorViewModel {
                 if state.hasContent { save() }
             } else {
                 apply(NoteAttributePatch(requiresBiometricUnlock: state.requiresBiometricUnlock))
+            }
+        case .toggleHiddenPreview:
+            state.hidesPreview.toggle()
+            if state.note == nil {
+                if state.hasContent { save() }
+            } else {
+                apply(NoteAttributePatch(hidesPreview: state.hidesPreview))
             }
         case .openOptions:
             if state.note == nil, state.hasContent { save() }
@@ -430,7 +440,8 @@ public final class NoteEditorViewModel {
             title: title,
             folder: state.folder,
             icon: state.icon,
-            requiresBiometricUnlock: state.requiresBiometricUnlock
+            requiresBiometricUnlock: state.requiresBiometricUnlock,
+            hidesPreview: state.hidesPreview
         )
         saveTask = Task { [weak self] in
             guard let self else { return }
@@ -443,20 +454,24 @@ public final class NoteEditorViewModel {
                 let desiredFolder = state.folder
                 let desiredIcon = state.icon
                 let desiredLock = state.requiresBiometricUnlock
+                let desiredHiding = state.hidesPreview
                 state.note = saved
                 state.folder = desiredFolder
                 state.icon = desiredIcon
                 state.requiresBiometricUnlock = desiredLock
+                state.hidesPreview = desiredHiding
                 saveTask = nil
                 onChange()
                 let attributePatch = NoteAttributePatch(
                     folder: saved.folder == desiredFolder ? .unchanged : .set(desiredFolder),
                     icon: saved.icon == desiredIcon ? .unchanged : .set(desiredIcon),
-                    requiresBiometricUnlock: saved.requiresBiometricUnlock == desiredLock ? nil : desiredLock
+                    requiresBiometricUnlock: saved.requiresBiometricUnlock == desiredLock ? nil : desiredLock,
+                    hidesPreview: saved.hidesPreview == desiredHiding ? nil : desiredHiding
                 )
                 if attributePatch.folder != .unchanged
                     || attributePatch.icon != .unchanged
-                    || attributePatch.requiresBiometricUnlock != nil {
+                    || attributePatch.requiresBiometricUnlock != nil
+                    || attributePatch.hidesPreview != nil {
                     apply(attributePatch)
                 }
                 let changedWhileSaving = state.body != body || state.title != title

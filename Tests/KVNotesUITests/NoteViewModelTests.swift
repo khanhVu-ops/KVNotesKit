@@ -354,6 +354,45 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state.pinnedCount, 3)
     }
 
+    func testAHiddenPreviewStopsBeingDrawnButKeepsBeingSearchable() async throws {
+        let store = InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies)
+        let viewModel = NotesListViewModel(store: store)
+        viewModel.send(.onAppear)
+        try await settle { viewModel.state.phase == .loaded }
+
+        let bank = try XCTUnwrap(viewModel.state.visibleNotes.first { $0.id == NoteFixtures.bank.id })
+        XCTAssertEqual(bank.visiblePreview, bank.snippet)
+
+        _ = try await store.apply(NoteAttributePatch(hidesPreview: true), to: NoteFixtures.bank.id)
+        viewModel.send(.refresh)
+        try await settle { viewModel.state.index.notes.contains { $0.hidesPreview } }
+
+        let hidden = try XCTUnwrap(viewModel.state.visibleNotes.first { $0.id == NoteFixtures.bank.id })
+        // Nothing for a row to draw…
+        XCTAssertNil(hidden.visiblePreview)
+        // …and the text is still there for the person who owns the vault to search on. Hiding a
+        // preview is about the room, not about locking the owner out of their own note.
+        XCTAssertEqual(hidden.snippet, NoteFixtures.bank.snippet)
+        XCTAssertFalse(hidden.requiresBiometricUnlock)
+
+        viewModel.send(.updateSearchQuery("transfer"))
+        XCTAssertEqual(viewModel.state.visibleNotes.map(\.title), ["Bank details"])
+    }
+
+    func testALockedNoteHasNoPreviewToHideOrToSearch() async throws {
+        let store = InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies)
+        let viewModel = NotesListViewModel(store: store)
+        viewModel.send(.onAppear)
+        try await settle { viewModel.state.phase == .loaded }
+
+        // The gate is the stronger promise and it is unaffected by the weaker one: the host
+        // withholds the snippet entirely, so `visiblePreview` is nil whichever way the flag sits.
+        let wallet = try XCTUnwrap(viewModel.state.visibleNotes.first { $0.id == NoteFixtures.wallet.id })
+        XCTAssertTrue(wallet.requiresBiometricUnlock)
+        XCTAssertNil(wallet.snippet)
+        XCTAssertNil(wallet.visiblePreview)
+    }
+
     func testTheOptionSheetReadsTheNoteItIsAboutRatherThanACopy() async throws {
         let store = InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies)
         let viewModel = NotesListViewModel(store: store)

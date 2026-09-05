@@ -157,3 +157,7 @@
 "Folder options" = "خيارات المجلد";
 "Grid view" = "عرض شبكي";
 "List view" = "عرض قائمة";
+"Hide preview" = "إخفاء المعاينة";
+"Preview hidden" = "المعاينة مخفية";
+"The list shows this note's name and nothing else. It still opens with one tap." = "تعرض القائمة اسم هذه الملاحظة فقط ولا شيء غير ذلك. وتظل تُفتح بنقرة واحدة.";
+"The lock already hides it. This is what the list shows if you unlock the note again." = "القفل يخفيها بالفعل. هذا ما ستعرضه القائمة إذا ألغيت قفل الملاحظة.";

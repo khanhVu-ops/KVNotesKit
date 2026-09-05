@@ -99,8 +99,11 @@ struct NoteGridCard: View {
     }
 
     /// Three lines rather than the row's one — the reason to be in this layout at all.
+    ///
+    /// `visiblePreview`, never `snippet`: withheld by the host and hidden by the user are the
+    /// same answer, and asking two questions is how one of them gets forgotten.
     @ViewBuilder private var preview: some View {
-        if note.requiresBiometricUnlock || note.snippet == nil {
+        if note.visiblePreview == nil {
             VStack(alignment: .leading, spacing: 5) {
                 ForEach([1.0, 0.82, 0.45], id: \.self) { fraction in
                     RoundedRectangle(cornerRadius: 2)
@@ -112,7 +115,7 @@ struct NoteGridCard: View {
             }
             .opacity(0.14)
             .accessibilityHidden(true)
-        } else if let snippet = note.snippet, !snippet.isEmpty {
+        } else if let snippet = note.visiblePreview, !snippet.isEmpty {
             Text(verbatim: snippet)
                 .font(theme.captionFont)
                 .foregroundStyle(theme.secondaryText)
@@ -146,6 +149,12 @@ struct NoteGridCard: View {
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(theme.primaryText)
                     .accessibilityLabel(Text(.notesKit("Locked")))
+            }
+            if note.hidesPreview, !note.requiresBiometricUnlock {
+                Image(systemName: "eye.slash.fill")
+                    .font(.system(size: 9))
+                    .foregroundStyle(theme.secondaryText)
+                    .accessibilityLabel(Text(.notesKit("Preview hidden")))
             }
             if note.isPinned {
                 Image(systemName: "pin.fill")

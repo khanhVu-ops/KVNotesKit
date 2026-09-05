@@ -157,3 +157,7 @@
 "Folder options" = "Параметры папки";
 "Grid view" = "Вид сеткой";
 "List view" = "Вид списком";
+"Hide preview" = "Скрыть превью";
+"Preview hidden" = "Превью скрыто";
+"The list shows this note's name and nothing else. It still opens with one tap." = "В списке видно только имя этой заметки и ничего больше. Она по-прежнему открывается одним касанием.";
+"The lock already hides it. This is what the list shows if you unlock the note again." = "Блокировка уже скрывает его. Вот что покажет список, если снять блокировку с заметки.";

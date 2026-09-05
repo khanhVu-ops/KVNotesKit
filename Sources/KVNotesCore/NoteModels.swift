@@ -20,6 +20,9 @@ public struct NoteDigest: Identifiable, Equatable, Sendable {
     public var title: String
     /// `nil` means the host withheld the preview, most importantly for a locked note. The UI
     /// must render a protected state and must never try to recover a preview from the body.
+    ///
+    /// Read `visiblePreview`, not this, to decide what a row draws — a note can carry a snippet
+    /// it does not want drawn.
     public var snippet: String?
     public var characterCount: Int
     public var folder: String?
@@ -33,6 +36,14 @@ public struct NoteDigest: Identifiable, Equatable, Sendable {
     /// `false` for a locked note whatever it contains — the host withholds this the way it
     /// withholds the snippet, so *has checklist* cannot be used to probe a note behind the gate.
     public var hasChecklist: Bool
+    /// The user asked for this note's opening not to be drawn on the list.
+    ///
+    /// A display setting, not a gate, and the difference is the whole point of it existing beside
+    /// `requiresBiometricUnlock`. The note still opens with one tap; the snippet is still stored
+    /// and still searchable by its owner. What it buys is that the first line of a note called
+    /// "Bank" is not facing the room while the list is open — the common case, and a biometric
+    /// prompt on every open is far too much to pay for it.
+    public var hidesPreview: Bool
     public var createdAt: Date
     public var lastEditedAt: Date
 
@@ -48,6 +59,7 @@ public struct NoteDigest: Identifiable, Equatable, Sendable {
         isTitleUserProvided: Bool = false,
         isPinned: Bool = false,
         hasChecklist: Bool = false,
+        hidesPreview: Bool = false,
         createdAt: Date = Date(),
         lastEditedAt: Date = Date()
     ) {
@@ -62,9 +74,18 @@ public struct NoteDigest: Identifiable, Equatable, Sendable {
         self.isTitleUserProvided = isTitleUserProvided
         self.isPinned = isPinned
         self.hasChecklist = hasChecklist
+        self.hidesPreview = hidesPreview
         self.createdAt = createdAt
         self.lastEditedAt = lastEditedAt
     }
+
+    /// The preview a row may draw, or `nil` when it may draw none.
+    ///
+    /// The one property the UI reads, so "withheld by the host" and "hidden by the user" cannot
+    /// be handled in two places and drift apart. `snippet` stays what it was — the text search
+    /// matches on, because hiding a preview from the room is not hiding the note from the person
+    /// who owns it and is typing into their own search field.
+    public var visiblePreview: String? { hidesPreview ? nil : snippet }
 }
 
 /// Plaintext supplied to `NoteStore.create`. A store must consume it without persisting an
@@ -75,19 +96,22 @@ public struct NoteDraft: Equatable, Sendable {
     public var folder: String?
     public var icon: String?
     public var requiresBiometricUnlock: Bool
+    public var hidesPreview: Bool
 
     public init(
         body: String,
         title: String? = nil,
         folder: String? = nil,
         icon: String? = nil,
-        requiresBiometricUnlock: Bool = false
+        requiresBiometricUnlock: Bool = false,
+        hidesPreview: Bool = false
     ) {
         self.body = body
         self.title = title
         self.folder = folder
         self.icon = icon
         self.requiresBiometricUnlock = requiresBiometricUnlock
+        self.hidesPreview = hidesPreview
     }
 }
 
@@ -103,17 +127,20 @@ public struct NoteAttributePatch: Equatable, Sendable {
     public var icon: NoteOptionalPatch<String>
     public var requiresBiometricUnlock: Bool?
     public var isPinned: Bool?
+    public var hidesPreview: Bool?
 
     public init(
         folder: NoteOptionalPatch<String> = .unchanged,
         icon: NoteOptionalPatch<String> = .unchanged,
         requiresBiometricUnlock: Bool? = nil,
-        isPinned: Bool? = nil
+        isPinned: Bool? = nil,
+        hidesPreview: Bool? = nil
     ) {
         self.folder = folder
         self.icon = icon
         self.requiresBiometricUnlock = requiresBiometricUnlock
         self.isPinned = isPinned
+        self.hidesPreview = hidesPreview
     }
 }
 

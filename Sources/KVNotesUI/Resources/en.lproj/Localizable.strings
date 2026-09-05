@@ -157,3 +157,7 @@
 "Folder options" = "Folder options";
 "Grid view" = "Grid view";
 "List view" = "List view";
+"Hide preview" = "Hide preview";
+"Preview hidden" = "Preview hidden";
+"The list shows this note's name and nothing else. It still opens with one tap." = "The list shows this note's name and nothing else. It still opens with one tap.";
+"The lock already hides it. This is what the list shows if you unlock the note again." = "The lock already hides it. This is what the list shows if you unlock the note again.";

@@ -157,3 +157,7 @@
 "Folder options" = "Mapopties";
 "Grid view" = "Rasterweergave";
 "List view" = "Lijstweergave";
+"Hide preview" = "Voorvertoning verbergen";
+"Preview hidden" = "Voorvertoning verborgen";
+"The list shows this note's name and nothing else. It still opens with one tap." = "De lijst toont alleen de naam van deze notitie. Ze opent nog steeds met één tik.";
+"The lock already hides it. This is what the list shows if you unlock the note again." = "Het slot verbergt hem al. Dit is wat de lijst toont als je de notitie weer ontgrendelt.";

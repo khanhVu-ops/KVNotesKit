@@ -59,15 +59,17 @@ struct NoteRowCard: View {
         return Text(verbatim: note.title)
     }
 
+    /// Reads `visiblePreview`, never `snippet`: a note the host withheld and a note the user
+    /// hid are the same answer here, and asking two questions is how one of them gets forgotten.
     @ViewBuilder private var preview: some View {
-        if note.requiresBiometricUnlock || note.snippet == nil {
+        if note.visiblePreview == nil {
             HStack(spacing: 4) {
                 ForEach([38.0, 22.0, 54.0, 30.0], id: \.self) { width in
                     RoundedRectangle(cornerRadius: 2).fill(theme.primaryText).frame(width: width, height: 7)
                 }
             }
             .opacity(0.14).frame(height: 15).accessibilityHidden(true)
-        } else if let snippet = note.snippet, !snippet.isEmpty {
+        } else if let snippet = note.visiblePreview, !snippet.isEmpty {
             Text(verbatim: snippet)
                 .font(theme.monoFont)
                 .foregroundStyle(theme.secondaryText)
@@ -101,6 +103,15 @@ struct NoteRowCard: View {
                     .font(.system(size: 8, weight: .semibold))
                     .foregroundStyle(theme.primaryText)
                     .accessibilityLabel(Text(.notesKit("Locked")))
+            }
+            // Only where the lock is not already saying it. Two badges for one hidden preview
+            // reads as two different protections.
+            if note.hidesPreview, !note.requiresBiometricUnlock {
+                dot
+                Image(systemName: "eye.slash.fill")
+                    .font(.system(size: 8))
+                    .foregroundStyle(theme.secondaryText)
+                    .accessibilityLabel(Text(.notesKit("Preview hidden")))
             }
             if note.isPinned {
                 dot

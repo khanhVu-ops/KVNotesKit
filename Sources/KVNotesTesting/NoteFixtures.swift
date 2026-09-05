@@ -6,9 +6,15 @@ public enum NoteFixtures {
     private static let bankTitle = "Bank details"
     private static let journalTitle = "Friday journal"
 
+    /// The locked one, and it carries no snippet — which is the point of it.
+    ///
+    /// It used to hold "Recovery phrase and device PIN", a state no store can produce since
+    /// NK-001: the host withholds a locked note's snippet on the way out. A fixture that models
+    /// an impossible state is worse than no fixture, because the preview of a locked row drew
+    /// real text instead of the redaction bars a person would actually see.
     public static let wallet = NoteDigest(
         title: walletTitle,
-        snippet: "Recovery phrase and device PIN",
+        snippet: nil,
         characterCount: 148,
         folder: "Passwords",
         icon: "🔑",

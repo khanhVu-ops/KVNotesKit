@@ -157,3 +157,7 @@
 "Folder options" = "Opsi folder";
 "Grid view" = "Tampilan kisi";
 "List view" = "Tampilan daftar";
+"Hide preview" = "Sembunyikan pratinjau";
+"Preview hidden" = "Pratinjau disembunyikan";
+"The list shows this note's name and nothing else. It still opens with one tap." = "Daftar hanya menampilkan nama catatan ini, tidak lebih. Tetap terbuka dengan satu ketukan.";
+"The lock already hides it. This is what the list shows if you unlock the note again." = "Kunci sudah menyembunyikannya. Ini yang akan ditampilkan daftar jika catatan dibuka kuncinya lagi.";

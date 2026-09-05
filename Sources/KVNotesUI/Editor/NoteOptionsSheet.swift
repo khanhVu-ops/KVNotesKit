@@ -7,11 +7,13 @@ struct NoteOptionsSheet: View {
     let folder: String?
     let folders: [String]
     let isLocked: Bool
+    let hidesPreview: Bool
     let theme: NoteTheme
     let haptic: @MainActor @Sendable () -> Void
     let onIcon: (String?) -> Void
     let onFolder: (String?) -> Void
     let onToggleLock: () -> Void
+    let onToggleHiddenPreview: () -> Void
     let onDismiss: () -> Void
 
     @State private var newFolder = ""
@@ -23,7 +25,7 @@ struct NoteOptionsSheet: View {
             VStack(alignment: .leading, spacing: theme.large) {
                 iconSection
                 folderSection
-                lockSection
+                securitySection
             }
             .padding(.horizontal, theme.medium)
             .padding(.top, theme.small)
@@ -202,36 +204,73 @@ struct NoteOptionsSheet: View {
         isNamingFolder = false
     }
 
-    private var lockSection: some View {
+    /// Two settings, deliberately in the same section and deliberately not the same size.
+    ///
+    /// The lock is the strong one and costs a prompt on every open. Hiding the preview is the
+    /// cheap one and the one most notes actually want: the list stops drawing the opening line,
+    /// and nothing else changes. Their captions have to say which is which, because a person
+    /// choosing between them is choosing how much friction to buy.
+    private var securitySection: some View {
         section(.notesKit("Security")) {
-            Button {
-                haptic()
-                onToggleLock()
-            } label: {
-                HStack(spacing: theme.small + 4) {
-                    Image(systemName: isLocked ? "lock.fill" : "lock.open")
-                        .font(.system(size: 15))
-                        .foregroundStyle(isLocked ? theme.success : theme.secondaryText)
-                        .frame(width: 28)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(.notesKit("Lock this note"))
-                            .font(theme.rowFont)
-                            .foregroundStyle(theme.primaryText)
-                        Text(.notesKit("Even inside an unlocked vault, this note asks to unlock again before it opens."))
-                            .font(theme.captionFont)
-                            .foregroundStyle(theme.secondaryText)
-                            .multilineTextAlignment(.leading)
-                    }
-                    Spacer(minLength: theme.small)
-                    LockSwitch(isOn: isLocked, theme: theme)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .noteCard(theme: theme, padding: theme.small + 4)
-                .contentShape(Rectangle())
+            VStack(spacing: theme.small) {
+                toggleRow(
+                    icon: isLocked ? "lock.fill" : "lock.open",
+                    tone: isLocked ? theme.success : theme.secondaryText,
+                    title: .notesKit("Lock this note"),
+                    caption: .notesKit("Even inside an unlocked vault, this note asks to unlock again before it opens."),
+                    isOn: isLocked,
+                    action: onToggleLock
+                )
+
+                toggleRow(
+                    icon: hidesPreview ? "eye.slash.fill" : "eye",
+                    tone: hidesPreview ? theme.success : theme.secondaryText,
+                    title: .notesKit("Hide preview"),
+                    caption: isLocked
+                        ? .notesKit("The lock already hides it. This is what the list shows if you unlock the note again.")
+                        : .notesKit("The list shows this note's name and nothing else. It still opens with one tap."),
+                    isOn: hidesPreview,
+                    action: onToggleHiddenPreview
+                )
             }
-            .buttonStyle(NotePressButtonStyle())
-            .accessibilityAddTraits(isLocked ? [.isSelected] : [])
         }
+    }
+
+    private func toggleRow(
+        icon: String,
+        tone: Color,
+        title: LocalizedStringResource,
+        caption: LocalizedStringResource,
+        isOn: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button {
+            haptic()
+            action()
+        } label: {
+            HStack(spacing: theme.small + 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 15))
+                    .foregroundStyle(tone)
+                    .frame(width: 28)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(theme.rowFont)
+                        .foregroundStyle(theme.primaryText)
+                    Text(caption)
+                        .font(theme.captionFont)
+                        .foregroundStyle(theme.secondaryText)
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: theme.small)
+                LockSwitch(isOn: isOn, theme: theme)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .noteCard(theme: theme, padding: theme.small + 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(NotePressButtonStyle())
+        .accessibilityAddTraits(isOn ? [.isSelected] : [])
     }
 
     private func section<Content: View>(

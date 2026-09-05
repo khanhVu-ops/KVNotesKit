@@ -157,3 +157,7 @@
 "Folder options" = "文件夹选项";
 "Grid view" = "网格视图";
 "List view" = "列表视图";
+"Hide preview" = "隐藏预览";
+"Preview hidden" = "预览已隐藏";
+"The list shows this note's name and nothing else. It still opens with one tap." = "列表只显示这条笔记的名称，不显示其他内容。仍可一触打开。";
+"The lock already hides it. This is what the list shows if you unlock the note again." = "锁定已经隐藏了它。这是解锁笔记后列表会显示的内容。";

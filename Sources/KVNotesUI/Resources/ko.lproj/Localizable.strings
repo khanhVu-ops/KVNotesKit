@@ -157,3 +157,7 @@
 "Folder options" = "폴더 옵션";
 "Grid view" = "격자 보기";
 "List view" = "목록 보기";
+"Hide preview" = "미리보기 숨기기";
+"Preview hidden" = "미리보기 숨김";
+"The list shows this note's name and nothing else. It still opens with one tap." = "목록에는 이 메모의 이름만 표시됩니다. 한 번 눌러 여는 것은 그대로입니다.";
+"The lock already hides it. This is what the list shows if you unlock the note again." = "잠금이 이미 숨기고 있습니다. 메모를 다시 잠금 해제하면 목록에 이것이 표시됩니다.";

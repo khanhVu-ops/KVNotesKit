@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Add `hidesPreview`: a per-note toggle that stops the list drawing a note's opening line without
+  putting a biometric gate in front of it. Unlike the lock it keeps the snippet stored and
+  searchable by the vault's owner.
+- `NoteDigest.visiblePreview` is now the one property rows and cards read to decide whether they
+  may draw a preview.
+- `NoteFixtures.wallet` no longer carries a snippet: a locked note cannot have one.
 - Replace every `Menu` on the notes list with an option sheet: sort and filter, a note's actions,
   the batch dock's More, and the folder manager's per-folder actions. The keyboard no longer rises
   when one is opened.

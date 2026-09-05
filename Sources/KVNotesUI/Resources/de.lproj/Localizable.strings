@@ -157,3 +157,7 @@
 "Folder options" = "Ordneroptionen";
 "Grid view" = "Rasteransicht";
 "List view" = "Listenansicht";
+"Hide preview" = "Vorschau ausblenden";
+"Preview hidden" = "Vorschau ausgeblendet";
+"The list shows this note's name and nothing else. It still opens with one tap." = "Die Liste zeigt nur den Namen dieser Notiz. Sie öffnet sich weiterhin mit einem Tippen.";
+"The lock already hides it. This is what the list shows if you unlock the note again." = "Die Sperre blendet sie bereits aus. So sieht die Liste aus, wenn du die Notiz wieder entsperrst.";

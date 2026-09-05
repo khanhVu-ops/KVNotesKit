@@ -434,11 +434,13 @@ public struct NoteEditorScreen: View {
             folder: viewModel.state.folder,
             folders: viewModel.state.folders,
             isLocked: viewModel.state.requiresBiometricUnlock,
+            hidesPreview: viewModel.state.hidesPreview,
             theme: theme,
             haptic: haptic,
             onIcon: { viewModel.send(.setIcon($0)) },
             onFolder: { viewModel.send(.setFolder($0)) },
             onToggleLock: { viewModel.send(.toggleBiometricLock) },
+            onToggleHiddenPreview: { viewModel.send(.toggleHiddenPreview) },
             onDismiss: { viewModel.send(.dismissOptions) }
         )
     }

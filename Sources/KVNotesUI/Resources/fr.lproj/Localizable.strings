@@ -157,3 +157,7 @@
 "Folder options" = "Options du dossier";
 "Grid view" = "Vue en grille";
 "List view" = "Vue en liste";
+"Hide preview" = "Masquer l'aperçu";
+"Preview hidden" = "Aperçu masqué";
+"The list shows this note's name and nothing else. It still opens with one tap." = "La liste affiche le nom de cette note et rien d'autre. Elle s'ouvre toujours d'une seule touche.";
+"The lock already hides it. This is what the list shows if you unlock the note again." = "Le verrou le masque déjà. Voici ce que la liste affichera si vous déverrouillez la note.";

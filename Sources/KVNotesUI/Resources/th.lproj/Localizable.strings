@@ -157,3 +157,7 @@
 "Folder options" = "ตัวเลือกโฟลเดอร์";
 "Grid view" = "มุมมองตาราง";
 "List view" = "มุมมองรายการ";
+"Hide preview" = "ซ่อนตัวอย่าง";
+"Preview hidden" = "ซ่อนตัวอย่างแล้ว";
+"The list shows this note's name and nothing else. It still opens with one tap." = "รายการจะแสดงเฉพาะชื่อของโน้ตนี้เท่านั้น และยังเปิดได้ด้วยการแตะครั้งเดียว";
+"The lock already hides it. This is what the list shows if you unlock the note again." = "การล็อกซ่อนไว้อยู่แล้ว นี่คือสิ่งที่รายการจะแสดงหากคุณปลดล็อกโน้ตอีกครั้ง";

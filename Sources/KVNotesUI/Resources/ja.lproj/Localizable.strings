@@ -157,3 +157,7 @@
 "Folder options" = "フォルダオプション";
 "Grid view" = "グリッド表示";
 "List view" = "リスト表示";
+"Hide preview" = "プレビューを隠す";
+"Preview hidden" = "プレビュー非表示";
+"The list shows this note's name and nothing else. It still opens with one tap." = "リストにはこのメモの名前だけが表示されます。ワンタップで開けるのは変わりません。";
+"The lock already hides it. This is what the list shows if you unlock the note again." = "ロックがすでに隠しています。メモのロックを解除すると、リストにはこれが表示されます。";

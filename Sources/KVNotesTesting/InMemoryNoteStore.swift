@@ -39,6 +39,10 @@ public actor InMemoryNoteStore: NoteStore {
             icon: draft.icon,
             requiresBiometricUnlock: draft.requiresBiometricUnlock,
             isTitleUserProvided: !title.isEmpty,
+            // Kept, not cleared: hiding a preview is a display choice, so the real store leaves
+            // the snippet stored and searchable. A fake that scrubbed it would let a test pass
+            // against behaviour the vault does not have.
+            hidesPreview: draft.hidesPreview,
             createdAt: now,
             lastEditedAt: now
         )
@@ -69,6 +73,7 @@ public actor InMemoryNoteStore: NoteStore {
             digest.snippet = locked ? nil : bodies[id]
         }
         if let pinned = patch.isPinned { digest.isPinned = pinned }
+        if let hidden = patch.hidesPreview { digest.hidesPreview = hidden }
         digests[id] = digest
         return digest
     }
