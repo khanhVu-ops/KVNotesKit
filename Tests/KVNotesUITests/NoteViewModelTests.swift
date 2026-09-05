@@ -362,6 +362,33 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(remaining, [NoteFixtures.wallet.id])
     }
 
+    func testFolderManagementRenamesTintsAndRemovesWithoutLosingNotes() async throws {
+        let store = InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies)
+        let viewModel = NotesListViewModel(store: store)
+        viewModel.send(.onAppear)
+        try await settle { viewModel.state.phase == .loaded }
+
+        viewModel.send(.selectFolder("Banking"))
+        viewModel.send(.renameFolder("Banking", to: "Money"))
+        // The chip was filtering on a name that is about to stop existing.
+        XCTAssertEqual(viewModel.state.selectedFolder, "Money")
+        try await settle { !viewModel.state.isBusy }
+        XCTAssertEqual(viewModel.state.index.folders.sorted(), ["Money", "Passwords"])
+
+        viewModel.send(.tintFolder("Money", .teal))
+        try await settle { !viewModel.state.isBusy }
+        XCTAssertEqual(viewModel.state.index.folderTints["Money"], .teal)
+
+        let before = viewModel.state.index.notes.count
+        viewModel.send(.removeFolder("Money"))
+        XCTAssertNil(viewModel.state.selectedFolder)
+        try await settle { !viewModel.state.isBusy }
+        // Removing a label is not removing the things it was on.
+        XCTAssertEqual(viewModel.state.index.notes.count, before)
+        XCTAssertFalse(viewModel.state.index.folders.contains("Money"))
+        XCTAssertNil(viewModel.state.index.notes.first { $0.id == NoteFixtures.bank.id }?.folder)
+    }
+
     private func settle(
         until condition: @escaping @MainActor () -> Bool,
         file: StaticString = #filePath,
@@ -410,6 +437,14 @@ private actor DelayedNoteStore: NoteStore {
     func discard(_ id: NoteID) async throws { try await base.discard(id) }
     func renameFolder(_ name: String, to newName: String) async throws -> Int {
         await base.renameFolder(name, to: newName)
+    }
+
+    func tintFolder(_ name: String, with tint: NoteFolderTint) async throws -> Int {
+        await base.tintFolder(name, with: tint)
+    }
+
+    func removeFolder(_ name: String) async throws -> Int {
+        await base.removeFolder(name)
     }
 
     func writeCount() -> Int { writes }

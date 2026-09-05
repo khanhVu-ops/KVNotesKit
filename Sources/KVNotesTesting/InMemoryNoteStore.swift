@@ -90,6 +90,25 @@ public actor InMemoryNoteStore: NoteStore {
         return count
     }
 
+    public func tintFolder(_ name: String, with tint: NoteFolderTint) -> Int {
+        var count = 0
+        for id in digests.keys where digests[id]?.folder == name {
+            digests[id]?.folderTint = tint
+            count += 1
+        }
+        return count
+    }
+
+    public func removeFolder(_ name: String) -> Int {
+        var count = 0
+        for id in digests.keys where digests[id]?.folder == name {
+            digests[id]?.folder = nil
+            digests[id]?.folderTint = .neutral
+            count += 1
+        }
+        return count
+    }
+
     private func requireDigest(_ id: NoteID) throws -> NoteDigest {
         guard let digest = digests[id] else { throw InMemoryNoteStoreError.noteNotFound(id) }
         return digest

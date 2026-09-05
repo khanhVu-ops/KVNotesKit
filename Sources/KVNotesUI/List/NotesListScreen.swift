@@ -63,6 +63,25 @@ public struct NotesListScreen: View {
                 }
             }
             .onDisappear { searchTask?.cancel() }
+            .sheet(isPresented: Binding(
+                get: { viewModel.state.showsFolderManager },
+                set: { if !$0 { viewModel.send(.closeFolderManager) } }
+            )) {
+                NoteFolderManagerSheet(
+                    folders: viewModel.state.index.folders,
+                    counts: viewModel.state.folderChips.reduce(into: [:]) { $0[$1.name] = $1.count },
+                    tints: viewModel.state.index.folderTints,
+                    isBusy: viewModel.state.isBusy,
+                    theme: theme,
+                    haptic: haptic,
+                    onRename: { viewModel.send(.renameFolder($0, to: $1)) },
+                    onTint: { viewModel.send(.tintFolder($0, $1)) },
+                    onRemove: { viewModel.send(.removeFolder($0)) },
+                    onDismiss: { viewModel.send(.closeFolderManager) }
+                )
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
             .overlay(alignment: .bottom) {
                 if viewModel.state.isSelecting {
                     NoteBatchToolbar(
@@ -411,9 +430,29 @@ public struct NotesListScreen: View {
                     chip(
                         title: Text(verbatim: folder.name),
                         count: folder.count,
-                        isSelected: viewModel.state.selectedFolder == folder.name
+                        isSelected: viewModel.state.selectedFolder == folder.name,
+                        tint: viewModel.state.index.folderTints[folder.name] ?? .neutral
                     ) { viewModel.send(.selectFolder(folder.name)) }
                 }
+
+                // Managing folders belongs where the folders are, not in a header that already
+                // carries four controls and a title — on a small phone that row runs out of
+                // width before the title does.
+                Button {
+                    haptic()
+                    viewModel.send(.openFolderManager)
+                } label: {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(theme.secondaryText)
+                        .padding(.horizontal, theme.small + 2)
+                        .frame(height: 31)
+                        .overlay { Capsule().strokeBorder(theme.separator, lineWidth: 0.75) }
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(NotePressButtonStyle())
+                .frame(minHeight: 44)
+                .accessibilityLabel(Text(.notesKit("Folders")))
             }
             .padding(.horizontal, theme.medium)
             .padding(.bottom, 2)
@@ -425,6 +464,7 @@ public struct NotesListScreen: View {
         title: Text,
         count: Int,
         isSelected: Bool,
+        tint: NoteFolderTint = .neutral,
         action: @escaping () -> Void
     ) -> some View {
         Button {
@@ -432,6 +472,9 @@ public struct NotesListScreen: View {
             action()
         } label: {
             HStack(spacing: 5) {
+                if tint != .neutral, !isSelected {
+                    Circle().fill(theme.color(for: tint)).frame(width: 6, height: 6)
+                }
                 title.textCase(.uppercase).tracking(1.3)
                 Text(count, format: .number)
                     .foregroundStyle(isSelected ? theme.onAccent.opacity(0.6) : theme.disabledText)

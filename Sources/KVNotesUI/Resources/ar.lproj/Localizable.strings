@@ -119,3 +119,33 @@
 "More" = "المزيد";
 /* Batch selection UI on the notes list. */
 "Move these notes to Recently Deleted?" = "نقل هذه الملاحظات إلى المحذوفات مؤخرًا؟";
+/* Folder manager sheet on the notes list. */
+"Folders" = "المجلدات";
+/* Folder manager sheet on the notes list. */
+"Folder name" = "اسم المجلد";
+/* Folder manager sheet on the notes list. */
+"Rename" = "إعادة تسمية";
+/* Folder manager sheet on the notes list. */
+"Save" = "حفظ";
+/* Folder manager sheet on the notes list. */
+"Remove folder" = "إزالة المجلد";
+/* Folder manager sheet on the notes list. */
+"Remove this folder?" = "إزالة هذا المجلد؟";
+/* Folder manager sheet on the notes list. */
+"The notes in it stay in the vault, with no folder." = "تبقى الملاحظات في الخزنة، بدون مجلد.";
+/* Folder manager sheet on the notes list. */
+"No folders yet" = "لا توجد مجلدات بعد";
+/* Folder manager sheet on the notes list. */
+"A folder appears as soon as a note claims one." = "يظهر المجلد بمجرد أن تنتمي إليه ملاحظة.";
+/* Folder manager sheet on the notes list. */
+"No colour" = "بدون لون";
+/* Folder manager sheet on the notes list. */
+"Amber" = "كهرماني";
+/* Folder manager sheet on the notes list. */
+"Rose" = "وردي";
+/* Folder manager sheet on the notes list. */
+"Violet" = "بنفسجي";
+/* Folder manager sheet on the notes list. */
+"Teal" = "أزرق مخضر";
+/* Folder manager sheet on the notes list. */
+"Green" = "أخضر";

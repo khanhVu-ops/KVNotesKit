@@ -119,3 +119,33 @@
 "More" = "Daha fazla";
 /* Batch selection UI on the notes list. */
 "Move these notes to Recently Deleted?" = "Bu notlar Son Silinenler'e taşınsın mı?";
+/* Folder manager sheet on the notes list. */
+"Folders" = "Klasörler";
+/* Folder manager sheet on the notes list. */
+"Folder name" = "Klasör adı";
+/* Folder manager sheet on the notes list. */
+"Rename" = "Yeniden adlandır";
+/* Folder manager sheet on the notes list. */
+"Save" = "Kaydet";
+/* Folder manager sheet on the notes list. */
+"Remove folder" = "Klasörü kaldır";
+/* Folder manager sheet on the notes list. */
+"Remove this folder?" = "Bu klasör kaldırılsın mı?";
+/* Folder manager sheet on the notes list. */
+"The notes in it stay in the vault, with no folder." = "İçindeki notlar kasada kalır, klasörsüz olarak.";
+/* Folder manager sheet on the notes list. */
+"No folders yet" = "Henüz klasör yok";
+/* Folder manager sheet on the notes list. */
+"A folder appears as soon as a note claims one." = "Bir not klasör belirttiği anda klasör görünür.";
+/* Folder manager sheet on the notes list. */
+"No colour" = "Renk yok";
+/* Folder manager sheet on the notes list. */
+"Amber" = "Kehribar";
+/* Folder manager sheet on the notes list. */
+"Rose" = "Gül";
+/* Folder manager sheet on the notes list. */
+"Violet" = "Menekşe";
+/* Folder manager sheet on the notes list. */
+"Teal" = "Turkuaz";
+/* Folder manager sheet on the notes list. */
+"Green" = "Yeşil";

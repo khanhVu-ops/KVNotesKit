@@ -119,3 +119,33 @@
 "More" = "Thêm";
 /* Batch selection UI on the notes list. */
 "Move these notes to Recently Deleted?" = "Chuyển các ghi chú này vào Đã xoá gần đây?";
+/* Folder manager sheet on the notes list. */
+"Folders" = "Thư mục";
+/* Folder manager sheet on the notes list. */
+"Folder name" = "Tên thư mục";
+/* Folder manager sheet on the notes list. */
+"Rename" = "Đổi tên";
+/* Folder manager sheet on the notes list. */
+"Save" = "Lưu";
+/* Folder manager sheet on the notes list. */
+"Remove folder" = "Bỏ thư mục";
+/* Folder manager sheet on the notes list. */
+"Remove this folder?" = "Bỏ thư mục này?";
+/* Folder manager sheet on the notes list. */
+"The notes in it stay in the vault, with no folder." = "Các ghi chú bên trong vẫn ở trong két, chỉ là không còn thư mục.";
+/* Folder manager sheet on the notes list. */
+"No folders yet" = "Chưa có thư mục nào";
+/* Folder manager sheet on the notes list. */
+"A folder appears as soon as a note claims one." = "Thư mục xuất hiện ngay khi có ghi chú nhận nó.";
+/* Folder manager sheet on the notes list. */
+"No colour" = "Không màu";
+/* Folder manager sheet on the notes list. */
+"Amber" = "Hổ phách";
+/* Folder manager sheet on the notes list. */
+"Rose" = "Hồng";
+/* Folder manager sheet on the notes list. */
+"Violet" = "Tím";
+/* Folder manager sheet on the notes list. */
+"Teal" = "Xanh mòng két";
+/* Folder manager sheet on the notes list. */
+"Green" = "Xanh lá";

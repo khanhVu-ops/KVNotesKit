@@ -119,3 +119,33 @@
 "More" = "更多";
 /* Batch selection UI on the notes list. */
 "Move these notes to Recently Deleted?" = "将这些笔记移到“最近删除”？";
+/* Folder manager sheet on the notes list. */
+"Folders" = "文件夹";
+/* Folder manager sheet on the notes list. */
+"Folder name" = "文件夹名称";
+/* Folder manager sheet on the notes list. */
+"Rename" = "重命名";
+/* Folder manager sheet on the notes list. */
+"Save" = "存储";
+/* Folder manager sheet on the notes list. */
+"Remove folder" = "移除文件夹";
+/* Folder manager sheet on the notes list. */
+"Remove this folder?" = "移除此文件夹？";
+/* Folder manager sheet on the notes list. */
+"The notes in it stay in the vault, with no folder." = "其中的笔记仍留在保险库中，只是不再属于任何文件夹。";
+/* Folder manager sheet on the notes list. */
+"No folders yet" = "还没有文件夹";
+/* Folder manager sheet on the notes list. */
+"A folder appears as soon as a note claims one." = "只要有笔记归入，文件夹就会出现。";
+/* Folder manager sheet on the notes list. */
+"No colour" = "无颜色";
+/* Folder manager sheet on the notes list. */
+"Amber" = "琥珀色";
+/* Folder manager sheet on the notes list. */
+"Rose" = "玫瑰色";
+/* Folder manager sheet on the notes list. */
+"Violet" = "紫色";
+/* Folder manager sheet on the notes list. */
+"Teal" = "青色";
+/* Folder manager sheet on the notes list. */
+"Green" = "绿色";

@@ -119,3 +119,33 @@
 "More" = "More";
 /* Batch selection UI on the notes list. */
 "Move these notes to Recently Deleted?" = "Move these notes to Recently Deleted?";
+/* Folder manager sheet on the notes list. */
+"Folders" = "Folders";
+/* Folder manager sheet on the notes list. */
+"Folder name" = "Folder name";
+/* Folder manager sheet on the notes list. */
+"Rename" = "Rename";
+/* Folder manager sheet on the notes list. */
+"Save" = "Save";
+/* Folder manager sheet on the notes list. */
+"Remove folder" = "Remove folder";
+/* Folder manager sheet on the notes list. */
+"Remove this folder?" = "Remove this folder?";
+/* Folder manager sheet on the notes list. */
+"The notes in it stay in the vault, with no folder." = "The notes in it stay in the vault, with no folder.";
+/* Folder manager sheet on the notes list. */
+"No folders yet" = "No folders yet";
+/* Folder manager sheet on the notes list. */
+"A folder appears as soon as a note claims one." = "A folder appears as soon as a note claims one.";
+/* Folder manager sheet on the notes list. */
+"No colour" = "No colour";
+/* Folder manager sheet on the notes list. */
+"Amber" = "Amber";
+/* Folder manager sheet on the notes list. */
+"Rose" = "Rose";
+/* Folder manager sheet on the notes list. */
+"Violet" = "Violet";
+/* Folder manager sheet on the notes list. */
+"Teal" = "Teal";
+/* Folder manager sheet on the notes list. */
+"Green" = "Green";

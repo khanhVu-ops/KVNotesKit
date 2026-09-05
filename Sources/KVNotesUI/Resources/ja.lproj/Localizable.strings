@@ -119,3 +119,33 @@
 "More" = "その他";
 /* Batch selection UI on the notes list. */
 "Move these notes to Recently Deleted?" = "これらのメモを「最近削除した項目」に移動しますか？";
+/* Folder manager sheet on the notes list. */
+"Folders" = "フォルダ";
+/* Folder manager sheet on the notes list. */
+"Folder name" = "フォルダ名";
+/* Folder manager sheet on the notes list. */
+"Rename" = "名称変更";
+/* Folder manager sheet on the notes list. */
+"Save" = "保存";
+/* Folder manager sheet on the notes list. */
+"Remove folder" = "フォルダを削除";
+/* Folder manager sheet on the notes list. */
+"Remove this folder?" = "このフォルダを削除しますか？";
+/* Folder manager sheet on the notes list. */
+"The notes in it stay in the vault, with no folder." = "中のメモは保管庫に残り、フォルダなしになります。";
+/* Folder manager sheet on the notes list. */
+"No folders yet" = "フォルダがありません";
+/* Folder manager sheet on the notes list. */
+"A folder appears as soon as a note claims one." = "メモがフォルダを指定すると表示されます。";
+/* Folder manager sheet on the notes list. */
+"No colour" = "色なし";
+/* Folder manager sheet on the notes list. */
+"Amber" = "アンバー";
+/* Folder manager sheet on the notes list. */
+"Rose" = "ローズ";
+/* Folder manager sheet on the notes list. */
+"Violet" = "バイオレット";
+/* Folder manager sheet on the notes list. */
+"Teal" = "ティール";
+/* Folder manager sheet on the notes list. */
+"Green" = "グリーン";

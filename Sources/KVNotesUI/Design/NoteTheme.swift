@@ -1,3 +1,4 @@
+import KVNotesCore
 import SwiftUI
 
 /// Every visual decision KVNotesUI needs. Hosts map their design tokens once instead of letting
@@ -16,6 +17,9 @@ public struct NoteTheme {
     public var success: Color
     public var warning: Color
     public var error: Color
+    /// The host's colour for each folder tint. The package names tints; the vault owns the
+    /// palette, so folder colours stay inside one design system rather than two.
+    public var folderTints: [NoteFolderTint: Color]
 
     public var titleFont: Font
     public var sectionFont: Font
@@ -48,6 +52,7 @@ public struct NoteTheme {
         success: Color,
         warning: Color = .orange,
         error: Color,
+        folderTints: [NoteFolderTint: Color] = [:],
         titleFont: Font,
         sectionFont: Font,
         rowFont: Font,
@@ -77,6 +82,7 @@ public struct NoteTheme {
         self.success = success
         self.warning = warning
         self.error = error
+        self.folderTints = folderTints
         self.titleFont = titleFont
         self.sectionFont = sectionFont
         self.rowFont = rowFont
@@ -108,6 +114,13 @@ public struct NoteTheme {
         success: .green,
         warning: .orange,
         error: .red,
+        folderTints: [
+            .amber: Color(red: 0.85, green: 0.66, blue: 0.32),
+            .rose: Color(red: 0.85, green: 0.42, blue: 0.48),
+            .violet: Color(red: 0.60, green: 0.48, blue: 0.85),
+            .teal: Color(red: 0.35, green: 0.70, blue: 0.72),
+            .green: Color(red: 0.45, green: 0.72, blue: 0.45)
+        ],
         titleFont: .system(.title2, design: .rounded, weight: .semibold),
         sectionFont: .system(.headline, design: .rounded, weight: .semibold),
         rowFont: .system(.body, design: .rounded, weight: .semibold),
@@ -117,6 +130,14 @@ public struct NoteTheme {
         captionFont: .caption,
         monoFont: .system(.body, design: .monospaced)
     )
+}
+
+public extension NoteTheme {
+    /// The drawn colour of a folder tint, falling back to the ordinary secondary text colour —
+    /// `.neutral` is "no colour chosen", not a colour.
+    func color(for tint: NoteFolderTint) -> Color {
+        tint == .neutral ? secondaryText : (folderTints[tint] ?? secondaryText)
+    }
 }
 
 extension View {

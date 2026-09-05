@@ -119,3 +119,33 @@
 "More" = "Meer";
 /* Batch selection UI on the notes list. */
 "Move these notes to Recently Deleted?" = "Deze notities naar Onlangs verwijderd verplaatsen?";
+/* Folder manager sheet on the notes list. */
+"Folders" = "Mappen";
+/* Folder manager sheet on the notes list. */
+"Folder name" = "Mapnaam";
+/* Folder manager sheet on the notes list. */
+"Rename" = "Naam wijzigen";
+/* Folder manager sheet on the notes list. */
+"Save" = "Bewaren";
+/* Folder manager sheet on the notes list. */
+"Remove folder" = "Map verwijderen";
+/* Folder manager sheet on the notes list. */
+"Remove this folder?" = "Deze map verwijderen?";
+/* Folder manager sheet on the notes list. */
+"The notes in it stay in the vault, with no folder." = "De notities blijven in de kluis, zonder map.";
+/* Folder manager sheet on the notes list. */
+"No folders yet" = "Nog geen mappen";
+/* Folder manager sheet on the notes list. */
+"A folder appears as soon as a note claims one." = "Een map verschijnt zodra een notitie er een claimt.";
+/* Folder manager sheet on the notes list. */
+"No colour" = "Geen kleur";
+/* Folder manager sheet on the notes list. */
+"Amber" = "Amber";
+/* Folder manager sheet on the notes list. */
+"Rose" = "Roze";
+/* Folder manager sheet on the notes list. */
+"Violet" = "Violet";
+/* Folder manager sheet on the notes list. */
+"Teal" = "Blauwgroen";
+/* Folder manager sheet on the notes list. */
+"Green" = "Groen";

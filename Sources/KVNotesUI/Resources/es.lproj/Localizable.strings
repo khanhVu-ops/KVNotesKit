@@ -119,3 +119,33 @@
 "More" = "Más";
 /* Batch selection UI on the notes list. */
 "Move these notes to Recently Deleted?" = "¿Mover estas notas a Eliminadas recientemente?";
+/* Folder manager sheet on the notes list. */
+"Folders" = "Carpetas";
+/* Folder manager sheet on the notes list. */
+"Folder name" = "Nombre de la carpeta";
+/* Folder manager sheet on the notes list. */
+"Rename" = "Cambiar nombre";
+/* Folder manager sheet on the notes list. */
+"Save" = "Guardar";
+/* Folder manager sheet on the notes list. */
+"Remove folder" = "Quitar carpeta";
+/* Folder manager sheet on the notes list. */
+"Remove this folder?" = "¿Quitar esta carpeta?";
+/* Folder manager sheet on the notes list. */
+"The notes in it stay in the vault, with no folder." = "Las notas siguen en la caja fuerte, sin carpeta.";
+/* Folder manager sheet on the notes list. */
+"No folders yet" = "Aún no hay carpetas";
+/* Folder manager sheet on the notes list. */
+"A folder appears as soon as a note claims one." = "Una carpeta aparece en cuanto una nota la reclama.";
+/* Folder manager sheet on the notes list. */
+"No colour" = "Sin color";
+/* Folder manager sheet on the notes list. */
+"Amber" = "Ámbar";
+/* Folder manager sheet on the notes list. */
+"Rose" = "Rosa";
+/* Folder manager sheet on the notes list. */
+"Violet" = "Violeta";
+/* Folder manager sheet on the notes list. */
+"Teal" = "Verde azulado";
+/* Folder manager sheet on the notes list. */
+"Green" = "Verde";

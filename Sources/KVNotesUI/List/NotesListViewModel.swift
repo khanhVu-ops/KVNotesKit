@@ -42,6 +42,7 @@ public struct NotesListState: Equatable, Sendable {
     public var pendingBatchDiscard = false
     public var isBusy = false
     public var isSelecting = false
+    public var showsFolderManager = false
     public var selection: Set<NoteID> = []
     private var normalizedSearchHaystacks: [NoteID: SearchHaystackCache] = [:]
 
@@ -149,6 +150,11 @@ public final class NotesListViewModel {
         case requestDiscard(NoteDigest)
         case confirmDiscard
         case cancelDiscard
+        case openFolderManager
+        case closeFolderManager
+        case renameFolder(String, to: String)
+        case tintFolder(String, NoteFolderTint)
+        case removeFolder(String)
         case startSelecting
         case stopSelecting
         case toggleSelection(NoteID)
@@ -226,6 +232,20 @@ public final class NotesListViewModel {
             perform { try await self.store.discard(id); return nil }
         case .cancelDiscard:
             state.pendingDiscard = nil
+        case .openFolderManager:
+            state.showsFolderManager = true
+        case .closeFolderManager:
+            state.showsFolderManager = false
+        case .renameFolder(let name, let newName):
+            // The folder the user is looking at is about to have a different name; a chip
+            // filtering on the old one would show an empty list until the next tap.
+            if state.selectedFolder == name { state.selectedFolder = newName }
+            perform { _ = try await self.store.renameFolder(name, to: newName); return nil }
+        case .tintFolder(let name, let tint):
+            perform { _ = try await self.store.tintFolder(name, with: tint); return nil }
+        case .removeFolder(let name):
+            if state.selectedFolder == name { state.selectedFolder = nil }
+            perform { _ = try await self.store.removeFolder(name); return nil }
         case .startSelecting:
             state.isSelecting = true
             state.selection = []

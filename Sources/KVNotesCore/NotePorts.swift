@@ -8,6 +8,12 @@ public protocol NoteStore: Sendable {
     func apply(_ patch: NoteAttributePatch, to id: NoteID) async throws -> NoteDigest
     func discard(_ id: NoteID) async throws
     func renameFolder(_ name: String, to newName: String) async throws -> Int
+    /// Paints every note in the folder with one tint. Folders are labels, so this is the only
+    /// place the colour can live.
+    func tintFolder(_ name: String, with tint: NoteFolderTint) async throws -> Int
+    /// Takes the folder off its notes. It never discards a note: a folder is a label, and
+    /// removing a label is not removing the thing it was on.
+    func removeFolder(_ name: String) async throws -> Int
 }
 
 @MainActor

@@ -119,3 +119,33 @@
 "More" = "Plus";
 /* Batch selection UI on the notes list. */
 "Move these notes to Recently Deleted?" = "Déplacer ces notes vers Supprimées récemment ?";
+/* Folder manager sheet on the notes list. */
+"Folders" = "Dossiers";
+/* Folder manager sheet on the notes list. */
+"Folder name" = "Nom du dossier";
+/* Folder manager sheet on the notes list. */
+"Rename" = "Renommer";
+/* Folder manager sheet on the notes list. */
+"Save" = "Enregistrer";
+/* Folder manager sheet on the notes list. */
+"Remove folder" = "Retirer le dossier";
+/* Folder manager sheet on the notes list. */
+"Remove this folder?" = "Retirer ce dossier ?";
+/* Folder manager sheet on the notes list. */
+"The notes in it stay in the vault, with no folder." = "Les notes restent dans le coffre, sans dossier.";
+/* Folder manager sheet on the notes list. */
+"No folders yet" = "Aucun dossier";
+/* Folder manager sheet on the notes list. */
+"A folder appears as soon as a note claims one." = "Un dossier apparaît dès qu’une note en revendique un.";
+/* Folder manager sheet on the notes list. */
+"No colour" = "Sans couleur";
+/* Folder manager sheet on the notes list. */
+"Amber" = "Ambre";
+/* Folder manager sheet on the notes list. */
+"Rose" = "Rose";
+/* Folder manager sheet on the notes list. */
+"Violet" = "Violet";
+/* Folder manager sheet on the notes list. */
+"Teal" = "Sarcelle";
+/* Folder manager sheet on the notes list. */
+"Green" = "Vert";

@@ -119,3 +119,33 @@
 "More" = "Lainnya";
 /* Batch selection UI on the notes list. */
 "Move these notes to Recently Deleted?" = "Pindahkan catatan ini ke Baru Dihapus?";
+/* Folder manager sheet on the notes list. */
+"Folders" = "Folder";
+/* Folder manager sheet on the notes list. */
+"Folder name" = "Nama folder";
+/* Folder manager sheet on the notes list. */
+"Rename" = "Ganti nama";
+/* Folder manager sheet on the notes list. */
+"Save" = "Simpan";
+/* Folder manager sheet on the notes list. */
+"Remove folder" = "Hapus folder";
+/* Folder manager sheet on the notes list. */
+"Remove this folder?" = "Hapus folder ini?";
+/* Folder manager sheet on the notes list. */
+"The notes in it stay in the vault, with no folder." = "Catatan di dalamnya tetap ada di brankas, tanpa folder.";
+/* Folder manager sheet on the notes list. */
+"No folders yet" = "Belum ada folder";
+/* Folder manager sheet on the notes list. */
+"A folder appears as soon as a note claims one." = "Folder muncul begitu ada catatan yang memakainya.";
+/* Folder manager sheet on the notes list. */
+"No colour" = "Tanpa warna";
+/* Folder manager sheet on the notes list. */
+"Amber" = "Kuning amber";
+/* Folder manager sheet on the notes list. */
+"Rose" = "Merah muda";
+/* Folder manager sheet on the notes list. */
+"Violet" = "Ungu";
+/* Folder manager sheet on the notes list. */
+"Teal" = "Biru kehijauan";
+/* Folder manager sheet on the notes list. */
+"Green" = "Hijau";

@@ -119,3 +119,33 @@
 "More" = "और";
 /* Batch selection UI on the notes list. */
 "Move these notes to Recently Deleted?" = "इन नोट्स को हाल ही में हटाए गए में ले जाएँ?";
+/* Folder manager sheet on the notes list. */
+"Folders" = "फ़ोल्डर";
+/* Folder manager sheet on the notes list. */
+"Folder name" = "फ़ोल्डर का नाम";
+/* Folder manager sheet on the notes list. */
+"Rename" = "नाम बदलें";
+/* Folder manager sheet on the notes list. */
+"Save" = "सहेजें";
+/* Folder manager sheet on the notes list. */
+"Remove folder" = "फ़ोल्डर हटाएँ";
+/* Folder manager sheet on the notes list. */
+"Remove this folder?" = "यह फ़ोल्डर हटाएँ?";
+/* Folder manager sheet on the notes list. */
+"The notes in it stay in the vault, with no folder." = "इसके नोट वॉल्ट में ही रहेंगे, बिना फ़ोल्डर के।";
+/* Folder manager sheet on the notes list. */
+"No folders yet" = "अभी कोई फ़ोल्डर नहीं";
+/* Folder manager sheet on the notes list. */
+"A folder appears as soon as a note claims one." = "जैसे ही कोई नोट फ़ोल्डर चुनता है, वह दिख जाता है।";
+/* Folder manager sheet on the notes list. */
+"No colour" = "कोई रंग नहीं";
+/* Folder manager sheet on the notes list. */
+"Amber" = "अंबर";
+/* Folder manager sheet on the notes list. */
+"Rose" = "गुलाबी";
+/* Folder manager sheet on the notes list. */
+"Violet" = "बैंगनी";
+/* Folder manager sheet on the notes list. */
+"Teal" = "टील";
+/* Folder manager sheet on the notes list. */
+"Green" = "हरा";

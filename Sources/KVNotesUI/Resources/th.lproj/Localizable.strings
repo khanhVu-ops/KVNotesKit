@@ -119,3 +119,33 @@
 "More" = "เพิ่มเติม";
 /* Batch selection UI on the notes list. */
 "Move these notes to Recently Deleted?" = "ย้ายโน้ตเหล่านี้ไปยังลบล่าสุดไหม";
+/* Folder manager sheet on the notes list. */
+"Folders" = "โฟลเดอร์";
+/* Folder manager sheet on the notes list. */
+"Folder name" = "ชื่อโฟลเดอร์";
+/* Folder manager sheet on the notes list. */
+"Rename" = "เปลี่ยนชื่อ";
+/* Folder manager sheet on the notes list. */
+"Save" = "บันทึก";
+/* Folder manager sheet on the notes list. */
+"Remove folder" = "นำโฟลเดอร์ออก";
+/* Folder manager sheet on the notes list. */
+"Remove this folder?" = "นำโฟลเดอร์นี้ออกไหม";
+/* Folder manager sheet on the notes list. */
+"The notes in it stay in the vault, with no folder." = "โน้ตข้างในยังอยู่ในตู้นิรภัย เพียงแต่ไม่มีโฟลเดอร์";
+/* Folder manager sheet on the notes list. */
+"No folders yet" = "ยังไม่มีโฟลเดอร์";
+/* Folder manager sheet on the notes list. */
+"A folder appears as soon as a note claims one." = "โฟลเดอร์จะปรากฏทันทีที่มีโน้ตระบุถึงมัน";
+/* Folder manager sheet on the notes list. */
+"No colour" = "ไม่มีสี";
+/* Folder manager sheet on the notes list. */
+"Amber" = "สีเหลืองอำพัน";
+/* Folder manager sheet on the notes list. */
+"Rose" = "สีกุหลาบ";
+/* Folder manager sheet on the notes list. */
+"Violet" = "สีม่วง";
+/* Folder manager sheet on the notes list. */
+"Teal" = "สีเขียวน้ำทะเล";
+/* Folder manager sheet on the notes list. */
+"Green" = "สีเขียว";

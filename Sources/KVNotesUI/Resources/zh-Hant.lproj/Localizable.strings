@@ -119,3 +119,33 @@
 "More" = "更多";
 /* Batch selection UI on the notes list. */
 "Move these notes to Recently Deleted?" = "將這些備忘錄移到「最近刪除」？";
+/* Folder manager sheet on the notes list. */
+"Folders" = "檔案夾";
+/* Folder manager sheet on the notes list. */
+"Folder name" = "檔案夾名稱";
+/* Folder manager sheet on the notes list. */
+"Rename" = "重新命名";
+/* Folder manager sheet on the notes list. */
+"Save" = "儲存";
+/* Folder manager sheet on the notes list. */
+"Remove folder" = "移除檔案夾";
+/* Folder manager sheet on the notes list. */
+"Remove this folder?" = "移除此檔案夾？";
+/* Folder manager sheet on the notes list. */
+"The notes in it stay in the vault, with no folder." = "其中的備忘錄仍留在保險庫中，只是不再屬於任何檔案夾。";
+/* Folder manager sheet on the notes list. */
+"No folders yet" = "還沒有檔案夾";
+/* Folder manager sheet on the notes list. */
+"A folder appears as soon as a note claims one." = "只要有備忘錄歸入，檔案夾就會出現。";
+/* Folder manager sheet on the notes list. */
+"No colour" = "無顏色";
+/* Folder manager sheet on the notes list. */
+"Amber" = "琥珀色";
+/* Folder manager sheet on the notes list. */
+"Rose" = "玫瑰色";
+/* Folder manager sheet on the notes list. */
+"Violet" = "紫色";
+/* Folder manager sheet on the notes list. */
+"Teal" = "青色";
+/* Folder manager sheet on the notes list. */
+"Green" = "綠色";

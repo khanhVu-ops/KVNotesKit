@@ -119,3 +119,33 @@
 "More" = "Mais";
 /* Batch selection UI on the notes list. */
 "Move these notes to Recently Deleted?" = "Mover estas notas para Excluídas recentemente?";
+/* Folder manager sheet on the notes list. */
+"Folders" = "Pastas";
+/* Folder manager sheet on the notes list. */
+"Folder name" = "Nome da pasta";
+/* Folder manager sheet on the notes list. */
+"Rename" = "Renomear";
+/* Folder manager sheet on the notes list. */
+"Save" = "Salvar";
+/* Folder manager sheet on the notes list. */
+"Remove folder" = "Remover pasta";
+/* Folder manager sheet on the notes list. */
+"Remove this folder?" = "Remover esta pasta?";
+/* Folder manager sheet on the notes list. */
+"The notes in it stay in the vault, with no folder." = "As notas continuam no cofre, sem pasta.";
+/* Folder manager sheet on the notes list. */
+"No folders yet" = "Nenhuma pasta ainda";
+/* Folder manager sheet on the notes list. */
+"A folder appears as soon as a note claims one." = "Uma pasta aparece assim que uma nota a reivindica.";
+/* Folder manager sheet on the notes list. */
+"No colour" = "Sem cor";
+/* Folder manager sheet on the notes list. */
+"Amber" = "Âmbar";
+/* Folder manager sheet on the notes list. */
+"Rose" = "Rosa";
+/* Folder manager sheet on the notes list. */
+"Violet" = "Violeta";
+/* Folder manager sheet on the notes list. */
+"Teal" = "Azul-petróleo";
+/* Folder manager sheet on the notes list. */
+"Green" = "Verde";

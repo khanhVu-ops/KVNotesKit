@@ -23,6 +23,7 @@ public struct NoteDigest: Identifiable, Equatable, Sendable {
     public var snippet: String?
     public var characterCount: Int
     public var folder: String?
+    public var folderTint: NoteFolderTint
     public var icon: String?
     public var requiresBiometricUnlock: Bool
     public var isTitleUserProvided: Bool
@@ -41,6 +42,7 @@ public struct NoteDigest: Identifiable, Equatable, Sendable {
         snippet: String?,
         characterCount: Int,
         folder: String? = nil,
+        folderTint: NoteFolderTint = .neutral,
         icon: String? = nil,
         requiresBiometricUnlock: Bool = false,
         isTitleUserProvided: Bool = false,
@@ -54,6 +56,7 @@ public struct NoteDigest: Identifiable, Equatable, Sendable {
         self.snippet = snippet
         self.characterCount = characterCount
         self.folder = folder
+        self.folderTint = folderTint
         self.icon = icon
         self.requiresBiometricUnlock = requiresBiometricUnlock
         self.isTitleUserProvided = isTitleUserProvided
@@ -123,6 +126,26 @@ public struct NoteIndex: Equatable, Sendable {
         self.folders = folders ?? Self.deriveFolders(from: notes)
     }
 
+    /// The tint each folder claims, taken from the notes in it.
+    ///
+    /// The first note wins where they disagree — a disagreement only exists between a recolour
+    /// and the write that failed halfway through it, and the alternative is a folder that draws
+    /// two colours at once.
+    public var folderTints: [String: NoteFolderTint] {
+        var tints: [String: NoteFolderTint] = [:]
+        for note in notes {
+            guard let folder = note.folder, tints[folder] == nil, note.folderTint != .neutral else {
+                continue
+            }
+            tints[folder] = note.folderTint
+        }
+        return tints
+    }
+
+    public func count(inFolder folder: String) -> Int {
+        notes.reduce(0) { $0 + ($1.folder == folder ? 1 : 0) }
+    }
+
     public var isEmpty: Bool { notes.isEmpty }
 
     public static func deriveFolders(from notes: [NoteDigest]) -> [String] {
@@ -139,6 +162,20 @@ public struct NoteIndex: Equatable, Sendable {
                 : left > right
         }
     }
+}
+
+/// A folder's colour, as a name rather than a colour value.
+///
+/// Folders are labels, not records — there is no folder table — so anything about a folder lives
+/// on the notes that claim it, encrypted with them. A name keeps the package out of the host's
+/// palette: KVNotesUI asks the theme for the colour, and the vault answers with its own token.
+public enum NoteFolderTint: String, CaseIterable, Equatable, Codable, Sendable {
+    case neutral
+    case amber
+    case rose
+    case violet
+    case teal
+    case green
 }
 
 public enum NoteSortOrder: String, CaseIterable, Equatable, Codable, Sendable {
