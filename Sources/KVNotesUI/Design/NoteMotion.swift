@@ -21,6 +21,31 @@ enum NoteMotion {
             : .spring(response: 0.44, dampingFraction: 0.92)
     }
 
+    /// The header folding away and coming back.
+    ///
+    /// Fully damped, and that is not taste. The header is a `safeAreaInset`, so its height *is*
+    /// the list's top content inset: a spring that overshoots drives the inset past its mark and
+    /// back, and the scroll view re-adjusts its own offset on every frame of the overshoot. Under
+    /// a finger that has already stopped, that reads as the list twitching rather than as bounce —
+    /// and each of those frames is another offset reading the fold has to recognise as its own.
+    static func header(reduceMotion: Bool) -> Animation {
+        reduceMotion
+            ? .easeInOut(duration: 0.18)
+            : .spring(response: 0.3, dampingFraction: 1)
+    }
+
+    /// Rows becoming cards.
+    ///
+    /// A spring, unlike `header`: nothing here is a scroll inset, so a little overshoot is a card
+    /// arriving somewhere rather than a list twitching. Slower than `reorder` because these
+    /// travel further and change shape on the way — every card moves at once, and a stiff curve
+    /// on that many frames reads as a cut with extra steps.
+    static func layout(reduceMotion: Bool) -> Animation {
+        reduceMotion
+            ? .easeInOut(duration: 0.18)
+            : .spring(response: 0.42, dampingFraction: 0.86)
+    }
+
     /// A row changing places in a list.
     ///
     /// Quicker and stiffer than `content`: a row that travels the length of the list on a 0.44s

@@ -5,22 +5,14 @@ public struct NotesListScreen: View {
     @State private var viewModel: NotesListViewModel
     @State private var searchText = ""
     @State private var searchTask: Task<Void, Never>?
-    /// True once the list has been scrolled past the first few points.
+    /// Whether the title, the count line and the folder chips are folded away.
     ///
-    /// The title, the count line and the folder chips fold away while reading and come back on
-    /// the way up — on a phone the header was eating a third of the screen before the first note.
-    @State private var isHeaderCollapsed = false
-    @State private var lastScrollOffset: CGFloat = 0
-    /// Geometry reported while the header is still resizing is about the header, not about the
-    /// finger; folding changes the list's top inset, and reacting to that is how a header ends up
-    /// flapping between the two states.
-    @State private var headerSettlesAt: Date = .distantPast
-    /// Ties the large title and the folded one together so the words travel between them instead
-    /// of one disappearing while the other appears somewhere else.
-    @Namespace private var headerTitle
+    /// They fold while reading and come back on the way up — on a phone the header was eating a
+    /// third of the screen before the first note. An object and not a `@State` flag: the scroll
+    /// bookkeeping behind the decision is written on every frame of every scroll, and writing
+    /// `@State` at 120 Hz rebuilds this body 120 times a second. Only the header reads it.
+    @State private var collapse = NotesHeaderCollapse()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private static let titleGeometry = "notes.title"
 
     private let theme: NoteTheme
     private let refreshToken: Int
@@ -61,19 +53,25 @@ public struct NotesListScreen: View {
     public var body: some View {
         content
             .background(theme.background)
-            .safeAreaInset(edge: .top, spacing: 0) { chrome }
+            .safeAreaInset(edge: .top, spacing: 0) { header }
             .noteNavigationChrome()
             .onAppear { viewModel.send(.onAppear) }
             .onChange(of: refreshToken) { viewModel.send(.refresh) }
             .onChange(of: viewModel.state.isSelecting) { _, isSelecting in
                 onSelectionChange(isSelecting)
             }
-            // Swapping the `List` for the grid throws away the scroll view that was reporting
-            // offsets, and the first reading from the new one is measured against the old one's
-            // last. Left alone that difference reads as a flick and folds the header.
+            // One column becoming two halves the content's height under a finger that is not
+            // touching the screen, and the scroll view adjusts its own offset to cope. Read as a
+            // scroll that is a flick, and it would fold the header in the middle of the morph.
             .onChange(of: viewModel.state.layout) { _, _ in
-                lastScrollOffset = 0
-                headerSettlesAt = Date().addingTimeInterval(0.6)
+                collapse.rebase()
+                collapse.holdSteady()
+            }
+            // A header folded over a placeholder folds over nothing: the empty and failed states
+            // are not scrollable lists, so nothing would ever unfold it again.
+            .onChange(of: viewModel.state.visibleNotes.isEmpty) { _, isEmpty in
+                guard isEmpty else { return }
+                collapse.expand(animation: NoteMotion.header(reduceMotion: reduceMotion))
             }
             .onDisappear { onSelectionChange(false) }
             .onChange(of: searchText) { _, query in
@@ -107,26 +105,33 @@ public struct NotesListScreen: View {
                 .presentationDragIndicator(.hidden)
             }
             .overlay(alignment: .bottom) {
-                if viewModel.state.isSelecting {
-                    NoteBatchToolbar(
-                        selectionCount: viewModel.state.selection.count,
-                        wouldPin: viewModel.state.batchWouldPin,
-                        wouldLock: viewModel.state.batchWouldLock,
-                        isBusy: viewModel.state.isBusy,
-                        theme: theme,
-                        onPin: { haptic(); listChange(.batchPin) },
-                        onLock: { haptic(); listChange(.batchLock) },
-                        onMore: { viewModel.send(.openOptions(.batch)) }
-                    )
-                    .padding(.horizontal, theme.medium)
-                    .padding(.bottom, theme.small)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                // The dock's animation belongs to the dock. It used to be a screen-wide
+                // `.animation(_:value:)` on this chain, which is the modifier that clears the
+                // transaction for everything beneath it whenever its own value did not change —
+                // so every `withAnimation` in `listChange`, the layout swap included, arrived at
+                // the list with no animation left in it. Scoping it here is what gives those back.
+                ZStack {
+                    if viewModel.state.isSelecting {
+                        NoteBatchToolbar(
+                            selectionCount: viewModel.state.selection.count,
+                            wouldPin: viewModel.state.batchWouldPin,
+                            wouldLock: viewModel.state.batchWouldLock,
+                            isBusy: viewModel.state.isBusy,
+                            theme: theme,
+                            onPin: { haptic(); listChange(.batchPin) },
+                            onLock: { haptic(); listChange(.batchLock) },
+                            onMore: { viewModel.send(.openOptions(.batch)) }
+                        )
+                        .padding(.horizontal, theme.medium)
+                        .padding(.bottom, theme.small)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
                 }
+                .animation(
+                    NoteMotion.mode(reduceMotion: reduceMotion),
+                    value: viewModel.state.isSelecting
+                )
             }
-            .animation(
-                NoteMotion.mode(reduceMotion: reduceMotion),
-                value: viewModel.state.isSelecting
-            )
             .noteOptionSheet(
                 isPresented: Binding(
                     get: { viewModel.state.optionSheet != nil },
@@ -172,10 +177,9 @@ public struct NotesListScreen: View {
         case .loaded where viewModel.state.isEmptyBecauseOfFilter:
             scroller { emptyFilter }
         case .loaded:
-            switch viewModel.state.layout {
-            case .list: rowList
-            case .grid: cardGrid
-            }
+            // One view for both layouts. Not a `switch` on `layout`: two branches would be two
+            // views in one slot, and the switch between them could only ever cross-fade.
+            noteBoard
         }
     }
 
@@ -187,7 +191,7 @@ public struct NotesListScreen: View {
         // Rows moving or leaving shifts the list's own content offset, and the header decides to
         // fold from offset deltas. Without this a pinned row sliding to the top folded the header
         // underneath it, which resizes the list mid-move — the jump the animation exists to avoid.
-        headerSettlesAt = Date().addingTimeInterval(0.6)
+        collapse.holdSteady()
         withAnimation(NoteMotion.reorder(reduceMotion: reduceMotion)) {
             viewModel.send(action)
         }
@@ -203,186 +207,45 @@ public struct NotesListScreen: View {
         .refreshable { viewModel.send(.refresh) }
     }
 
-    private var chrome: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 2) {
-                if viewModel.state.isSelecting {
-                    selectionChrome
-                } else {
-                    browsingChrome
-                }
-            }
-            .frame(height: 44)
-            .padding(.horizontal, theme.small)
-
-            if !viewModel.state.isSelecting {
-                if !isHeaderCollapsed {
-                    title
-                    countLine
-                }
-                searchField
-                if !viewModel.state.folderChips.isEmpty, !isHeaderCollapsed { folderRow }
-            } else {
-                selectionCount
-            }
-
-            Rectangle()
-                .fill(theme.separator)
-                .frame(height: 0.75)
-                .padding(.top, theme.xs)
-        }
-        .background(theme.background)
-        .animation(NoteMotion.mode(reduceMotion: reduceMotion), value: viewModel.state.isSelecting)
-        .animation(NoteMotion.mode(reduceMotion: reduceMotion), value: isHeaderCollapsed)
-    }
-
-    @ViewBuilder
-    private var browsingChrome: some View {
-        Group {
-                Button(action: onClose) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(theme.primaryText)
-                        .frame(width: 40, height: 40)
-                        .background(theme.card, in: Circle())
-                        .overlay { Circle().strokeBorder(theme.separator, lineWidth: 0.75) }
-                }
-                .buttonStyle(NotePressButtonStyle())
-                .frame(width: 44, height: 44)
-                .accessibilityLabel(Text(.notesKit("Back")))
-
-                if isHeaderCollapsed { foldedTitle }
-
-                Spacer(minLength: theme.xs)
-
-                sortButton
-
-                layoutToggle
-
-                Button {
-                    haptic()
-                    viewModel.send(.startSelecting)
-                } label: {
-                    Image(systemName: "checkmark.circle")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(theme.primaryText)
-                        .frame(width: 32, height: 32)
-                        .background(theme.card, in: Circle())
-                        .overlay { Circle().strokeBorder(theme.separator, lineWidth: 0.75) }
-                }
-                .buttonStyle(NotePressButtonStyle())
-                .frame(width: 44, height: 44)
-                .disabled(viewModel.state.visibleNotes.isEmpty)
-                .accessibilityLabel(Text(.notesKit("Select notes")))
-
-                Button(action: onCreateNote) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(theme.onAccent)
-                        .frame(width: 32, height: 32)
-                        .background(theme.accent, in: Circle())
-                }
-                .buttonStyle(NotePressButtonStyle())
-                .frame(width: 44, height: 44)
-                .accessibilityLabel(Text(.notesKit("New note")))
-            }
-        }
-
-    /// Cancel on the left, Select All on the right, count underneath: the same shape Vault Home
-    /// and the trash already use, so selecting notes is not a second thing to learn.
-    @ViewBuilder
-    private var selectionChrome: some View {
-        Group {
-            Button { viewModel.send(.stopSelecting) } label: {
-                Text(.notesKit("Cancel"))
-                    .font(theme.modeFont)
-                    .textCase(.uppercase)
-                    .tracking(1.2)
-                    .foregroundStyle(theme.primaryText)
-            }
-            .buttonStyle(NotePressButtonStyle())
-            .padding(.leading, theme.small)
-
-            Spacer(minLength: theme.small)
-
-            Button {
-                haptic()
-                viewModel.send(.selectAllOrNone)
-            } label: {
-                Text(viewModel.state.isEverythingSelected
-                    ? .notesKit("Deselect All")
-                    : .notesKit("Select All"))
-                    .font(theme.modeFont)
-                    .textCase(.uppercase)
-                    .tracking(1.2)
-                    .foregroundStyle(theme.primaryText)
-            }
-            .buttonStyle(NotePressButtonStyle())
-            .padding(.trailing, theme.small)
-        }
-    }
-
-    private var selectionCount: some View {
-        Text(.notesKit(count: "\(viewModel.state.selection.count) selected"))
-            .font(theme.metadataFont)
-            .textCase(.uppercase)
-            .tracking(1.4)
-            .foregroundStyle(theme.secondaryText)
-            .contentTransition(.numericText())
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, theme.medium)
-            .padding(.bottom, theme.small)
-    }
-
-    /// Sort and filter behind one control rather than two.
+    /// The header, and the one place `collapse` is handed to anything.
     ///
-    /// They answer the same question — "show me a different slice of this list" — and the header
-    /// has room for one more 32pt circle, not two. The dot marks a list that is narrowed, because
-    /// a filter left on looks exactly like a vault that lost its notes.
-    private var sortButton: some View {
-        Button {
-            haptic()
-            viewModel.send(.openOptions(.sortAndFilter))
-        } label: {
-            Image(systemName: "line.3.horizontal.decrease")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(viewModel.state.isNarrowed ? theme.onAccent : theme.primaryText)
-                .frame(width: 32, height: 32)
-                .background(viewModel.state.isNarrowed ? theme.accent : theme.card, in: Circle())
-                .overlay {
-                    Circle().strokeBorder(
-                        viewModel.state.isNarrowed ? .clear : theme.separator,
-                        lineWidth: 0.75
-                    )
+    /// A view of its own taking values, not a `@ViewBuilder` reading `viewModel.state`: the fold
+    /// happens while the list is being scrolled, and a fold that lives on this screen redraws
+    /// this screen — every row, every option sheet, every folder group.
+    private var header: some View {
+        NotesListHeader(
+            collapse: collapse,
+            theme: theme,
+            searchText: $searchText,
+            isSelecting: viewModel.state.isSelecting,
+            isEverythingSelected: viewModel.state.isEverythingSelected,
+            selectionCount: viewModel.state.selection.count,
+            noteCount: viewModel.state.index.notes.count,
+            hasVisibleNotes: !viewModel.state.visibleNotes.isEmpty,
+            isNarrowed: viewModel.state.isNarrowed,
+            layout: viewModel.state.layout,
+            folderChips: viewModel.state.folderChips,
+            folderTints: viewModel.state.index.folderTints,
+            selectedFolder: viewModel.state.selectedFolder,
+            haptic: haptic,
+            onClose: onClose,
+            onCreateNote: onCreateNote,
+            onStartSelecting: { viewModel.send(.startSelecting) },
+            onStopSelecting: { viewModel.send(.stopSelecting) },
+            onSelectAllOrNone: { viewModel.send(.selectAllOrNone) },
+            onOpenSortAndFilter: { viewModel.send(.openOptions(.sortAndFilter)) },
+            onToggleLayout: {
+                let next: NoteListLayout = viewModel.state.layout == .grid ? .list : .grid
+                // Its own curve, not `reorder`: nothing is moving anywhere, one view is becoming
+                // another one. `collapse.rebase()` runs from `onChange` — the scroll view this
+                // replaces is about to stop reporting, and the new one starts from its own zero.
+                withAnimation(NoteMotion.layout(reduceMotion: reduceMotion)) {
+                    viewModel.send(.setLayout(next))
                 }
-        }
-        .buttonStyle(NotePressButtonStyle())
-        .frame(width: 44, height: 44)
-        .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: viewModel.state.isNarrowed)
-        .accessibilityLabel(Text(.notesKit("Sort and filter")))
-    }
-
-    /// Rows or cards, one tap either way.
-    ///
-    /// The icon names the layout the tap will *produce*, not the one on screen — the same
-    /// grammar as the Photos grid density control, and the reason it needs no label beside it.
-    private var layoutToggle: some View {
-        let isGrid = viewModel.state.layout == .grid
-        return Button {
-            haptic()
-            listChange(.setLayout(isGrid ? .list : .grid))
-        } label: {
-            Image(systemName: isGrid ? "list.bullet" : "square.grid.2x2")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(theme.primaryText)
-                .frame(width: 32, height: 32)
-                .background(theme.card, in: Circle())
-                .overlay { Circle().strokeBorder(theme.separator, lineWidth: 0.75) }
-                .contentTransition(.symbolEffect(.replace))
-        }
-        .buttonStyle(NotePressButtonStyle())
-        .frame(width: 44, height: 44)
-        .accessibilityLabel(Text(isGrid ? .notesKit("List view") : .notesKit("Grid view")))
+            },
+            onSelectFolder: { viewModel.send(.selectFolder($0)) },
+            onOpenFolderManager: { viewModel.send(.openFolderManager) }
+        )
     }
 
     private static func sortTitle(_ order: NoteSortOrder) -> LocalizedStringResource {
@@ -424,328 +287,48 @@ public struct NotesListScreen: View {
         }
     }
 
-    /// The screen's name, on its own line and at title size.
+    /// Both layouts, one container.
     ///
-    /// It used to sit between the back button and three controls, which capped it at a caption
-    /// and left the row looking like a toolbar with a label wedged into it. A title has the width
-    /// of the screen here, and the controls keep their own row.
-    private var title: some View {
-        Text(.notesKit("Private notes"))
-            .font(theme.titleFont)
-            .foregroundStyle(theme.primaryText)
-            // On the Text itself, not on the padded row: the anchor has to be where the glyphs
-            // start, or the title lands a `medium` short of the back button.
-            .matchedGeometryEffect(
-                id: Self.titleGeometry,
-                in: headerTitle,
-                properties: .position,
-                anchor: .leading,
-                isSource: !isHeaderCollapsed
-            )
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, theme.medium)
-            .padding(.top, theme.xs)
-            .padding(.bottom, 2)
-            .accessibilityAddTraits(.isHeader)
-            // Position comes from the geometry match, so the transition only has to cross-fade
-            // the two sizes. A `move` on top of it would pull the title off its own path.
-            .transition(.opacity)
-    }
-
-    /// The title once the header has folded: same words, row size, beside the back button.
+    /// A `List` for rows and a `ScrollView` for cards meant the switch between them could only
+    /// ever be a cross-fade: two different views in the same slot, one leaving as the other
+    /// arrives. In one `LazyVGrid` the switch is a change of *column count*, the cards keep their
+    /// identity across it, and SwiftUI animates each one from the row it was to the card it
+    /// becomes. That is the whole reason the `List` is gone.
     ///
-    /// The geometry match carries the position and not the frame. Matching the frame as well
-    /// squeezes the large title's glyphs into this one's box on the way up, and the two type
-    /// sizes are exactly what the cross-fade is for.
-    private var foldedTitle: some View {
-        Text(.notesKit("Private notes"))
-            .font(theme.sectionFont)
-            .foregroundStyle(theme.primaryText)
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
-            .matchedGeometryEffect(
-                id: Self.titleGeometry,
-                in: headerTitle,
-                properties: .position,
-                anchor: .leading,
-                isSource: isHeaderCollapsed
-            )
-            .padding(.leading, theme.xs)
-            .accessibilityAddTraits(.isHeader)
-            .transition(.opacity)
-    }
-
-    private var countLine: some View {
-        HStack(spacing: theme.small) {
-            Text(.notesKit(count: "\(viewModel.state.index.notes.count) notes"))
-                .textCase(.uppercase)
-                .contentTransition(.numericText())
-            Rectangle().fill(theme.secondaryText).frame(width: 16, height: 0.75)
-            HStack(spacing: 4) {
-                Image(systemName: "lock").font(.system(size: 10, weight: .semibold))
-                Text(verbatim: "AES-256")
-            }
-        }
-        .font(theme.metadataFont)
-        .tracking(1.4)
-        .foregroundStyle(theme.secondaryText)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, theme.medium)
-        .padding(.bottom, theme.small)
-        .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: viewModel.state.index.notes.count)
-        // Nothing catches this line on the way out, so it leaves the way the header folds:
-        // upward, behind the row that is taking the title.
-        .transition(.move(edge: .top).combined(with: .opacity))
-    }
-
-    private var searchField: some View {
-        HStack(spacing: theme.small) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(theme.secondaryText)
-            TextField(
-                text: $searchText,
-                prompt: Text(.notesKit("Search notes")).foregroundStyle(theme.disabledText)
-            ) { Text(.notesKit("Search")) }
-                .textFieldStyle(.plain)
-                .font(theme.monoFont)
-                .foregroundStyle(theme.primaryText)
-                .autocorrectionDisabled()
-                .noteNeverAutocapitalizes()
-                .submitLabel(.search)
-
-            if !searchText.isEmpty {
-                Button { searchText = "" } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 13))
-                        .foregroundStyle(theme.disabledText)
-                }
-                .buttonStyle(.plain)
-                .transition(.scale.combined(with: .opacity))
-                .accessibilityLabel(Text(.notesKit("Cancel")))
-            }
-        }
-        .padding(.horizontal, theme.small + 4)
-        .frame(height: 36)
-        .background(theme.card, in: Capsule())
-        .overlay { Capsule().strokeBorder(theme.separator, lineWidth: 0.75) }
-        .padding(.horizontal, theme.medium)
-        .padding(.bottom, theme.small)
-        .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: searchText.isEmpty)
-    }
-
-    private var folderRow: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: theme.xs + 2) {
-                chip(
-                    title: Text(.notesKit("All")),
-                    count: viewModel.state.index.notes.count,
-                    isSelected: viewModel.state.selectedFolder == nil
-                ) { viewModel.send(.selectFolder(nil)) }
-                ForEach(viewModel.state.folderChips) { folder in
-                    chip(
-                        title: Text(verbatim: folder.name),
-                        count: folder.count,
-                        isSelected: viewModel.state.selectedFolder == folder.name,
-                        tint: viewModel.state.index.folderTints[folder.name] ?? .neutral
-                    ) { viewModel.send(.selectFolder(folder.name)) }
-                }
-
-                // Managing folders belongs where the folders are, not in a header that already
-                // carries four controls and a title — on a small phone that row runs out of
-                // width before the title does.
-                Button {
-                    haptic()
-                    viewModel.send(.openFolderManager)
-                } label: {
-                    Image(systemName: "slider.horizontal.3")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(theme.secondaryText)
-                        .padding(.horizontal, theme.small + 2)
-                        .frame(height: 31)
-                        .overlay { Capsule().strokeBorder(theme.separator, lineWidth: 0.75) }
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(NotePressButtonStyle())
-                .frame(minHeight: 44)
-                .accessibilityLabel(Text(.notesKit("Folders")))
-            }
-            .padding(.horizontal, theme.medium)
-            .padding(.bottom, 2)
-        }
-        .scrollIndicators(.hidden)
-    }
-
-    private func chip(
-        title: Text,
-        count: Int,
-        isSelected: Bool,
-        tint: NoteFolderTint = .neutral,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button {
-            haptic()
-            action()
-        } label: {
-            HStack(spacing: 5) {
-                if tint != .neutral, !isSelected {
-                    Circle().fill(theme.color(for: tint)).frame(width: 6, height: 6)
-                }
-                title.textCase(.uppercase).tracking(1.3)
-                Text(count, format: .number)
-                    .foregroundStyle(isSelected ? theme.onAccent.opacity(0.6) : theme.disabledText)
-            }
-            .font(theme.modeFont)
-            .foregroundStyle(isSelected ? theme.onAccent : theme.secondaryText)
-            .padding(.horizontal, theme.small + 4)
-            .frame(height: 31)
-            .background {
-                if isSelected { Capsule().fill(theme.accent) }
-                else { Capsule().strokeBorder(theme.separator, lineWidth: 0.75) }
-            }
-            .contentShape(Capsule())
-        }
-        .buttonStyle(NotePressButtonStyle())
-        .frame(minHeight: 44)
-        .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: isSelected)
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-    }
-
-    /// Folds on the way down and unfolds on the way up, from the direction of travel rather than
-    /// from a fixed offset.
+    /// What went with it is `.swipeActions`. Pin and Trash are on the corner button and the long
+    /// press in both layouts now — see `NoteCard`, which explains why they were not rebuilt as a
+    /// `DragGesture`.
     ///
-    /// An absolute threshold cannot work here: the header lives in a `safeAreaInset`, so folding
-    /// it changes the list's own top inset, which changes the offset that decided to fold it. The
-    /// first version latched collapsed for that reason. Direction is immune to the resize, and a
-    /// short settling window keeps the resize itself from being read as a scroll.
-    private func updateHeaderCollapse(for offset: CGFloat) {
-        defer { lastScrollOffset = offset }
-        // The top is the one place direction cannot decide. A flick that ends at the first row
-        // travels upward the whole way and still leaves the last delta pointing down, or gets
-        // absorbed by the rubber band entirely — either way the header stayed folded over a list
-        // that had nothing above it, which is the state it is supposed to fold *out* of.
-        if offset <= 4 {
-            guard isHeaderCollapsed else { return }
-            isHeaderCollapsed = false
-            headerSettlesAt = Date().addingTimeInterval(0.35)
-            return
-        }
-        guard Date() >= headerSettlesAt else { return }
-        let delta = offset - lastScrollOffset
-        guard abs(delta) > 8 else { return }
-        let collapsed = delta > 0
-        guard collapsed != isHeaderCollapsed else { return }
-        isHeaderCollapsed = collapsed
-        headerSettlesAt = Date().addingTimeInterval(0.35)
-    }
-
-    /// The whole list as one flat sequence, headers included.
-    ///
-    /// Not two `Section`s, and that is the difference between a pinned row sliding and a pinned
-    /// row blinking. Across sections a pin is a delete on one side and an insert on the other, so
-    /// `List` cross-fades it; worse, the first pin in an unpinned vault swapped a bare `ForEach`
-    /// for two sections, which rebuilt every row on screen. In one `ForEach` the same change is a
-    /// move of a row that keeps its identity, which is the animation `List` does properly.
-    ///
-    /// The cost is that the headers scroll away instead of pinning to the top. They are two words
-    /// of metadata over cards on a plain background, not a table's index.
-    private enum ListRow: Identifiable {
-        case pinnedHeader
-        case timelineHeader
-        case note(NoteDigest)
-
-        var id: AnyHashable {
-            switch self {
-            case .pinnedHeader: AnyHashable("notes.header.pinned")
-            case .timelineHeader: AnyHashable("notes.header.timeline")
-            case .note(let note): AnyHashable(note.id)
-            }
-        }
-    }
-
-    private var listRows: [ListRow] {
-        let state = viewModel.state
-        guard state.pinnedCount > 0 else { return state.visibleNotes.map(ListRow.note) }
-        var rows: [ListRow] = [.pinnedHeader]
-        rows += state.pinnedNotes.map(ListRow.note)
-        if state.pinnedCount < state.visibleNotes.count {
-            rows.append(.timelineHeader)
-            rows += state.timelineNotes.map(ListRow.note)
-        }
-        return rows
-    }
-
-    private var rowList: some View {
-        List {
-            ForEach(listRows) { item in
-                switch item {
-                case .pinnedHeader:
-                    sectionHeader(Text(.notesKit("Pinned")), icon: "pin.fill")
-                case .timelineHeader:
-                    sectionHeader(Text(.notesKit("All notes")), icon: nil, topPadding: theme.small + 4)
-                case .note(let note):
-                    row(note)
-                }
-            }
-        }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .scrollIndicators(.hidden)
-        .environment(\.defaultMinListRowHeight, 0)
-        .refreshable { viewModel.send(.refresh) }
-        .onScrollGeometryChange(for: CGFloat.self) { geometry in
-            geometry.contentOffset.y + geometry.contentInsets.top
-        } action: { _, offset in
-            updateHeaderCollapse(for: offset)
-        }
-        // No `.animation(value:)` here. That modifier animates the whole `List` as one view, and
-        // a row leaving on a swipe then cross-faded against everything around it instead of the
-        // row sliding out and its neighbours closing the gap. `List` animates its own rows
-        // correctly when the change arrives inside a transaction — `listChange` below wraps the
-        // sends that move or remove a row, which is exactly the set of changes that should
-        // animate, and leaves a reload from the store alone.
-    }
-
-    /// The same notes, two columns wide.
-    ///
-    /// `LazyVGrid` rather than a second `List`: a `List` cannot lay two cells side by side, and
-    /// that is the whole point of this layout — twice the notes on screen and three lines of
-    /// preview instead of one, for when the user is looking *for* a note rather than working
-    /// through one. Sections here rather than the flat `ForEach` the rows use, because a header
-    /// in a grid has to span both columns and a flat sequence would give it one cell.
-    private var cardGrid: some View {
+    /// Sections rather than a flat sequence with header rows: a header in a two-column grid has
+    /// to span both columns, and a flat sequence would hand it one cell.
+    private var noteBoard: some View {
         ScrollView {
-            LazyVGrid(columns: Self.gridColumns(spacing: theme.small), spacing: theme.small) {
+            LazyVGrid(columns: columns, spacing: theme.small) {
                 if viewModel.state.pinnedCount > 0 {
                     Section {
                         ForEach(entries(viewModel.state.pinnedNotes, group: .pinned)) { entry in
-                            gridCard(entry.note)
+                            noteCard(entry.note)
                         }
                     } header: {
-                        sectionHeader(
-                            Text(.notesKit("Pinned")),
-                            icon: "pin.fill",
-                            horizontalPadding: 0
-                        )
+                        sectionHeader(Text(.notesKit("Pinned")), icon: "pin.fill")
                     }
 
                     if viewModel.state.pinnedCount < viewModel.state.visibleNotes.count {
                         Section {
                             ForEach(entries(viewModel.state.timelineNotes, group: .timeline)) { entry in
-                                gridCard(entry.note)
+                                noteCard(entry.note)
                             }
                         } header: {
                             sectionHeader(
                                 Text(.notesKit("All notes")),
                                 icon: nil,
-                                topPadding: theme.small + 4,
-                                horizontalPadding: 0
+                                topPadding: theme.small + 4
                             )
                         }
                     }
                 } else {
                     ForEach(entries(viewModel.state.visibleNotes[...], group: .timeline)) { entry in
-                        gridCard(entry.note)
+                        noteCard(entry.note)
                     }
                 }
             }
@@ -755,23 +338,30 @@ public struct NotesListScreen: View {
         }
         .scrollIndicators(.hidden)
         .refreshable { viewModel.send(.refresh) }
-        .onScrollGeometryChange(for: CGFloat.self) { geometry in
-            geometry.contentOffset.y + geometry.contentInsets.top
-        } action: { _, offset in
-            updateHeaderCollapse(for: offset)
-        }
+        .notesHeaderCollapse(collapse, animation: NoteMotion.header(reduceMotion: reduceMotion))
+        // No `.animation(value:)` here. That modifier sets the animation for this whole subtree
+        // when its value changes and clears it when it does not, so one placed here would wipe
+        // the transaction `listChange` opens for a card leaving or moving. The layout switch and
+        // every row change arrive inside their own `withAnimation`, which is the granularity
+        // that matters, and a reload from the store is left alone.
+    }
+
+    /// One column or two. The only difference between the two layouts, as far as this screen is
+    /// concerned — everything else about the change is `NoteCard` reading `layout`.
+    private var columns: [GridItem] {
+        let spacing = theme.small
+        let column = GridItem(.flexible(), spacing: spacing, alignment: .top)
+        return viewModel.state.layout == .grid ? [column, column] : [column]
     }
 
     /// A note together with the group it is currently drawn in.
     ///
     /// The group is half the identity on purpose. `LazyVGrid` flattens its sections into one list
-    /// of items, so a card that moves from the pinned grid to the timeline keeps its note id and
+    /// of items, so a card that moves from the pinned group to the timeline keeps its note id and
     /// the move is diffed as a reorder rather than a removal and an insertion — and a lazy
     /// container does not rebuild the body of an item it believes only moved. A card unpinned
     /// from its own menu went on wearing its pin for exactly that reason, until something else
     /// forced the grid to rebuild. Qualifying the id makes the change what it actually is.
-    ///
-    /// The rows do not need this: they are one flat `ForEach` with no sections to move between.
     private struct GridEntry: Identifiable {
         enum Group: String { case pinned, timeline }
 
@@ -784,22 +374,18 @@ public struct NotesListScreen: View {
         notes.map { GridEntry(group: group, note: $0) }
     }
 
-    private static func gridColumns(spacing: CGFloat) -> [GridItem] {
-        [
-            GridItem(.flexible(), spacing: spacing, alignment: .top),
-            GridItem(.flexible(), spacing: spacing, alignment: .top)
-        ]
-    }
-
-    private func gridCard(_ note: NoteDigest) -> some View {
+    private func noteCard(_ note: NoteDigest) -> some View {
         let isSelecting = viewModel.state.isSelecting
-        return NoteGridCard(
+        return NoteCard(
             note: note,
             theme: theme,
+            layout: viewModel.state.layout,
             isSelecting: isSelecting,
             isSelected: viewModel.state.selection.contains(note.id),
             haptic: haptic,
             onOpen: {
+                // While selecting, a tap ticks the card. Opening a note from here would lose the
+                // selection the user is halfway through building.
                 if isSelecting {
                     viewModel.send(.toggleSelection(note.id))
                 } else {
@@ -808,20 +394,22 @@ public struct NotesListScreen: View {
             },
             onOptions: { viewModel.send(.openOptions(.note(note.id))) }
         )
-        // Short enough that a one-line note is still a card, tall enough that three lines of
-        // preview do not have to fight for the space; a taller neighbour still wins the row.
-        .frame(minHeight: 158)
+        // Cards get a floor so a one-line note is still a card and three lines of preview do not
+        // have to fight for the space; a taller neighbour still wins the row. Rows have no floor
+        // — a row is as tall as what is in it.
+        .frame(minHeight: viewModel.state.layout == .grid ? 158 : nil)
         .simultaneousGesture(optionsLongPress(note, isSelecting: isSelecting))
     }
 
     /// Deliberately not a `.headerProminence` default: the header has to read as the same
     /// typographic family as the count line above the list, not as a grouped-table caption.
+    ///
+    /// No horizontal padding of its own: the grid pads its gutter, and a header inside it must
+    /// not pay for it twice.
     private func sectionHeader(
         _ title: Text,
         icon: String?,
-        topPadding: CGFloat = 0,
-        // The grid pads its own gutter, so a header inside it must not pay for it twice.
-        horizontalPadding: CGFloat? = nil
+        topPadding: CGFloat = 0
     ) -> some View {
         HStack(spacing: 5) {
             if let icon {
@@ -832,60 +420,17 @@ public struct NotesListScreen: View {
         .font(theme.metadataFont)
         .foregroundStyle(theme.secondaryText)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, horizontalPadding ?? theme.medium)
         .padding(.top, topPadding)
         .padding(.bottom, theme.xs)
-        .listRowInsets(EdgeInsets())
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
         .accessibilityAddTraits(.isHeader)
-    }
-
-    private func row(_ note: NoteDigest) -> some View {
-        let isSelecting = viewModel.state.isSelecting
-        return NoteRowCard(
-            note: note,
-            theme: theme,
-            isSelecting: isSelecting,
-            isSelected: viewModel.state.selection.contains(note.id),
-            haptic: haptic
-        ) {
-            // While selecting, a tap ticks the row. Opening a note from here would lose the
-            // selection the user is halfway through building.
-            if isSelecting {
-                viewModel.send(.toggleSelection(note.id))
-            } else {
-                onOpenNote(note)
-            }
-        }
-            .listRowInsets(EdgeInsets(
-                top: theme.xs,
-                leading: theme.medium,
-                bottom: theme.xs,
-                trailing: theme.medium
-            ))
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-            // Swipes and the context menu are off while selecting: a swipe that acts on one row
-            // in the middle of building a selection of five is an action nobody asked for.
-            .swipeActions(edge: .trailing) {
-                if !isSelecting {
-                    Button(role: .destructive) { viewModel.send(.requestDiscard(note)) } label: {
-                        Label(.notesKit("Move to Trash"), systemImage: "trash")
-                    }
-                }
-            }
-            .swipeActions(edge: .leading) { if !isSelecting { pinSwipeButton(note) } }
-            // A long press instead of `.contextMenu`: the sheet it opens is the same one the grid
-            // card's button opens, and the row keeps the two verbs worth a swipe on either edge.
-            .simultaneousGesture(optionsLongPress(note, isSelecting: isSelecting))
     }
 
     /// Opens a row or card's options without stealing its tap.
     ///
     /// `simultaneousGesture` rather than `.onLongPressGesture`, which would swallow the tap that
     /// opens the note; and 0.45s rather than the 0.5s default, which is long enough that people
-    /// let go first.
+    /// let go first. With the swipes gone this and the corner button are the two ways in, so it
+    /// covers the whole card rather than a menu affordance somewhere on it.
     private func optionsLongPress(_ note: NoteDigest, isSelecting: Bool) -> some Gesture {
         LongPressGesture(minimumDuration: 0.45).onEnded { _ in
             guard !isSelecting else { return }
@@ -1047,29 +592,6 @@ public struct NotesListScreen: View {
         }
 
         return groups
-    }
-
-    private func pinSwipeButton(_ note: NoteDigest) -> some View {
-        Button {
-            haptic()
-            // A swipe action's row is still collapsing when the action runs, and `List` will not
-            // move a cell that is mid-gesture: the gap opened above immediately while the row
-            // itself stayed put, then snapped up when the collapse finished. Let the collapse
-            // finish first, then animate the move — the wait is the animation the user is already
-            // watching, not an added delay. The number is the system's own swipe-close duration;
-            // there is no callback for it, and undershooting it is what the jump looked like.
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(260))
-                guard !Task.isCancelled else { return }
-                listChange(.togglePin(note.id))
-            }
-        } label: {
-            Label(
-                note.isPinned ? .notesKit("Unpin") : .notesKit("Pin"),
-                systemImage: note.isPinned ? "pin.slash" : "pin"
-            )
-        }
-        .tint(theme.accent)
     }
 
     private var skeleton: some View {
