@@ -23,6 +23,9 @@ final class NoteViewModelTests: XCTestCase {
 
         viewModel.send(.updateSearchQuery(""))
         viewModel.send(.togglePin(NoteFixtures.bank.id))
+        // The row moves before the write returns; waiting for storage makes it sit still under
+        // the finger and then jump.
+        XCTAssertEqual(viewModel.state.pinnedCount, 2)
         try await settle { !viewModel.state.isBusy }
         let pinnedIndex = await store.index()
         XCTAssertTrue(pinnedIndex.notes.first(where: { $0.id == NoteFixtures.bank.id })?.isPinned == true)

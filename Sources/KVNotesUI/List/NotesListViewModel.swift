@@ -8,6 +8,16 @@ public struct NotesListState: Equatable, Sendable {
         let normalized: String
     }
     public enum Phase: Equatable, Sendable { case idle, loading, loaded, failed }
+    /// What the list looks like, as one animatable value.
+    public struct Layout: Equatable, Sendable {
+        public let order: [NoteID]
+        public let pinnedCount: Int
+
+        public init(order: [NoteID], pinnedCount: Int) {
+            self.order = order
+            self.pinnedCount = pinnedCount
+        }
+    }
     public struct FolderChip: Identifiable, Equatable, Sendable {
         public let name: String
         public let count: Int
@@ -174,8 +184,14 @@ public final class NotesListViewModel {
             state.recompute()
             rememberHowTheListIsShown()
         case .togglePin(let id):
-            guard let note = state.index.notes.first(where: { $0.id == id }) else { return }
-            perform { try await self.store.apply(NoteAttributePatch(isPinned: !note.isPinned), to: id) }
+            guard let index = state.index.notes.firstIndex(where: { $0.id == id }) else { return }
+            let pinned = !state.index.notes[index].isPinned
+            // Moved locally first, then persisted. Waiting for the round trip means the row sits
+            // still under the finger and then jumps a moment later, which reads as a glitch
+            // rather than as a move; a failed write reloads and puts it back.
+            state.index.notes[index].isPinned = pinned
+            state.recompute()
+            perform { try await self.store.apply(NoteAttributePatch(isPinned: pinned), to: id) }
         case .moveToFolder(let id, let folder):
             perform { try await self.store.apply(NoteAttributePatch(folder: .set(folder)), to: id) }
         case .requestDiscard(let note):

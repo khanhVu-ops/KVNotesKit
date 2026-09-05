@@ -7,6 +7,14 @@ enum NoteMotion {
             : .spring(response: 0.38, dampingFraction: 0.9)
     }
 
+    /// The read/edit switch: one curve for the sliding pill and both surfaces, so the control
+    /// and the thing it controls move together rather than at two different speeds.
+    static func mode(reduceMotion: Bool) -> Animation {
+        reduceMotion
+            ? .easeInOut(duration: 0.2)
+            : .spring(response: 0.34, dampingFraction: 0.86)
+    }
+
     static func content(reduceMotion: Bool) -> Animation {
         reduceMotion
             ? .easeInOut(duration: 0.18)

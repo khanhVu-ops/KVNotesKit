@@ -355,7 +355,15 @@ public struct NotesListScreen: View {
         // leaves a band of empty background between the search field and the pinned header.
         .noteCompactSections(theme.small)
         .refreshable { viewModel.send(.refresh) }
-        .animation(NoteMotion.content(reduceMotion: reduceMotion), value: viewModel.state.visibleNotes.map(\.id))
+        // The pinned count is part of the value: pinning the first note adds a whole section, and
+        // a section that appears without being animated snaps the rows below it down the screen.
+        .animation(
+            NoteMotion.content(reduceMotion: reduceMotion),
+            value: NotesListState.Layout(
+                order: viewModel.state.visibleNotes.map(\.id),
+                pinnedCount: viewModel.state.pinnedCount
+            )
+        )
     }
 
     /// Deliberately not a `.headerProminence` default: the header has to read as the same

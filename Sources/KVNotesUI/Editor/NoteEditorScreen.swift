@@ -4,6 +4,7 @@ import SwiftUI
 public struct NoteEditorScreen: View {
     @State private var viewModel: NoteEditorViewModel
     @State private var showsGenerator = false
+    @Namespace private var modeNamespace
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.locale) private var locale
     @Environment(\.scenePhase) private var scenePhase
@@ -90,19 +91,25 @@ public struct NoteEditorScreen: View {
             // Both surfaces stay in the hierarchy across the switch. Rebuilding the text view
             // every time the user previews a note would throw away the caret and the scroll
             // position, and read mode's own state with them.
+            // A straight cross-fade leaves two copies of the same paragraph ghosting through
+            // each other, because both surfaces draw the note in the same place. A few points of
+            // travel in opposite directions separates them without turning a mode switch into a
+            // slide show.
             ZStack {
                 editBody
-                    .opacity(viewModel.state.mode == .edit ? 1 : 0)
-                    .allowsHitTesting(viewModel.state.mode == .edit)
-                    .accessibilityHidden(viewModel.state.mode != .edit)
+                    .opacity(isEditing ? 1 : 0)
+                    .offset(y: isEditing ? 0 : -8)
+                    .allowsHitTesting(isEditing)
+                    .accessibilityHidden(!isEditing)
                 readBody
-                    .opacity(viewModel.state.mode == .read ? 1 : 0)
-                    .allowsHitTesting(viewModel.state.mode == .read)
-                    .accessibilityHidden(viewModel.state.mode != .read)
+                    .opacity(isEditing ? 0 : 1)
+                    .offset(y: isEditing ? 8 : 0)
+                    .allowsHitTesting(!isEditing)
+                    .accessibilityHidden(isEditing)
             }
         }
         .background(theme.background)
-        .animation(NoteMotion.content(reduceMotion: reduceMotion), value: viewModel.state.mode)
+        .animation(NoteMotion.mode(reduceMotion: reduceMotion), value: viewModel.state.mode)
         .overlay(alignment: .bottom) { savedToast }
     }
 
@@ -229,6 +236,9 @@ public struct NoteEditorScreen: View {
         }
         .padding(3)
         .background(theme.elevatedCard, in: Capsule())
+        // The switch lives in the toolbar, outside the body's own animation scope, so it carries
+        // the same curve itself — otherwise the pill and the text it reveals move at two speeds.
+        .animation(NoteMotion.mode(reduceMotion: reduceMotion), value: viewModel.state.mode)
     }
 
     private func modeButton(_ mode: NoteEditorState.Mode, title: LocalizedStringResource) -> some View {
@@ -244,12 +254,21 @@ public struct NoteEditorScreen: View {
                 .foregroundStyle(isSelected ? theme.onAccent : theme.secondaryText)
                 .padding(.horizontal, theme.small + 4)
                 .frame(height: 26)
-                .background { if isSelected { Capsule().fill(theme.accent) } }
+                .background {
+                    // One capsule shared between the two buttons, so it slides across instead of
+                    // vanishing under one label and reappearing under the other.
+                    if isSelected {
+                        Capsule()
+                            .fill(theme.accent)
+                            .matchedGeometryEffect(id: "mode", in: modeNamespace)
+                    }
+                }
         }
         .buttonStyle(NotePressButtonStyle())
-        .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: isSelected)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
+
+    private var isEditing: Bool { viewModel.state.mode == .edit }
 
     private var editBody: some View {
         NoteTextEditor(
