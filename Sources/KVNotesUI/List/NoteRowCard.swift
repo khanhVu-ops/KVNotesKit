@@ -4,6 +4,8 @@ import SwiftUI
 struct NoteRowCard: View {
     let note: NoteDigest
     let theme: NoteTheme
+    var isSelecting = false
+    var isSelected = false
     let haptic: @MainActor @Sendable () -> Void
     let onOpen: () -> Void
 
@@ -13,6 +15,13 @@ struct NoteRowCard: View {
             onOpen()
         } label: {
             HStack(alignment: .top, spacing: theme.small + 4) {
+                if isSelecting {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 20, weight: .regular))
+                        .foregroundStyle(isSelected ? theme.accent : theme.disabledText)
+                        .frame(height: 44, alignment: .center)
+                        .transition(.scale.combined(with: .opacity))
+                }
                 glyph
                 VStack(alignment: .leading, spacing: 3) {
                     title
@@ -27,11 +36,18 @@ struct NoteRowCard: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .noteCard(theme: theme, padding: theme.small + 4)
+            .overlay {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: theme.smallRadius, style: .continuous)
+                        .strokeBorder(theme.accent, lineWidth: 1.5)
+                }
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(NotePressButtonStyle())
         .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
+        .accessibilityAddTraits(isSelecting ? [.isButton, .isSelected] : [.isButton])
+        .accessibilityRemoveTraits(isSelecting && !isSelected ? [.isSelected] : [])
     }
 
     private var title: Text {

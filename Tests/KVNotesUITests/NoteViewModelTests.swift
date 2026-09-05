@@ -304,6 +304,64 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state.find.currentNumber, 2)
     }
 
+    func testBatchActionsApplyToEverySelectedNoteAndThenEndTheSelection() async throws {
+        let store = InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies)
+        let viewModel = NotesListViewModel(store: store)
+        viewModel.send(.onAppear)
+        try await settle { viewModel.state.phase == .loaded }
+
+        viewModel.send(.startSelecting)
+        viewModel.send(.selectAllOrNone)
+        XCTAssertTrue(viewModel.state.isEverythingSelected)
+        // One fixture is already pinned, so the mixed selection pins the rest rather than
+        // toggling each note into the opposite of what it was.
+        XCTAssertTrue(viewModel.state.batchWouldPin)
+
+        viewModel.send(.batchPin)
+        // Selection ends with the batch: five rows left ticked are a selection of things that
+        // are no longer where the user left them.
+        XCTAssertFalse(viewModel.state.isSelecting)
+        XCTAssertTrue(viewModel.state.selection.isEmpty)
+        try await settle { !viewModel.state.isBusy }
+        let afterPin = await store.index()
+        XCTAssertTrue(afterPin.notes.allSatisfy(\.isPinned))
+
+        viewModel.send(.startSelecting)
+        viewModel.send(.toggleSelection(NoteFixtures.journal.id))
+        viewModel.send(.batchMoveToFolder("Archive"))
+        try await settle { !viewModel.state.isBusy }
+        let afterMove = await store.index()
+        XCTAssertEqual(
+            afterMove.notes.first { $0.id == NoteFixtures.journal.id }?.folder,
+            "Archive"
+        )
+        XCTAssertEqual(afterMove.notes.first { $0.id == NoteFixtures.bank.id }?.folder, "Banking")
+    }
+
+    func testABatchTrashAsksFirstAndDiscardsEveryChosenNote() async throws {
+        let store = InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies)
+        let viewModel = NotesListViewModel(store: store)
+        viewModel.send(.onAppear)
+        try await settle { viewModel.state.phase == .loaded }
+
+        viewModel.send(.startSelecting)
+        viewModel.send(.toggleSelection(NoteFixtures.journal.id))
+        viewModel.send(.toggleSelection(NoteFixtures.bank.id))
+        viewModel.send(.requestBatchDiscard)
+        XCTAssertTrue(viewModel.state.pendingBatchDiscard)
+
+        viewModel.send(.cancelBatchDiscard)
+        XCTAssertFalse(viewModel.state.pendingBatchDiscard)
+        let afterCancel = await store.index().notes.count
+        XCTAssertEqual(afterCancel, 3)
+
+        viewModel.send(.requestBatchDiscard)
+        viewModel.send(.confirmBatchDiscard)
+        try await settle { !viewModel.state.isBusy }
+        let remaining = await store.index().notes.map(\.id)
+        XCTAssertEqual(remaining, [NoteFixtures.wallet.id])
+    }
+
     private func settle(
         until condition: @escaping @MainActor () -> Bool,
         file: StaticString = #filePath,

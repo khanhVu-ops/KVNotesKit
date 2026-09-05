@@ -19,7 +19,7 @@ final class NotesLocalizationTests: XCTestCase {
     /// shows the raw `%lld notes`. Nothing fails, so this test is the only thing that would.
     func testEveryLanguageHasTheSamePluralKeys() throws {
         let english = try pluralTable(for: "en")
-        XCTAssertEqual(Set(english.keys), ["%lld notes", "%lld characters"])
+        XCTAssertEqual(Set(english.keys), ["%lld notes", "%lld characters", "%lld selected"])
 
         for language in NotesLocalization.supportedLanguages {
             let table = try pluralTable(for: language)

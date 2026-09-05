@@ -105,3 +105,17 @@
 "Hold to reveal" = "Zum Anzeigen halten";
 /* Hint under a secret block while it is revealed. */
 "Release to hide" = "Loslassen zum Ausblenden";
+/* Batch selection UI on the notes list. */
+"Select notes" = "Notizen auswählen";
+/* Batch selection UI on the notes list. */
+"Select All" = "Alle auswählen";
+/* Batch selection UI on the notes list. */
+"Deselect All" = "Auswahl aufheben";
+/* Batch selection UI on the notes list. */
+"Lock" = "Sperren";
+/* Batch selection UI on the notes list. */
+"Unlock" = "Entsperren";
+/* Batch selection UI on the notes list. */
+"More" = "Mehr";
+/* Batch selection UI on the notes list. */
+"Move these notes to Recently Deleted?" = "Diese Notizen in „Zuletzt gelöscht“ verschieben?";

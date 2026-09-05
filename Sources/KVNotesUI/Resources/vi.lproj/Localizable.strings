@@ -105,3 +105,17 @@
 "Hold to reveal" = "Giữ để hiện";
 /* Hint under a secret block while it is revealed. */
 "Release to hide" = "Thả ra để ẩn";
+/* Batch selection UI on the notes list. */
+"Select notes" = "Chọn ghi chú";
+/* Batch selection UI on the notes list. */
+"Select All" = "Chọn tất cả";
+/* Batch selection UI on the notes list. */
+"Deselect All" = "Bỏ chọn tất cả";
+/* Batch selection UI on the notes list. */
+"Lock" = "Khoá";
+/* Batch selection UI on the notes list. */
+"Unlock" = "Mở khoá";
+/* Batch selection UI on the notes list. */
+"More" = "Thêm";
+/* Batch selection UI on the notes list. */
+"Move these notes to Recently Deleted?" = "Chuyển các ghi chú này vào Đã xoá gần đây?";

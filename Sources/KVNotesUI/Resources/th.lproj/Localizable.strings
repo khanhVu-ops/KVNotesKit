@@ -105,3 +105,17 @@
 "Hold to reveal" = "กดค้างเพื่อแสดง";
 /* Hint under a secret block while it is revealed. */
 "Release to hide" = "ปล่อยเพื่อซ่อน";
+/* Batch selection UI on the notes list. */
+"Select notes" = "เลือกโน้ต";
+/* Batch selection UI on the notes list. */
+"Select All" = "เลือกทั้งหมด";
+/* Batch selection UI on the notes list. */
+"Deselect All" = "ยกเลิกเลือกทั้งหมด";
+/* Batch selection UI on the notes list. */
+"Lock" = "ล็อก";
+/* Batch selection UI on the notes list. */
+"Unlock" = "ปลดล็อก";
+/* Batch selection UI on the notes list. */
+"More" = "เพิ่มเติม";
+/* Batch selection UI on the notes list. */
+"Move these notes to Recently Deleted?" = "ย้ายโน้ตเหล่านี้ไปยังลบล่าสุดไหม";

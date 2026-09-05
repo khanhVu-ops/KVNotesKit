@@ -105,3 +105,17 @@
 "Hold to reveal" = "استمر بالضغط للإظهار";
 /* Hint under a secret block while it is revealed. */
 "Release to hide" = "ارفع إصبعك للإخفاء";
+/* Batch selection UI on the notes list. */
+"Select notes" = "تحديد الملاحظات";
+/* Batch selection UI on the notes list. */
+"Select All" = "تحديد الكل";
+/* Batch selection UI on the notes list. */
+"Deselect All" = "إلغاء تحديد الكل";
+/* Batch selection UI on the notes list. */
+"Lock" = "قفل";
+/* Batch selection UI on the notes list. */
+"Unlock" = "إلغاء القفل";
+/* Batch selection UI on the notes list. */
+"More" = "المزيد";
+/* Batch selection UI on the notes list. */
+"Move these notes to Recently Deleted?" = "نقل هذه الملاحظات إلى المحذوفات مؤخرًا؟";

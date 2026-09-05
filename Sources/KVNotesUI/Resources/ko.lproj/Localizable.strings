@@ -105,3 +105,17 @@
 "Hold to reveal" = "길게 눌러 표시";
 /* Hint under a secret block while it is revealed. */
 "Release to hide" = "놓으면 숨김";
+/* Batch selection UI on the notes list. */
+"Select notes" = "메모 선택";
+/* Batch selection UI on the notes list. */
+"Select All" = "모두 선택";
+/* Batch selection UI on the notes list. */
+"Deselect All" = "모두 선택 해제";
+/* Batch selection UI on the notes list. */
+"Lock" = "잠그기";
+/* Batch selection UI on the notes list. */
+"Unlock" = "잠금 해제";
+/* Batch selection UI on the notes list. */
+"More" = "더 보기";
+/* Batch selection UI on the notes list. */
+"Move these notes to Recently Deleted?" = "이 메모를 최근 삭제된 항목으로 이동할까요?";

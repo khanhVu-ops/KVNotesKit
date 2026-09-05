@@ -105,3 +105,17 @@
 "Hold to reveal" = "按住以显示";
 /* Hint under a secret block while it is revealed. */
 "Release to hide" = "松开以隐藏";
+/* Batch selection UI on the notes list. */
+"Select notes" = "选择笔记";
+/* Batch selection UI on the notes list. */
+"Select All" = "全选";
+/* Batch selection UI on the notes list. */
+"Deselect All" = "取消全选";
+/* Batch selection UI on the notes list. */
+"Lock" = "锁定";
+/* Batch selection UI on the notes list. */
+"Unlock" = "解锁";
+/* Batch selection UI on the notes list. */
+"More" = "更多";
+/* Batch selection UI on the notes list. */
+"Move these notes to Recently Deleted?" = "将这些笔记移到“最近删除”？";

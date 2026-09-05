@@ -105,3 +105,17 @@
 "Hold to reveal" = "Удерживайте, чтобы показать";
 /* Hint under a secret block while it is revealed. */
 "Release to hide" = "Отпустите, чтобы скрыть";
+/* Batch selection UI on the notes list. */
+"Select notes" = "Выбрать заметки";
+/* Batch selection UI on the notes list. */
+"Select All" = "Выбрать все";
+/* Batch selection UI on the notes list. */
+"Deselect All" = "Снять выделение";
+/* Batch selection UI on the notes list. */
+"Lock" = "Заблокировать";
+/* Batch selection UI on the notes list. */
+"Unlock" = "Разблокировать";
+/* Batch selection UI on the notes list. */
+"More" = "Ещё";
+/* Batch selection UI on the notes list. */
+"Move these notes to Recently Deleted?" = "Переместить эти заметки в «Недавно удалённые»?";

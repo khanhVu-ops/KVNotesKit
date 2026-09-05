@@ -12,6 +12,7 @@ public struct NotesListScreen: View {
     private let onClose: @MainActor @Sendable () -> Void
     private let onOpenNote: @MainActor @Sendable (NoteDigest) -> Void
     private let onCreateNote: @MainActor @Sendable () -> Void
+    private let onSelectionChange: @MainActor @Sendable (Bool) -> Void
     private let haptic: @MainActor @Sendable () -> Void
 
     public init(
@@ -23,6 +24,9 @@ public struct NotesListScreen: View {
         onOpenNote: @escaping @MainActor @Sendable (NoteDigest) -> Void,
         onCreateNote: @escaping @MainActor @Sendable () -> Void,
         onChange: @escaping @MainActor @Sendable () -> Void = {},
+        /// The host hides its dock while a selection is live; the package cannot reach that
+        /// modifier, and should not know it exists.
+        onSelectionChange: @escaping @MainActor @Sendable (Bool) -> Void = { _ in },
         haptic: @escaping @MainActor @Sendable () -> Void = {}
     ) {
         _viewModel = State(initialValue: NotesListViewModel(
@@ -35,6 +39,7 @@ public struct NotesListScreen: View {
         self.onClose = onClose
         self.onOpenNote = onOpenNote
         self.onCreateNote = onCreateNote
+        self.onSelectionChange = onSelectionChange
         self.haptic = haptic
     }
 
@@ -45,6 +50,10 @@ public struct NotesListScreen: View {
             .noteNavigationChrome()
             .onAppear { viewModel.send(.onAppear) }
             .onChange(of: refreshToken) { viewModel.send(.refresh) }
+            .onChange(of: viewModel.state.isSelecting) { _, isSelecting in
+                onSelectionChange(isSelecting)
+            }
+            .onDisappear { onSelectionChange(false) }
             .onChange(of: searchText) { _, query in
                 searchTask?.cancel()
                 searchTask = Task {
@@ -54,6 +63,44 @@ public struct NotesListScreen: View {
                 }
             }
             .onDisappear { searchTask?.cancel() }
+            .overlay(alignment: .bottom) {
+                if viewModel.state.isSelecting {
+                    NoteBatchToolbar(
+                        selectionCount: viewModel.state.selection.count,
+                        wouldPin: viewModel.state.batchWouldPin,
+                        wouldLock: viewModel.state.batchWouldLock,
+                        folders: viewModel.state.index.folders,
+                        isBusy: viewModel.state.isBusy,
+                        theme: theme,
+                        onPin: { haptic(); viewModel.send(.batchPin) },
+                        onLock: { haptic(); viewModel.send(.batchLock) },
+                        onMoveToFolder: { viewModel.send(.batchMoveToFolder($0)) },
+                        onTrash: { viewModel.send(.requestBatchDiscard) }
+                    )
+                    .padding(.horizontal, theme.medium)
+                    .padding(.bottom, theme.small)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(
+                NoteMotion.mode(reduceMotion: reduceMotion),
+                value: viewModel.state.isSelecting
+            )
+            .confirmationDialog(
+                Text(.notesKit("Move these notes to Recently Deleted?")),
+                isPresented: Binding(
+                    get: { viewModel.state.pendingBatchDiscard },
+                    set: { if !$0 { viewModel.send(.cancelBatchDiscard) } }
+                ),
+                titleVisibility: .visible
+            ) {
+                Button(.notesKit("Move to Trash"), role: .destructive) {
+                    viewModel.send(.confirmBatchDiscard)
+                }
+                Button(.notesKit("Cancel"), role: .cancel) {
+                    viewModel.send(.cancelBatchDiscard)
+                }
+            }
             .confirmationDialog(
                 Text(.notesKit("Move this note to Recently Deleted?")),
                 isPresented: Binding(
@@ -100,6 +147,35 @@ public struct NotesListScreen: View {
     private var chrome: some View {
         VStack(spacing: 0) {
             HStack(spacing: 2) {
+                if viewModel.state.isSelecting {
+                    selectionChrome
+                } else {
+                    browsingChrome
+                }
+            }
+            .frame(height: 44)
+            .padding(.horizontal, theme.small)
+
+            if !viewModel.state.isSelecting {
+                countLine
+                searchField
+                if !viewModel.state.folderChips.isEmpty { folderRow }
+            } else {
+                selectionCount
+            }
+
+            Rectangle()
+                .fill(theme.separator)
+                .frame(height: 0.75)
+                .padding(.top, theme.xs)
+        }
+        .background(theme.background)
+        .animation(NoteMotion.mode(reduceMotion: reduceMotion), value: viewModel.state.isSelecting)
+    }
+
+    @ViewBuilder
+    private var browsingChrome: some View {
+        Group {
                 Button(action: onClose) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 15, weight: .medium))
@@ -122,6 +198,22 @@ public struct NotesListScreen: View {
 
                 sortMenu
 
+                Button {
+                    haptic()
+                    viewModel.send(.startSelecting)
+                } label: {
+                    Image(systemName: "checkmark.circle")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(theme.primaryText)
+                        .frame(width: 32, height: 32)
+                        .background(theme.card, in: Circle())
+                        .overlay { Circle().strokeBorder(theme.separator, lineWidth: 0.75) }
+                }
+                .buttonStyle(NotePressButtonStyle())
+                .frame(width: 44, height: 44)
+                .disabled(viewModel.state.visibleNotes.isEmpty)
+                .accessibilityLabel(Text(.notesKit("Select notes")))
+
                 Button(action: onCreateNote) {
                     Image(systemName: "plus")
                         .font(.system(size: 15, weight: .medium))
@@ -133,19 +225,52 @@ public struct NotesListScreen: View {
                 .frame(width: 44, height: 44)
                 .accessibilityLabel(Text(.notesKit("New note")))
             }
-            .frame(height: 44)
-            .padding(.horizontal, theme.small)
-
-            countLine
-            searchField
-            if !viewModel.state.folderChips.isEmpty { folderRow }
-
-            Rectangle()
-                .fill(theme.separator)
-                .frame(height: 0.75)
-                .padding(.top, theme.xs)
         }
-        .background(theme.background)
+
+    /// Cancel on the left, Select All on the right, count underneath: the same shape Vault Home
+    /// and the trash already use, so selecting notes is not a second thing to learn.
+    @ViewBuilder
+    private var selectionChrome: some View {
+        Group {
+            Button { viewModel.send(.stopSelecting) } label: {
+                Text(.notesKit("Cancel"))
+                    .font(theme.modeFont)
+                    .textCase(.uppercase)
+                    .tracking(1.2)
+                    .foregroundStyle(theme.primaryText)
+            }
+            .buttonStyle(NotePressButtonStyle())
+            .padding(.leading, theme.small)
+
+            Spacer(minLength: theme.small)
+
+            Button {
+                haptic()
+                viewModel.send(.selectAllOrNone)
+            } label: {
+                Text(viewModel.state.isEverythingSelected
+                    ? .notesKit("Deselect All")
+                    : .notesKit("Select All"))
+                    .font(theme.modeFont)
+                    .textCase(.uppercase)
+                    .tracking(1.2)
+                    .foregroundStyle(theme.primaryText)
+            }
+            .buttonStyle(NotePressButtonStyle())
+            .padding(.trailing, theme.small)
+        }
+    }
+
+    private var selectionCount: some View {
+        Text(.notesKit(count: "\(viewModel.state.selection.count) selected"))
+            .font(theme.metadataFont)
+            .textCase(.uppercase)
+            .tracking(1.4)
+            .foregroundStyle(theme.secondaryText)
+            .contentTransition(.numericText())
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, theme.medium)
+            .padding(.bottom, theme.small)
     }
 
     /// Sort and filter in one menu rather than two controls.
@@ -387,7 +512,22 @@ public struct NotesListScreen: View {
     }
 
     private func row(_ note: NoteDigest) -> some View {
-        NoteRowCard(note: note, theme: theme, haptic: haptic) { onOpenNote(note) }
+        let isSelecting = viewModel.state.isSelecting
+        return NoteRowCard(
+            note: note,
+            theme: theme,
+            isSelecting: isSelecting,
+            isSelected: viewModel.state.selection.contains(note.id),
+            haptic: haptic
+        ) {
+            // While selecting, a tap ticks the row. Opening a note from here would lose the
+            // selection the user is halfway through building.
+            if isSelecting {
+                viewModel.send(.toggleSelection(note.id))
+            } else {
+                onOpenNote(note)
+            }
+        }
             .listRowInsets(EdgeInsets(
                 top: theme.xs,
                 leading: theme.medium,
@@ -396,13 +536,18 @@ public struct NotesListScreen: View {
             ))
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
+            // Swipes and the context menu are off while selecting: a swipe that acts on one row
+            // in the middle of building a selection of five is an action nobody asked for.
             .swipeActions(edge: .trailing) {
-                Button(role: .destructive) { viewModel.send(.requestDiscard(note)) } label: {
-                    Label(.notesKit("Move to Trash"), systemImage: "trash")
+                if !isSelecting {
+                    Button(role: .destructive) { viewModel.send(.requestDiscard(note)) } label: {
+                        Label(.notesKit("Move to Trash"), systemImage: "trash")
+                    }
                 }
             }
-            .swipeActions(edge: .leading) { pinButton(note) }
+            .swipeActions(edge: .leading) { if !isSelecting { pinButton(note) } }
             .contextMenu {
+                if isSelecting { EmptyView() } else {
                 pinButton(note)
                 if !viewModel.state.index.folders.isEmpty || note.folder != nil {
                     Menu {
@@ -420,6 +565,7 @@ public struct NotesListScreen: View {
                 }
                 Button(role: .destructive) { viewModel.send(.requestDiscard(note)) } label: {
                     Label(.notesKit("Move to Trash"), systemImage: "trash")
+                }
                 }
             }
     }

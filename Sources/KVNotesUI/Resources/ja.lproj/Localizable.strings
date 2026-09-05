@@ -105,3 +105,17 @@
 "Hold to reveal" = "長押しで表示";
 /* Hint under a secret block while it is revealed. */
 "Release to hide" = "離すと非表示";
+/* Batch selection UI on the notes list. */
+"Select notes" = "メモを選択";
+/* Batch selection UI on the notes list. */
+"Select All" = "すべて選択";
+/* Batch selection UI on the notes list. */
+"Deselect All" = "すべて選択解除";
+/* Batch selection UI on the notes list. */
+"Lock" = "ロック";
+/* Batch selection UI on the notes list. */
+"Unlock" = "ロック解除";
+/* Batch selection UI on the notes list. */
+"More" = "その他";
+/* Batch selection UI on the notes list. */
+"Move these notes to Recently Deleted?" = "これらのメモを「最近削除した項目」に移動しますか？";

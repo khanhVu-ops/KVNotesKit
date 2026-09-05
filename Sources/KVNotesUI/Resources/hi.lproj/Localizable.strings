@@ -105,3 +105,17 @@
 "Hold to reveal" = "दिखाने के लिए दबाए रखें";
 /* Hint under a secret block while it is revealed. */
 "Release to hide" = "छिपाने के लिए छोड़ें";
+/* Batch selection UI on the notes list. */
+"Select notes" = "नोट चुनें";
+/* Batch selection UI on the notes list. */
+"Select All" = "सभी चुनें";
+/* Batch selection UI on the notes list. */
+"Deselect All" = "चयन हटाएँ";
+/* Batch selection UI on the notes list. */
+"Lock" = "लॉक करें";
+/* Batch selection UI on the notes list. */
+"Unlock" = "अनलॉक करें";
+/* Batch selection UI on the notes list. */
+"More" = "और";
+/* Batch selection UI on the notes list. */
+"Move these notes to Recently Deleted?" = "इन नोट्स को हाल ही में हटाए गए में ले जाएँ?";

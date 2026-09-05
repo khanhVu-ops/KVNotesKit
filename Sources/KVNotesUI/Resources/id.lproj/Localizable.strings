@@ -105,3 +105,17 @@
 "Hold to reveal" = "Tahan untuk menampilkan";
 /* Hint under a secret block while it is revealed. */
 "Release to hide" = "Lepas untuk menyembunyikan";
+/* Batch selection UI on the notes list. */
+"Select notes" = "Pilih catatan";
+/* Batch selection UI on the notes list. */
+"Select All" = "Pilih semua";
+/* Batch selection UI on the notes list. */
+"Deselect All" = "Batalkan semua pilihan";
+/* Batch selection UI on the notes list. */
+"Lock" = "Kunci";
+/* Batch selection UI on the notes list. */
+"Unlock" = "Buka kunci";
+/* Batch selection UI on the notes list. */
+"More" = "Lainnya";
+/* Batch selection UI on the notes list. */
+"Move these notes to Recently Deleted?" = "Pindahkan catatan ini ke Baru Dihapus?";

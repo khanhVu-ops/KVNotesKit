@@ -38,13 +38,27 @@ public struct NotesListState: Equatable, Sendable {
     public var pinnedCount = 0
     public var folderChips: [FolderChip] = []
     public var pendingDiscard: NoteDigest?
+    /// Set while a batch is waiting for the user to confirm sending it to the trash.
+    public var pendingBatchDiscard = false
     public var isBusy = false
+    public var isSelecting = false
+    public var selection: Set<NoteID> = []
     private var normalizedSearchHaystacks: [NoteID: SearchHaystackCache] = [:]
 
     /// Whether anything narrows the list beyond the folder chips, which the header already
     /// shows. Drives the marker on the sort control: a filter left on and forgotten looks
     /// exactly like a vault that lost its notes.
     public var isNarrowed: Bool { filter != .all || sortOrder != .lastEditedNewest }
+
+    /// The notes a batch action would touch, in the order they are on screen.
+    public var selectedNotes: [NoteDigest] { visibleNotes.filter { selection.contains($0.id) } }
+    public var isEverythingSelected: Bool {
+        !visibleNotes.isEmpty && selection.count == visibleNotes.count
+    }
+    /// One verb for the whole batch: pinning a mixed selection pins all of it, which is what the
+    /// photo grid does with Favourite and what a person means by tapping Pin on five rows.
+    public var batchWouldPin: Bool { selectedNotes.contains { !$0.isPinned } }
+    public var batchWouldLock: Bool { selectedNotes.contains { !$0.requiresBiometricUnlock } }
 
     public var isEmptyBecauseStoreIsEmpty: Bool { phase == .loaded && index.isEmpty }
     public var isEmptyBecauseOfFilter: Bool {
@@ -135,6 +149,16 @@ public final class NotesListViewModel {
         case requestDiscard(NoteDigest)
         case confirmDiscard
         case cancelDiscard
+        case startSelecting
+        case stopSelecting
+        case toggleSelection(NoteID)
+        case selectAllOrNone
+        case batchPin
+        case batchLock
+        case batchMoveToFolder(String?)
+        case requestBatchDiscard
+        case confirmBatchDiscard
+        case cancelBatchDiscard
     }
 
     public private(set) var state = NotesListState()
@@ -202,11 +226,65 @@ public final class NotesListViewModel {
             perform { try await self.store.discard(id); return nil }
         case .cancelDiscard:
             state.pendingDiscard = nil
+        case .startSelecting:
+            state.isSelecting = true
+            state.selection = []
+        case .stopSelecting:
+            state.isSelecting = false
+            state.selection = []
+        case .toggleSelection(let id):
+            if state.selection.contains(id) {
+                state.selection.remove(id)
+            } else {
+                state.selection.insert(id)
+            }
+        case .selectAllOrNone:
+            state.selection = state.isEverythingSelected
+                ? []
+                : Set(state.visibleNotes.map(\.id))
+        case .batchPin:
+            let pinned = state.batchWouldPin
+            batch { store, id in _ = try await store.apply(NoteAttributePatch(isPinned: pinned), to: id) }
+        case .batchLock:
+            let locked = state.batchWouldLock
+            batch { store, id in
+                _ = try await store.apply(NoteAttributePatch(requiresBiometricUnlock: locked), to: id)
+            }
+        case .batchMoveToFolder(let folder):
+            batch { store, id in _ = try await store.apply(NoteAttributePatch(folder: .set(folder)), to: id) }
+        case .requestBatchDiscard:
+            guard !state.selection.isEmpty else { return }
+            state.pendingBatchDiscard = true
+        case .cancelBatchDiscard:
+            state.pendingBatchDiscard = false
+        case .confirmBatchDiscard:
+            state.pendingBatchDiscard = false
+            batch { store, id in try await store.discard(id) }
         }
     }
 
     private func rememberHowTheListIsShown() {
         preferences?.save(NoteListPreferences(sortOrder: state.sortOrder, filter: state.filter))
+    }
+
+    /// Applies one operation to every selected note, in the order the list shows them.
+    ///
+    /// Sequential rather than concurrent, and that is not laziness: every one of these writes
+    /// re-encrypts the same vault, and a `TaskGroup` racing five metadata writes through one
+    /// store is how a batch ends up with a note whose attributes came from two different writes.
+    /// Selection ends when the batch does — leaving five rows ticked after they have all moved is
+    /// a selection of things that are no longer where the user left them.
+    private func batch(
+        _ operation: @escaping @Sendable (any NoteStore, NoteID) async throws -> Void
+    ) {
+        let ids = state.selectedNotes.map(\.id)
+        guard !ids.isEmpty else { return }
+        perform { [store] in
+            for id in ids { try await operation(store, id) }
+            return nil
+        }
+        state.isSelecting = false
+        state.selection = []
     }
 
     private func load() {
@@ -218,6 +296,9 @@ public final class NotesListViewModel {
                 let index = try await store.index()
                 guard !Task.isCancelled else { return }
                 state.index = index
+                // A note that has gone — trashed here or elsewhere — must not stay selected, or
+                // the next batch acts on an id the store no longer has.
+                state.selection.formIntersection(Set(index.notes.map(\.id)))
                 if let folder = state.selectedFolder, !index.folders.contains(folder) {
                     state.selectedFolder = nil
                 }

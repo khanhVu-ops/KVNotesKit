@@ -50,5 +50,29 @@
 			<string>%lld حرف</string>
 		</dict>
 	</dict>
+	<key>%lld selected</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>zero</key>
+			<string>لم يتم تحديد شيء</string>
+			<key>one</key>
+			<string>تم تحديد واحدة</string>
+			<key>two</key>
+			<string>تم تحديد اثنتين</string>
+			<key>few</key>
+			<string>تم تحديد %lld</string>
+			<key>many</key>
+			<string>تم تحديد %lld</string>
+			<key>other</key>
+			<string>تم تحديد %lld</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

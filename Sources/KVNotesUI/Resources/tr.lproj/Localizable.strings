@@ -105,3 +105,17 @@
 "Hold to reveal" = "Göstermek için basılı tutun";
 /* Hint under a secret block while it is revealed. */
 "Release to hide" = "Gizlemek için bırakın";
+/* Batch selection UI on the notes list. */
+"Select notes" = "Notları seç";
+/* Batch selection UI on the notes list. */
+"Select All" = "Tümünü seç";
+/* Batch selection UI on the notes list. */
+"Deselect All" = "Tüm seçimi kaldır";
+/* Batch selection UI on the notes list. */
+"Lock" = "Kilitle";
+/* Batch selection UI on the notes list. */
+"Unlock" = "Kilidi aç";
+/* Batch selection UI on the notes list. */
+"More" = "Daha fazla";
+/* Batch selection UI on the notes list. */
+"Move these notes to Recently Deleted?" = "Bu notlar Son Silinenler'e taşınsın mı?";

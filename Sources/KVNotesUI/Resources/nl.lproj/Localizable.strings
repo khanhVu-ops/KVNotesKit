@@ -105,3 +105,17 @@
 "Hold to reveal" = "Houd vast om te tonen";
 /* Hint under a secret block while it is revealed. */
 "Release to hide" = "Loslaten om te verbergen";
+/* Batch selection UI on the notes list. */
+"Select notes" = "Notities selecteren";
+/* Batch selection UI on the notes list. */
+"Select All" = "Alles selecteren";
+/* Batch selection UI on the notes list. */
+"Deselect All" = "Selectie opheffen";
+/* Batch selection UI on the notes list. */
+"Lock" = "Vergrendelen";
+/* Batch selection UI on the notes list. */
+"Unlock" = "Ontgrendelen";
+/* Batch selection UI on the notes list. */
+"More" = "Meer";
+/* Batch selection UI on the notes list. */
+"Move these notes to Recently Deleted?" = "Deze notities naar Onlangs verwijderd verplaatsen?";
