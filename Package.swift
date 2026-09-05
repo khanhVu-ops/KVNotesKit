@@ -19,6 +19,11 @@ let package = Package(
         .testTarget(
             name: "KVNotesTargetBoundaryTests",
             dependencies: ["KVNotesCore", "KVNotesUI", "KVNotesTesting", "KVNotesKit"]
+        ),
+        .testTarget(name: "KVNotesCoreTests", dependencies: ["KVNotesCore"]),
+        .testTarget(
+            name: "KVNotesTestingTests",
+            dependencies: ["KVNotesCore", "KVNotesTesting"]
         )
     ],
     swiftLanguageModes: [.v6]
