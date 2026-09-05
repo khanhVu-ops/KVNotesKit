@@ -22,24 +22,57 @@ public enum NoteMarkdownBlock: Equatable, Sendable {
 
     case heading(level: Int, text: String)
     case paragraph(String)
+    /// A fenced or backticked value, and whether the note asked for it to be masked.
+    ///
+    /// The flag lives in the note's own text — a fence opened as ```` ```secret ```` — rather than
+    /// in a side table. A mask stored anywhere else is a mask that a copy, an export or a restore
+    /// silently loses, and the value it was hiding is the kind that only has to surface once.
+    public struct Code: Equatable, Sendable {
+        public let value: String
+        public let isSecret: Bool
+
+        public init(value: String, isSecret: Bool = false) {
+            self.value = value
+            self.isSecret = isSecret
+        }
+
+        /// What a reader is shown. Dots rather than a blur: a blurred password is still on
+        /// screen, and a screenshot or a shoulder recovers it — the characters are simply not
+        /// drawn until asked for. The count is padded and capped so the dots do not report the
+        /// length of the value they hide.
+        public func displayed(revealed: Bool) -> String {
+            guard isSecret, !revealed else { return value }
+            return String(repeating: "•", count: min(max(value.count, 8), 32))
+        }
+    }
+
     case bullet(String)
     case quote(String)
     case task(Task)
-    case code(String)
+    case code(Code)
     case divider
+
+    /// The info string that marks a fenced block as one to hide until asked for.
+    public static let secretFenceInfo = "secret"
 
     public static func blocks(of markdown: String) -> [NoteMarkdownBlock] {
         var blocks: [NoteMarkdownBlock] = []
         var fenced: [String]?
+        var fenceIsSecret = false
 
         for (lineIndex, rawLine) in markdown.components(separatedBy: .newlines).enumerated() {
             let line = rawLine.trimmingCharacters(in: .whitespaces)
             if line.hasPrefix("```") {
                 if let open = fenced {
-                    blocks.append(.code(open.joined(separator: "\n")))
+                    blocks.append(.code(Code(
+                        value: open.joined(separator: "\n"),
+                        isSecret: fenceIsSecret
+                    )))
                     fenced = nil
+                    fenceIsSecret = false
                 } else {
                     fenced = []
+                    fenceIsSecret = isSecretFence(line)
                 }
                 continue
             }
@@ -57,7 +90,7 @@ public enum NoteMarkdownBlock: Equatable, Sendable {
             } else if line.hasPrefix("#") {
                 blocks.append(.heading(level: 1, text: strip(line, "#")))
             } else if isSingleBacktickedValue(line) {
-                blocks.append(.code(String(line.dropFirst().dropLast())))
+                blocks.append(.code(Code(value: String(line.dropFirst().dropLast()))))
             } else if line.hasPrefix("> ") {
                 blocks.append(.quote(strip(line, ">")))
             } else if let task = task(in: line, lineIndex: lineIndex) {
@@ -69,7 +102,7 @@ public enum NoteMarkdownBlock: Equatable, Sendable {
             }
         }
         if let open = fenced, !open.isEmpty {
-            blocks.append(.code(open.joined(separator: "\n")))
+            blocks.append(.code(Code(value: open.joined(separator: "\n"), isSecret: fenceIsSecret)))
         }
         return blocks
     }
@@ -121,6 +154,14 @@ public enum NoteMarkdownBlock: Equatable, Sendable {
         let afterClosing = line.index(after: closing)
         guard afterClosing < line.endIndex, line[afterClosing] == " " else { return nil }
         return box..<closing
+    }
+
+    /// ```` ```secret ```` opens a masked block; any other info string is an ordinary fence.
+    public static func isSecretFence(_ line: String) -> Bool {
+        line.trimmingCharacters(in: .whitespaces)
+            .dropFirst(3)
+            .trimmingCharacters(in: .whitespaces)
+            .lowercased() == secretFenceInfo
     }
 
     private static func isSingleBacktickedValue(_ line: String) -> Bool {

@@ -99,3 +99,9 @@
 "Next match" = "下一個符合項目";
 /* Accessibility label of the find bar's up chevron. */
 "Previous match" = "上一個符合項目";
+/* Accessibility label of a masked secret block in read mode. */
+"Hidden value" = "已隱藏的值";
+/* Hint under a masked secret block. */
+"Hold to reveal" = "按住以顯示";
+/* Hint under a secret block while it is revealed. */
+"Release to hide" = "放開以隱藏";

@@ -99,3 +99,9 @@
 "Next match" = "Следующее совпадение";
 /* Accessibility label of the find bar's up chevron. */
 "Previous match" = "Предыдущее совпадение";
+/* Accessibility label of a masked secret block in read mode. */
+"Hidden value" = "Скрытое значение";
+/* Hint under a masked secret block. */
+"Hold to reveal" = "Удерживайте, чтобы показать";
+/* Hint under a secret block while it is revealed. */
+"Release to hide" = "Отпустите, чтобы скрыть";

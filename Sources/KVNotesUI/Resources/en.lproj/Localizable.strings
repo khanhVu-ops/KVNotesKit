@@ -99,3 +99,9 @@
 "Next match" = "Next match";
 /* Accessibility label of the find bar's up chevron. */
 "Previous match" = "Previous match";
+/* Accessibility label of a masked secret block in read mode. */
+"Hidden value" = "Hidden value";
+/* Hint under a masked secret block. */
+"Hold to reveal" = "Hold to reveal";
+/* Hint under a secret block while it is revealed. */
+"Release to hide" = "Release to hide";

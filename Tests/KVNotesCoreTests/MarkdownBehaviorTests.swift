@@ -14,7 +14,7 @@ final class MarkdownBehaviorTests: XCTestCase {
         """), [
             .heading(level: 1, text: "Wallet"),
             .bullet("Recovery phrase"),
-            .code("8492"),
+            .code(NoteMarkdownBlock.Code(value: "8492")),
             .divider,
             // A quote since NK-210 added the key that writes one; the line below still shows
             // that an unrecognised marker survives as the author typed it.
@@ -26,7 +26,7 @@ final class MarkdownBehaviorTests: XCTestCase {
     func testParserKeepsUnclosedFenceInsteadOfDroppingSecretText() {
         XCTAssertEqual(
             NoteMarkdownBlock.blocks(of: "```\nseed words"),
-            [.code("seed words")]
+            [.code(NoteMarkdownBlock.Code(value: "seed words"))]
         )
     }
 
@@ -129,6 +129,63 @@ final class MarkdownBehaviorTests: XCTestCase {
 
     func testQuoteLinesRenderAsQuotesRatherThanProse() {
         XCTAssertEqual(NoteMarkdownBlock.blocks(of: "> said"), [.quote("said")])
+    }
+}
+
+final class SecretBlockTests: XCTestCase {
+    func testASecretFenceMarksItsBlockAndAnOrdinaryFenceDoesNot() {
+        let masked = NoteMarkdownBlock.blocks(of: "```secret\nseed words\n```")
+        XCTAssertEqual(masked, [.code(NoteMarkdownBlock.Code(value: "seed words", isSecret: true))])
+
+        let plain = NoteMarkdownBlock.blocks(of: "```\nseed words\n```")
+        XCTAssertEqual(plain, [.code(NoteMarkdownBlock.Code(value: "seed words", isSecret: false))])
+    }
+
+    /// An unclosed secret fence still hides: the file being mid-edit is not a reason to publish
+    /// the value it was opened for.
+    func testAnUnclosedSecretFenceKeepsItsFlag() {
+        XCTAssertEqual(
+            NoteMarkdownBlock.blocks(of: "```secret\nseed words"),
+            [.code(NoteMarkdownBlock.Code(value: "seed words", isSecret: true))]
+        )
+    }
+
+    /// The leak this task closes: the list row is drawn without the vault being open in front of
+    /// it, and a fenced block in this app is where a password goes.
+    func testFencedContentNeverReachesTheListSnippet() {
+        let markdown = """
+        Router
+        ```secret
+        correct horse battery staple
+        ```
+        rebooted on Tuesday
+        """
+
+        let snippet = NoteTextDerivation.snippet(from: markdown, alreadyShowing: "Router")
+
+        XCTAssertFalse(snippet.contains("correct horse"))
+        XCTAssertTrue(snippet.contains("rebooted"))
+    }
+
+    func testAMaskedValueShowsDotsThatDoNotReportItsLength() {
+        let short = NoteMarkdownBlock.Code(value: "123", isSecret: true)
+        let long = NoteMarkdownBlock.Code(value: String(repeating: "x", count: 200), isSecret: true)
+
+        XCTAssertEqual(short.displayed(revealed: false).count, 8)
+        XCTAssertEqual(long.displayed(revealed: false).count, 32)
+        XCTAssertFalse(short.displayed(revealed: false).contains("1"))
+
+        XCTAssertEqual(short.displayed(revealed: true), "123")
+        // A block nobody marked secret is never masked, revealed or not.
+        XCTAssertEqual(NoteMarkdownBlock.Code(value: "8492").displayed(revealed: false), "8492")
+    }
+
+    func testTheToolbarKeyWrapsTheSelectionInASecretFence() {
+        let result = MarkdownInsertion.apply(.secretBlock, to: "hunter2", selection: 0..<7)
+
+        XCTAssertEqual(result.text, "```secret\nhunter2\n```\n")
+        // The caret stays with the value rather than jumping past the closing fence.
+        XCTAssertEqual(result.caretOffset, 17)
     }
 }
 

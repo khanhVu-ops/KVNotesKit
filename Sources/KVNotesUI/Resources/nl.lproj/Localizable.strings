@@ -99,3 +99,9 @@
 "Next match" = "Volgende overeenkomst";
 /* Accessibility label of the find bar's up chevron. */
 "Previous match" = "Vorige overeenkomst";
+/* Accessibility label of a masked secret block in read mode. */
+"Hidden value" = "Verborgen waarde";
+/* Hint under a masked secret block. */
+"Hold to reveal" = "Houd vast om te tonen";
+/* Hint under a secret block while it is revealed. */
+"Release to hide" = "Loslaten om te verbergen";

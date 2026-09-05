@@ -99,3 +99,9 @@
 "Next match" = "النتيجة التالية";
 /* Accessibility label of the find bar's up chevron. */
 "Previous match" = "النتيجة السابقة";
+/* Accessibility label of a masked secret block in read mode. */
+"Hidden value" = "قيمة مخفية";
+/* Hint under a masked secret block. */
+"Hold to reveal" = "استمر بالضغط للإظهار";
+/* Hint under a secret block while it is revealed. */
+"Release to hide" = "ارفع إصبعك للإخفاء";

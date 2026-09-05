@@ -99,3 +99,9 @@
 "Next match" = "Corrispondenza successiva";
 /* Accessibility label of the find bar's up chevron. */
 "Previous match" = "Corrispondenza precedente";
+/* Accessibility label of a masked secret block in read mode. */
+"Hidden value" = "Valore nascosto";
+/* Hint under a masked secret block. */
+"Hold to reveal" = "Tieni premuto per mostrare";
+/* Hint under a secret block while it is revealed. */
+"Release to hide" = "Rilascia per nascondere";

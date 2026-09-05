@@ -99,3 +99,9 @@
 "Next match" = "Hasil berikutnya";
 /* Accessibility label of the find bar's up chevron. */
 "Previous match" = "Hasil sebelumnya";
+/* Accessibility label of a masked secret block in read mode. */
+"Hidden value" = "Nilai tersembunyi";
+/* Hint under a masked secret block. */
+"Hold to reveal" = "Tahan untuk menampilkan";
+/* Hint under a secret block while it is revealed. */
+"Release to hide" = "Lepas untuk menyembunyikan";

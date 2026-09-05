@@ -11,6 +11,7 @@ public enum MarkdownToken: String, CaseIterable, Identifiable, Sendable {
     case checklist
     case quote
     case inlineCode
+    case secretBlock
     case thematicBreak
 
     public var id: String { rawValue }
@@ -21,7 +22,8 @@ public enum MarkdownToken: String, CaseIterable, Identifiable, Sendable {
         case .italic: "*"
         case .strikethrough: "~~"
         case .inlineCode: "`"
-        case .heading1, .heading2, .heading3, .bulletList, .checklist, .quote, .thematicBreak: nil
+        case .heading1, .heading2, .heading3, .bulletList, .checklist, .quote, .secretBlock,
+             .thematicBreak: nil
         }
     }
 
@@ -33,7 +35,7 @@ public enum MarkdownToken: String, CaseIterable, Identifiable, Sendable {
         case .bulletList: "- "
         case .checklist: "- [ ] "
         case .quote: "> "
-        case .bold, .italic, .strikethrough, .inlineCode, .thematicBreak: nil
+        case .bold, .italic, .strikethrough, .inlineCode, .secretBlock, .thematicBreak: nil
         }
     }
 
@@ -49,6 +51,7 @@ public enum MarkdownToken: String, CaseIterable, Identifiable, Sendable {
         case .checklist: "☑"
         case .quote: "❯"
         case .inlineCode: "`"
+        case .secretBlock: "•••"
         case .thematicBreak: "—"
         }
     }
@@ -75,6 +78,7 @@ public enum MarkdownInsertion {
         if let prefix = token.linePrefix {
             return prefixLines(of: text, range: clamped, with: prefix)
         }
+        if token == .secretBlock { return wrapInSecretFence(text, range: clamped) }
         return insertBlock("\n---\n", into: text, at: clamped)
     }
 
@@ -118,6 +122,21 @@ public enum MarkdownInsertion {
         }
         result.insert(contentsOf: prefix, at: insertAt)
         return Result(text: result, caretOffset: range.upperBound + prefix.count)
+    }
+
+    /// Wraps the selection in a ```` ```secret ```` fence, keeping the selected text as the
+    /// block's contents — the mask is a property of the note, so writing it means writing text.
+    private static func wrapInSecretFence(_ text: String, range: Range<Int>) -> Result {
+        let start = index(text, range.lowerBound)
+        let end = index(text, range.upperBound)
+        let selected = String(text[start..<end])
+        let opening = "```\(NoteMarkdownBlock.secretFenceInfo)\n"
+        let block = "\(opening)\(selected)\n```\n"
+        var result = text
+        result.replaceSubrange(start..<end, with: block)
+        // The caret lands inside the fence, which is where the value goes when the selection was
+        // empty and where an edit continues when it was not.
+        return Result(text: result, caretOffset: range.lowerBound + opening.count + selected.count)
     }
 
     private static func insertBlock(

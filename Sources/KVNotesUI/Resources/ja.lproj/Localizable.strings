@@ -99,3 +99,9 @@
 "Next match" = "次の一致";
 /* Accessibility label of the find bar's up chevron. */
 "Previous match" = "前の一致";
+/* Accessibility label of a masked secret block in read mode. */
+"Hidden value" = "非表示の値";
+/* Hint under a masked secret block. */
+"Hold to reveal" = "長押しで表示";
+/* Hint under a secret block while it is revealed. */
+"Release to hide" = "離すと非表示";

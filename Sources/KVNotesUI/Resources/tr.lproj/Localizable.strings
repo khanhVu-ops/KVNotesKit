@@ -99,3 +99,9 @@
 "Next match" = "Sonraki eşleşme";
 /* Accessibility label of the find bar's up chevron. */
 "Previous match" = "Önceki eşleşme";
+/* Accessibility label of a masked secret block in read mode. */
+"Hidden value" = "Gizli değer";
+/* Hint under a masked secret block. */
+"Hold to reveal" = "Göstermek için basılı tutun";
+/* Hint under a secret block while it is revealed. */
+"Release to hide" = "Gizlemek için bırakın";

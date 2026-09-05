@@ -148,6 +148,12 @@ extension View {
         #endif
     }
 
+    /// `textSelection` takes two different types for on and off, so a ternary cannot express it.
+    @ViewBuilder
+    func noteTextSelection(enabled: Bool) -> some View {
+        if enabled { textSelection(.enabled) } else { textSelection(.disabled) }
+    }
+
     @ViewBuilder
     func noteNeverAutocapitalizes() -> some View {
         #if os(iOS)

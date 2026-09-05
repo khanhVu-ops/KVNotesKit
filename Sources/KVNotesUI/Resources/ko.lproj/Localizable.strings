@@ -99,3 +99,9 @@
 "Next match" = "다음 일치";
 /* Accessibility label of the find bar's up chevron. */
 "Previous match" = "이전 일치";
+/* Accessibility label of a masked secret block in read mode. */
+"Hidden value" = "숨겨진 값";
+/* Hint under a masked secret block. */
+"Hold to reveal" = "길게 눌러 표시";
+/* Hint under a secret block while it is revealed. */
+"Release to hide" = "놓으면 숨김";

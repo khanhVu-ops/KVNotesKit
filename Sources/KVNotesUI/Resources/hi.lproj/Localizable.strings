@@ -99,3 +99,9 @@
 "Next match" = "अगला मिलान";
 /* Accessibility label of the find bar's up chevron. */
 "Previous match" = "पिछला मिलान";
+/* Accessibility label of a masked secret block in read mode. */
+"Hidden value" = "छिपा हुआ मान";
+/* Hint under a masked secret block. */
+"Hold to reveal" = "दिखाने के लिए दबाए रखें";
+/* Hint under a secret block while it is revealed. */
+"Release to hide" = "छिपाने के लिए छोड़ें";

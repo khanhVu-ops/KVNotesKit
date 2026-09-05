@@ -99,3 +99,9 @@
 "Next match" = "Coincidencia siguiente";
 /* Accessibility label of the find bar's up chevron. */
 "Previous match" = "Coincidencia anterior";
+/* Accessibility label of a masked secret block in read mode. */
+"Hidden value" = "Valor oculto";
+/* Hint under a masked secret block. */
+"Hold to reveal" = "Mantén pulsado para mostrar";
+/* Hint under a secret block while it is revealed. */
+"Release to hide" = "Suelta para ocultar";

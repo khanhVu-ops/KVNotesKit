@@ -10,6 +10,9 @@ public struct NoteStyleSpan: Equatable, Sendable {
         case strikethrough
         case inlineCode
         case taskMarker(isDone: Bool)
+        /// The ```` ```secret ```` line itself. Marked so the editor can say, without masking
+        /// text the author is trying to edit, that this block is hidden when the note is read.
+        case secretFence
         /// The Markdown characters themselves. Dimmed rather than hidden: hiding them makes the
         /// caret jump over glyphs that are not there, which is the classic way a "live preview"
         /// editor becomes impossible to edit in.
@@ -73,6 +76,16 @@ public enum NoteSyntaxHighlighting {
             contentStart += 1
         }
         let start = lineRange.location + contentStart
+
+        if line.substring(from: contentStart).hasPrefix("```") {
+            let length = max(0, lineRange.location + lineRange.length - start)
+            let isSecret = NoteMarkdownBlock.isSecretFence(line.substring(from: contentStart))
+            spans.append(NoteStyleSpan(
+                kind: isSecret ? .secretFence : .syntax,
+                range: NSRange(location: start, length: length)
+            ))
+            return
+        }
 
         if let level = headingLevel(of: line, from: contentStart) {
             let markerLength = level + 1

@@ -76,7 +76,17 @@ public enum NoteTextDerivation {
         }
         var parts: [String] = []
         var length = 0
+        var insideFence = false
         for line in lines {
+            // A fenced block's contents never reach the list row. The row is the one place a
+            // note's text is drawn without the vault being open in front of it, and a fenced
+            // block in *this* app is where a password or a seed phrase goes — the same reasoning
+            // as NK-001, applied to the other thing worth hiding.
+            if line.trimmingCharacters(in: .whitespaces).hasPrefix("```") {
+                insideFence.toggle()
+                continue
+            }
+            guard !insideFence else { continue }
             let plain = plainText(from: line)
             guard !plain.isEmpty else { continue }
             parts.append(plain)

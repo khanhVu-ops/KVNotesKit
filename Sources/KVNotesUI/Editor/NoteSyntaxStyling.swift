@@ -31,6 +31,7 @@ final class NoteSyntaxStyling {
     private let taskDone: [NSAttributedString.Key: Any]
     private let taskOpen: [NSAttributedString.Key: Any]
     private let syntax: [NSAttributedString.Key: Any]
+    private let secretFence: [NSAttributedString.Key: Any]
     private let match: [NSAttributedString.Key: Any]
     private let currentMatch: [NSAttributedString.Key: Any]
 
@@ -66,6 +67,9 @@ final class NoteSyntaxStyling {
         // Dimmed, never hidden. Hiding the markers makes the caret step over glyphs that are not
         // drawn, and selection stops matching what the eye sees.
         syntax = [.foregroundColor: dimmed]
+        // Editing text that is drawn as dots is not editing, so the editor marks the fence
+        // instead of masking its contents, and the read view does the hiding.
+        secretFence = [.foregroundColor: accent, .backgroundColor: codeBackground]
         // Find highlights sit on top of syntax styling rather than replacing it: a match inside a
         // heading is still a heading, and losing that while searching makes the note look like a
         // different note.
@@ -114,6 +118,7 @@ final class NoteSyntaxStyling {
         case .inlineCode: inlineCode
         case .taskMarker(let isDone): isDone ? taskDone : taskOpen
         case .syntax: syntax
+        case .secretFence: secretFence
         }
     }
 

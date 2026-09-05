@@ -66,9 +66,10 @@ struct NoteMarkdownView: View {
             TaskRow(task: task, theme: theme, isEnabled: toggleTask != nil) {
                 toggleTask?(task.lineIndex)
             }
-        case .code(let value):
+        case .code(let code):
             CopyableValueRow(
-                value: value,
+                value: code.value,
+                isSecret: code.isSecret,
                 clipboardLifetime: clipboardLifetime,
                 theme: theme,
                 onCopy: copy
@@ -126,22 +127,36 @@ private struct TaskRow: View {
 
 private struct CopyableValueRow: View {
     let value: String
+    let isSecret: Bool
     let clipboardLifetime: TimeInterval
     let theme: NoteTheme
     let onCopy: @MainActor @Sendable (String) -> Void
 
     @State private var secondsLeft: Int?
     @State private var countdownTask: Task<Void, Never>?
+    @State private var isRevealed = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var displayed: String {
+        NoteMarkdownBlock.Code(value: value, isSecret: isSecret).displayed(revealed: isRevealed)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: theme.xs) {
             HStack(alignment: .top, spacing: theme.small) {
-                Text(verbatim: value)
+                Text(verbatim: displayed)
                     .font(theme.monoFont)
-                    .foregroundStyle(theme.primaryText)
-                    .textSelection(.enabled)
+                    .foregroundStyle(isSecret && !isRevealed ? theme.secondaryText : theme.primaryText)
+                    // Selection is off while masked, or the value can be dragged out of the dots.
+                    .noteTextSelection(enabled: !(isSecret && !isRevealed))
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .accessibilityLabel(
+                        isSecret && !isRevealed
+                            ? Text(.notesKit("Hidden value"))
+                            : Text(verbatim: value)
+                    )
+                    .gesture(revealGesture, isEnabled: isSecret)
 
                 Button(action: copyValue) {
                     Text(secondsLeft == nil ? .notesKit("Copy") : .notesKit("Copied"))
@@ -159,6 +174,17 @@ private struct CopyableValueRow: View {
                         }
                 }
                 .buttonStyle(NotePressButtonStyle())
+            }
+
+            if isSecret {
+                HStack(spacing: 4) {
+                    Image(systemName: isRevealed ? "eye" : "eye.slash")
+                        .font(.system(size: 9, weight: .semibold))
+                    Text(isRevealed ? .notesKit("Release to hide") : .notesKit("Hold to reveal"))
+                }
+                .font(theme.metadataFont)
+                .foregroundStyle(theme.disabledText)
+                .accessibilityHidden(true)
             }
 
             if let secondsLeft {
@@ -179,7 +205,22 @@ private struct CopyableValueRow: View {
                 .strokeBorder(theme.separator, lineWidth: 0.75)
         }
         .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: secondsLeft != nil)
-        .onDisappear { countdownTask?.cancel() }
+        .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: isRevealed)
+        // Leaving the screen re-hides: a note reopened from the app switcher must not come back
+        // already revealed.
+        .onDisappear {
+            countdownTask?.cancel()
+            isRevealed = false
+        }
+    }
+
+    /// Held, not tapped, and hidden again the moment the finger lifts. A toggle would leave a
+    /// password on screen for as long as it takes to walk away from the phone.
+    private var revealGesture: some Gesture {
+        LongPressGesture(minimumDuration: 0.25)
+            .onEnded { _ in isRevealed = true }
+            .sequenced(before: DragGesture(minimumDistance: 0).onEnded { _ in isRevealed = false })
+            .simultaneously(with: DragGesture(minimumDistance: 0).onEnded { _ in isRevealed = false })
     }
 
     private func copyValue() {

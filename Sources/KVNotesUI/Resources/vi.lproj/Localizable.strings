@@ -99,3 +99,9 @@
 "Next match" = "Kết quả kế tiếp";
 /* Accessibility label of the find bar's up chevron. */
 "Previous match" = "Kết quả trước";
+/* Accessibility label of a masked secret block in read mode. */
+"Hidden value" = "Giá trị đang ẩn";
+/* Hint under a masked secret block. */
+"Hold to reveal" = "Giữ để hiện";
+/* Hint under a secret block while it is revealed. */
+"Release to hide" = "Thả ra để ẩn";
