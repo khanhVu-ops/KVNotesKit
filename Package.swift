@@ -13,7 +13,11 @@ let package = Package(
     ],
     targets: [
         .target(name: "KVNotesCore"),
-        .target(name: "KVNotesUI", dependencies: ["KVNotesCore", "KVNotesTesting"]),
+        .target(
+            name: "KVNotesUI",
+            dependencies: ["KVNotesCore", "KVNotesTesting"],
+            resources: [.process("Resources")]
+        ),
         .target(name: "KVNotesTesting", dependencies: ["KVNotesCore"]),
         .target(name: "KVNotesKit", dependencies: ["KVNotesCore", "KVNotesUI"]),
         .testTarget(
@@ -24,7 +28,8 @@ let package = Package(
         .testTarget(
             name: "KVNotesTestingTests",
             dependencies: ["KVNotesCore", "KVNotesTesting"]
-        )
+        ),
+        .testTarget(name: "KVNotesUITests", dependencies: ["KVNotesUI"])
     ],
     swiftLanguageModes: [.v6]
 )

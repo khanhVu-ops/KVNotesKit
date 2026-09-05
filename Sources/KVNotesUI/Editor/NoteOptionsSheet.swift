@@ -17,23 +17,23 @@ struct NoteOptionsSheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: theme.large) {
-                section("Icon") {
+                section(.notesKit("Icon")) {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6)) {
                         iconButton(nil, label: "Aa")
                         ForEach(Self.icons, id: \.self) { iconButton($0, label: $0) }
                     }
                 }
-                section("Folder") {
+                section(.notesKit("Folder")) {
                     VStack(alignment: .leading, spacing: theme.small) {
                         ScrollView(.horizontal) {
                             HStack {
-                                folderButton(nil, label: "No folder")
-                                ForEach(folders, id: \.self) { folderButton($0, label: $0) }
+                                folderButton(nil, label: Text(.notesKit("No folder")))
+                                ForEach(folders, id: \.self) { folderButton($0, label: Text(verbatim: $0)) }
                             }
                         }.scrollIndicators(.hidden)
                         HStack {
-                            TextField("New folder", text: $newFolder).textFieldStyle(.plain)
-                            Button("Done") {
+                            TextField(text: $newFolder, prompt: Text(.notesKit("New folder"))) { EmptyView() }.textFieldStyle(.plain)
+                            Button(.notesKit("Done")) {
                                 let value = newFolder.trimmingCharacters(in: .whitespacesAndNewlines)
                                 guard !value.isEmpty else { return }
                                 haptic(); onFolder(value); newFolder = ""
@@ -41,13 +41,13 @@ struct NoteOptionsSheet: View {
                         }.noteCard(theme: theme, padding: theme.small + 4)
                     }
                 }
-                section("Security") {
+                section(.notesKit("Security")) {
                     Button { haptic(); onToggleLock() } label: {
                         HStack {
                             Image(systemName: isLocked ? "lock.fill" : "lock.open")
                             VStack(alignment: .leading) {
-                                Text("Lock this note").font(theme.rowFont)
-                                Text("Even inside an unlocked vault, this note asks to unlock again before it opens.")
+                                Text(.notesKit("Lock this note")).font(theme.rowFont)
+                                Text(.notesKit("Even inside an unlocked vault, this note asks to unlock again before it opens."))
                                     .font(theme.captionFont).foregroundStyle(theme.secondaryText)
                             }
                             Spacer()
@@ -60,9 +60,9 @@ struct NoteOptionsSheet: View {
         .background(theme.sheet)
         .safeAreaInset(edge: .top) {
             HStack {
-                Text("Note options").font(theme.sectionFont).textCase(.uppercase)
+                Text(.notesKit("Note options")).font(theme.sectionFont).textCase(.uppercase)
                 Spacer()
-                Button("Done", action: onDismiss).foregroundStyle(theme.accent)
+                Button(.notesKit("Done"), action: onDismiss).foregroundStyle(theme.accent)
             }.padding(theme.medium).background(theme.sheet)
         }
         .presentationDetents([.medium, .large])
@@ -83,9 +83,9 @@ struct NoteOptionsSheet: View {
         }.buttonStyle(.plain)
     }
 
-    private func folderButton(_ value: String?, label: String) -> some View {
+    private func folderButton(_ value: String?, label: Text) -> some View {
         Button { haptic(); onFolder(value) } label: {
-            Text(verbatim: label).font(theme.modeFont).textCase(.uppercase).padding(.horizontal, theme.medium).frame(height: 34)
+            label.font(theme.modeFont).textCase(.uppercase).padding(.horizontal, theme.medium).frame(height: 34)
                 .foregroundStyle(folder == value ? theme.onAccent : theme.secondaryText)
                 .background(folder == value ? theme.accent : theme.card, in: Capsule())
         }.buttonStyle(.plain)

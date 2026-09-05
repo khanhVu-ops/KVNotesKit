@@ -172,7 +172,7 @@ public final class NoteEditorViewModel {
             guard let self else { return }
             defer { state.isAuthenticating = false }
             do {
-                if try await unlockAuthority.authenticate(reason: "Unlock private note") {
+                if try await unlockAuthority.authenticate(reason: .notesKit("Unlocking private note")) {
                     state.isLocked = false
                     loadBody()
                 } else {

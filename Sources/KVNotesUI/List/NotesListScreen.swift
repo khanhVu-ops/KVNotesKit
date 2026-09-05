@@ -52,14 +52,14 @@ public struct NotesListScreen: View {
             }
         }
         .confirmationDialog(
-            Text("Move this note to Recently Deleted?"),
+            Text(.notesKit("Move this note to Recently Deleted?")),
             isPresented: Binding(
                 get: { viewModel.state.pendingDiscard != nil },
                 set: { if !$0 { viewModel.send(.cancelDiscard) } }
             )
         ) {
-            Button("Move to Trash", role: .destructive) { viewModel.send(.confirmDiscard) }
-            Button("Cancel", role: .cancel) { viewModel.send(.cancelDiscard) }
+            Button(.notesKit("Move to Trash"), role: .destructive) { viewModel.send(.confirmDiscard) }
+            Button(.notesKit("Cancel"), role: .cancel) { viewModel.send(.cancelDiscard) }
         }
     }
 
@@ -67,12 +67,12 @@ public struct NotesListScreen: View {
         VStack(spacing: 0) {
             HStack {
                 Button(action: onClose) { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
-                    .accessibilityLabel(Text("Back"))
-                Text("Private notes").font(theme.sectionFont).textCase(.uppercase).tracking(2.2)
+                    .accessibilityLabel(Text(.notesKit("Back")))
+                Text(.notesKit("Private notes")).font(theme.sectionFont).textCase(.uppercase).tracking(2.2)
                 Spacer()
                 Button(action: onCreateNote) {
                     Image(systemName: "plus").frame(width: 32, height: 32).background(theme.accent, in: Circle())
-                }.accessibilityLabel(Text("New note"))
+                }.accessibilityLabel(Text(.notesKit("New note")))
             }
             .foregroundStyle(theme.primaryText).padding(.horizontal, theme.small)
             searchField
@@ -85,7 +85,8 @@ public struct NotesListScreen: View {
     private var searchField: some View {
         HStack(spacing: theme.small) {
             Image(systemName: "magnifyingglass").foregroundStyle(theme.secondaryText)
-            TextField("Search notes", text: $searchText).textFieldStyle(.plain).font(theme.monoFont)
+            TextField(text: $searchText, prompt: Text(.notesKit("Search notes"))) { EmptyView() }
+                .textFieldStyle(.plain).font(theme.monoFont)
                 .autocorrectionDisabled()
         }
         .padding(.horizontal, theme.small + 4).frame(height: 36)
@@ -96,11 +97,11 @@ public struct NotesListScreen: View {
     private var folders: some View {
         ScrollView(.horizontal) {
             HStack(spacing: theme.xs + 2) {
-                chip("All", count: viewModel.state.index.notes.count, selected: viewModel.state.selectedFolder == nil) {
+                chip(Text(.notesKit("All")), count: viewModel.state.index.notes.count, selected: viewModel.state.selectedFolder == nil) {
                     viewModel.send(.selectFolder(nil))
                 }
                 ForEach(viewModel.state.folderChips) { folder in
-                    chip(folder.name, count: folder.count, selected: viewModel.state.selectedFolder == folder.name) {
+                    chip(Text(verbatim: folder.name), count: folder.count, selected: viewModel.state.selectedFolder == folder.name) {
                         viewModel.send(.selectFolder(folder.name))
                     }
                 }
@@ -108,9 +109,9 @@ public struct NotesListScreen: View {
         }.scrollIndicators(.hidden)
     }
 
-    private func chip(_ title: String, count: Int, selected: Bool, action: @escaping () -> Void) -> some View {
+    private func chip(_ title: Text, count: Int, selected: Bool, action: @escaping () -> Void) -> some View {
         Button { haptic(); action() } label: {
-            HStack(spacing: 5) { Text(verbatim: title); Text(count, format: .number) }
+            HStack(spacing: 5) { title; Text(count, format: .number) }
                 .font(theme.modeFont).textCase(.uppercase).padding(.horizontal, theme.small + 4).frame(height: 31)
                 .foregroundStyle(selected ? theme.onAccent : theme.secondaryText)
                 .background(selected ? AnyShapeStyle(theme.accent) : AnyShapeStyle(theme.separator), in: Capsule())
@@ -124,23 +125,28 @@ public struct NotesListScreen: View {
                     .listRowInsets(EdgeInsets(top: theme.xs, leading: theme.medium, bottom: theme.xs, trailing: theme.medium))
                     .listRowBackground(Color.clear).listRowSeparator(.hidden)
                     .swipeActions(edge: .trailing) {
-                        Button("Move to Trash", systemImage: "trash", role: .destructive) {
-                            viewModel.send(.requestDiscard(note))
+                        Button(role: .destructive) { viewModel.send(.requestDiscard(note)) } label: {
+                            Label(.notesKit("Move to Trash"), systemImage: "trash")
                         }
                     }
                     .swipeActions(edge: .leading) {
-                        Button(note.isFavorite ? "Remove from Favorites" : "Add to Favorites", systemImage: "heart") {
-                            viewModel.send(.toggleFavorite(note.id))
+                        Button { viewModel.send(.toggleFavorite(note.id)) } label: {
+                            Label(
+                                note.isFavorite
+                                    ? .notesKit("Remove from Favorites")
+                                    : .notesKit("Add to Favorites"),
+                                systemImage: "heart"
+                            )
                         }.tint(theme.error)
                     }
             }
         }.listStyle(.plain).scrollContentBackground(.hidden).refreshable { viewModel.send(.refresh) }
     }
 
-    private var skeleton: some View { placeholder(icon: "note.text", title: "Private notes") }
-    private var failure: some View { placeholder(icon: "exclamationmark.triangle", title: "Something went wrong.") }
-    private var empty: some View { placeholder(icon: "note.text", title: "No notes yet", message: "Notes you write here are sealed in the vault with AES-256.") }
-    private var noMatches: some View { placeholder(icon: "magnifyingglass", title: "No matching notes", message: "Titles and previews are searchable. The body of a note is not.") }
+    private var skeleton: some View { placeholder(icon: "note.text", title: .notesKit("Private notes")) }
+    private var failure: some View { placeholder(icon: "exclamationmark.triangle", title: .notesKit("Something went wrong.")) }
+    private var empty: some View { placeholder(icon: "note.text", title: .notesKit("No notes yet"), message: .notesKit("Notes you write here are sealed in the vault with AES-256.")) }
+    private var noMatches: some View { placeholder(icon: "magnifyingglass", title: .notesKit("No matching notes"), message: .notesKit("Titles and previews are searchable. The body of a note is not.")) }
 
     private func placeholder(
         icon: String,

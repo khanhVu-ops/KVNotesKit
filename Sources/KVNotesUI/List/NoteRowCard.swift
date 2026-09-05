@@ -32,7 +32,9 @@ struct NoteRowCard: View {
 
     private var title: Text {
         guard !note.title.isEmpty else {
-            return note.requiresBiometricUnlock ? Text("Locked note") : Text("Untitled note")
+            return note.requiresBiometricUnlock
+                ? Text(.notesKit("Locked note"))
+                : Text(.notesKit("Untitled note"))
         }
         return Text(verbatim: note.title)
     }
@@ -80,7 +82,7 @@ struct NoteRowCard: View {
 
     @ViewBuilder private var editedAt: some View {
         let elapsed = Date().timeIntervalSince(note.lastEditedAt)
-        if elapsed < 60 { Text("Just now") }
+        if elapsed < 60 { Text(.notesKit("Just now")) }
         else if elapsed < 7 * 86_400 { Text(note.lastEditedAt, format: .relative(presentation: .named)) }
         else { Text(note.lastEditedAt, format: .dateTime.day().month(.abbreviated)) }
     }

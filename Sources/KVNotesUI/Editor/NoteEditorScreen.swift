@@ -72,12 +72,12 @@ public struct NoteEditorScreen: View {
         HStack {
             Button { if viewModel.state.isDirty { viewModel.send(.save) }; onClose() } label: {
                 Image(systemName: "chevron.left").frame(width: 44, height: 44)
-            }.accessibilityLabel(Text("Back"))
+            }.accessibilityLabel(Text(.notesKit("Back")))
             Spacer()
             saveStatus
             Button { viewModel.send(.openOptions) } label: {
                 Image(systemName: "ellipsis").frame(width: 44, height: 44)
-            }.accessibilityLabel(Text("Note options"))
+            }.accessibilityLabel(Text(.notesKit("Note options")))
         }.foregroundStyle(theme.primaryText).padding(.horizontal, theme.small)
     }
 
@@ -85,7 +85,7 @@ public struct NoteEditorScreen: View {
         TextField(
             text: Binding(get: { viewModel.state.title }, set: { viewModel.send(.setTitle($0)) }),
             prompt: Text(verbatim: viewModel.state.titlePlaceholder)
-        ) { Text("Title") }
+        ) { Text(.notesKit("Title")) }
         .font(theme.titleFont).foregroundStyle(theme.primaryText).textFieldStyle(.plain)
         .padding(.horizontal, theme.medium).padding(.vertical, theme.small)
         .autocorrectionDisabled()
@@ -93,8 +93,8 @@ public struct NoteEditorScreen: View {
 
     private var modePicker: some View {
         HStack(spacing: 0) {
-            modeButton("Edit", .edit)
-            modeButton("Read", .read)
+            modeButton(.notesKit("Edit"), .edit)
+            modeButton(.notesKit("Read"), .read)
         }.padding(3).background(theme.card, in: Capsule()).padding(.horizontal, theme.medium)
     }
 
@@ -138,9 +138,9 @@ public struct NoteEditorScreen: View {
 
     @ViewBuilder private var saveStatus: some View {
         switch viewModel.state.saveStatus {
-        case .saving: Text("Saving…")
-        case .saved: Text("Saved to vault")
-        case .failed: Text("Not saved")
+        case .saving: Text(.notesKit("Saving…"))
+        case .saved: Text(.notesKit("Saved to vault"))
+        case .failed: Text(.notesKit("Not saved"))
         case .idle, .unsaved: EmptyView()
         }
     }
