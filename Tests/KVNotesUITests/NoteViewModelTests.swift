@@ -237,6 +237,28 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state.body, "")
     }
 
+    func testInsertedTextLandsAtTheCaretAndIsUndoable() {
+        let viewModel = NoteEditorViewModel(store: InMemoryNoteStore(), unlockAuthority: UnlockAuthority())
+
+        viewModel.send(.setBody("password: "))
+        viewModel.send(.insertText("s3cret", 10..<10))
+
+        XCTAssertEqual(viewModel.state.body, "password: s3cret")
+        XCTAssertEqual(viewModel.state.pendingCaretOffset, 16)
+
+        // The caret the ViewModel issues is also the point the *next* insertion uses, which is
+        // what a sheet's stale copy of the view struct got wrong before the caret moved here.
+        XCTAssertEqual(viewModel.state.selection, 16..<16)
+        viewModel.send(.insertText("!", viewModel.state.selection))
+        XCTAssertEqual(viewModel.state.body, "password: s3cret!")
+
+        // A selection is replaced rather than appended to, and the whole insertion is one undo.
+        viewModel.send(.insertText("other", 10..<17))
+        XCTAssertEqual(viewModel.state.body, "password: other")
+        viewModel.send(.undo)
+        XCTAssertEqual(viewModel.state.body, "password: s3cret!")
+    }
+
     private func settle(
         until condition: @escaping @MainActor () -> Bool,
         file: StaticString = #filePath,

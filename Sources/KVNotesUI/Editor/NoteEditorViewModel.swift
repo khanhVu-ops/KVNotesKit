@@ -22,6 +22,13 @@ public struct NoteEditorState: Equatable, Sendable {
     public var showOptions = false
     public var showSavedToast = false
     public var pendingCaretOffset: Int?
+    /// Where the caret is, as the ViewModel's own fact.
+    ///
+    /// It lived in the screen as `@State` and that was a bug with a long fuse: a sheet's content
+    /// closure captures the view struct as it was when the sheet was built, so the generator
+    /// inserted its password wherever the caret had been *before* the clock key ran. A reference
+    /// the closure reads through cannot go stale that way.
+    public var selection = 0..<0
     public var canUndo = false
     public var canRedo = false
 
@@ -62,6 +69,8 @@ public final class NoteEditorViewModel {
         case setBody(String)
         case setMode(NoteEditorState.Mode)
         case insert(MarkdownToken, Range<Int>)
+        case insertText(String, Range<Int>)
+        case setSelection(Range<Int>)
         case undo
         case redo
         case toggleTask(line: Int)
@@ -145,6 +154,7 @@ public final class NoteEditorViewModel {
             let result = MarkdownInsertion.apply(token, to: state.body, selection: selection)
             state.body = result.text
             state.pendingCaretOffset = result.caretOffset
+            state.selection = result.caretOffset..<result.caretOffset
             dirty()
         case .toggleTask(let line):
             // Read mode becomes a write path here, and it takes the same one every other change
@@ -158,6 +168,21 @@ public final class NoteEditorViewModel {
             state.body = toggled
             state.saveStatus = .unsaved
             save()
+        case .insertText(let value, let selection):
+            guard !value.isEmpty else { return }
+            recordUndoSnapshot(coalescingTyping: false)
+            let lower = min(max(selection.lowerBound, 0), state.body.count)
+            let upper = min(max(selection.upperBound, lower), state.body.count)
+            let start = state.body.index(state.body.startIndex, offsetBy: lower)
+            let end = state.body.index(state.body.startIndex, offsetBy: upper)
+            state.body.replaceSubrange(start..<end, with: value)
+            let caret = lower + value.count
+            state.pendingCaretOffset = caret
+            state.selection = caret..<caret
+            dirty()
+        case .setSelection(let range):
+            guard range != state.selection else { return }
+            state.selection = range
         case .undo:
             step(undoing: true)
         case .redo:

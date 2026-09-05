@@ -75,3 +75,19 @@
 "Undo" = "Anular";
 /* Accessibility label of the editor toolbar's redo key. */
 "Redo" = "Refazer";
+/* Title of the password generator sheet, and the toolbar key's label. */
+"Generate a password" = "Gerar uma palavra-passe";
+/* Accessibility label of the generated value shown in the sheet. */
+"Generated password" = "Palavra-passe gerada";
+/* Password length slider label. */
+"Length" = "Comprimento";
+/* Toggle: include digits in the generated password. */
+"Digits" = "Dígitos";
+/* Toggle: include symbols in the generated password. */
+"Symbols" = "Símbolos";
+/* Button that draws a new password. */
+"Regenerate" = "Gerar novamente";
+/* Button that puts the generated password into the note at the caret. */
+"Insert" = "Inserir";
+/* Accessibility label of the editor toolbar's timestamp key. */
+"Insert the time" = "Inserir a hora";

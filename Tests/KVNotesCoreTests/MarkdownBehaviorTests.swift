@@ -131,3 +131,68 @@ final class MarkdownBehaviorTests: XCTestCase {
         XCTAssertEqual(NoteMarkdownBlock.blocks(of: "> said"), [.quote("said")])
     }
 }
+
+final class PasswordGenerationTests: XCTestCase {
+    /// A deterministic source, so the assertions are about the generator's shape rather than
+    /// about one lucky draw.
+    private struct CountingGenerator: RandomNumberGenerator {
+        private var state: UInt64 = 0x2545F4914F6CDD1D
+        private(set) var draws = 0
+
+        mutating func next() -> UInt64 {
+            draws += 1
+            state ^= state << 13
+            state ^= state >> 7
+            state ^= state << 17
+            return state
+        }
+    }
+
+    func testEveryRequestedClassAppearsAndTheLengthIsExact() {
+        var generator = CountingGenerator()
+        let recipe = PasswordRecipe(length: 24, includesDigits: true, includesSymbols: true)
+
+        let password = PasswordGeneration.password(for: recipe, using: &generator)
+
+        XCTAssertEqual(password.count, 24)
+        XCTAssertTrue(password.contains { PasswordGeneration.letters.contains($0) })
+        XCTAssertTrue(password.contains { PasswordGeneration.digits.contains($0) })
+        XCTAssertTrue(password.contains { PasswordGeneration.symbols.contains($0) })
+        // Every character is drawn, rather than a fixed set being shuffled into place.
+        XCTAssertGreaterThanOrEqual(generator.draws, 24)
+    }
+
+    func testTurningAClassOffKeepsItOut() {
+        let recipe = PasswordRecipe(length: 32, includesDigits: false, includesSymbols: false)
+
+        let password = PasswordGeneration.password(for: recipe)
+
+        XCTAssertEqual(password.count, 32)
+        XCTAssertTrue(password.allSatisfy(PasswordGeneration.letters.contains))
+    }
+
+    func testLengthIsClampedToTheOfferedRange() {
+        XCTAssertEqual(PasswordRecipe(length: 2).length, PasswordRecipe.lengthRange.lowerBound)
+        XCTAssertEqual(PasswordRecipe(length: 4_096).length, PasswordRecipe.lengthRange.upperBound)
+    }
+
+    func testTwoPasswordsFromTheSystemSourceDiffer() {
+        let recipe = PasswordRecipe(length: 40)
+        XCTAssertNotEqual(PasswordGeneration.password(for: recipe), PasswordGeneration.password(for: recipe))
+    }
+}
+
+final class NoteTimestampTests: XCTestCase {
+    /// The point of the type: the stamp follows the locale it is handed, not the device's.
+    func testTheStampFollowsTheLocaleItIsGiven() {
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+
+        let english = NoteTimestamp.text(at: date, locale: Locale(identifier: "en_US"))
+        let vietnamese = NoteTimestamp.text(at: date, locale: Locale(identifier: "vi_VN"))
+        let japanese = NoteTimestamp.text(at: date, locale: Locale(identifier: "ja_JP"))
+
+        XCTAssertNotEqual(english, vietnamese)
+        XCTAssertNotEqual(english, japanese)
+        XCTAssertFalse(english.isEmpty)
+    }
+}

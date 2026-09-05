@@ -75,3 +75,19 @@
 "Undo" = "تراجع";
 /* Accessibility label of the editor toolbar's redo key. */
 "Redo" = "إعادة";
+/* Title of the password generator sheet, and the toolbar key's label. */
+"Generate a password" = "إنشاء كلمة سر";
+/* Accessibility label of the generated value shown in the sheet. */
+"Generated password" = "كلمة السر المُنشأة";
+/* Password length slider label. */
+"Length" = "الطول";
+/* Toggle: include digits in the generated password. */
+"Digits" = "أرقام";
+/* Toggle: include symbols in the generated password. */
+"Symbols" = "رموز";
+/* Button that draws a new password. */
+"Regenerate" = "إعادة الإنشاء";
+/* Button that puts the generated password into the note at the caret. */
+"Insert" = "إدراج";
+/* Accessibility label of the editor toolbar's timestamp key. */
+"Insert the time" = "إدراج الوقت";

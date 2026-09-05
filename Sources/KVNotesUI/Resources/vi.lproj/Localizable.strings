@@ -75,3 +75,19 @@
 "Undo" = "Hoàn tác";
 /* Accessibility label of the editor toolbar's redo key. */
 "Redo" = "Làm lại";
+/* Title of the password generator sheet, and the toolbar key's label. */
+"Generate a password" = "Tạo mật khẩu";
+/* Accessibility label of the generated value shown in the sheet. */
+"Generated password" = "Mật khẩu đã tạo";
+/* Password length slider label. */
+"Length" = "Độ dài";
+/* Toggle: include digits in the generated password. */
+"Digits" = "Chữ số";
+/* Toggle: include symbols in the generated password. */
+"Symbols" = "Ký tự đặc biệt";
+/* Button that draws a new password. */
+"Regenerate" = "Tạo lại";
+/* Button that puts the generated password into the note at the caret. */
+"Insert" = "Chèn";
+/* Accessibility label of the editor toolbar's timestamp key. */
+"Insert the time" = "Chèn thời gian";

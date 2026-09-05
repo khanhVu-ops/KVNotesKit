@@ -3,7 +3,7 @@ import SwiftUI
 
 public struct NoteEditorScreen: View {
     @State private var viewModel: NoteEditorViewModel
-    @State private var selection = 0..<0
+    @State private var showsGenerator = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.locale) private var locale
     @Environment(\.scenePhase) private var scenePhase
@@ -70,6 +70,18 @@ public struct NoteEditorScreen: View {
                 get: { viewModel.state.showOptions },
                 set: { if !$0 { viewModel.send(.dismissOptions) } }
             )) { options }
+            .sheet(isPresented: $showsGenerator) {
+                PasswordGeneratorSheet(
+                    theme: theme,
+                    onInsert: { password in
+                        showsGenerator = false
+                        viewModel.send(.insertText(password, viewModel.state.selection))
+                    },
+                    onCancel: { showsGenerator = false }
+                )
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+            }
     }
 
     private var editor: some View {
@@ -242,19 +254,28 @@ public struct NoteEditorScreen: View {
     private var editBody: some View {
         NoteTextEditor(
             text: Binding(get: { viewModel.state.body }, set: { viewModel.send(.setBody($0)) }),
-            selection: $selection,
+            selection: Binding(
+                get: { viewModel.state.selection },
+                set: { viewModel.send(.setSelection($0)) }
+            ),
             pendingCaretOffset: viewModel.state.pendingCaretOffset,
             theme: theme,
             onCaretApplied: { viewModel.send(.caretApplied) },
-            onInsert: { viewModel.send(.insert($0, selection)) },
+            onInsert: { viewModel.send(.insert($0, viewModel.state.selection)) },
             onUndo: { viewModel.send(.undo) },
             onRedo: { viewModel.send(.redo) },
+            onInsertTimestamp: {
+                viewModel.send(.insertText(NoteTimestamp.text(locale: locale), viewModel.state.selection))
+            },
+            onOpenGenerator: { showsGenerator = true },
             canUndo: viewModel.state.canUndo,
             canRedo: viewModel.state.canRedo,
             isActive: viewModel.state.mode == .edit,
             doneTitle: NotesLocalization.string("Done", locale: locale),
             undoTitle: NotesLocalization.string("Undo", locale: locale),
             redoTitle: NotesLocalization.string("Redo", locale: locale),
+            timestampTitle: NotesLocalization.string("Insert the time", locale: locale),
+            generatorTitle: NotesLocalization.string("Generate a password", locale: locale),
             haptic: haptic
         )
     }

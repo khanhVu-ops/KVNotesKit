@@ -75,3 +75,19 @@
 "Undo" = "撤销";
 /* Accessibility label of the editor toolbar's redo key. */
 "Redo" = "重做";
+/* Title of the password generator sheet, and the toolbar key's label. */
+"Generate a password" = "生成密码";
+/* Accessibility label of the generated value shown in the sheet. */
+"Generated password" = "已生成的密码";
+/* Password length slider label. */
+"Length" = "长度";
+/* Toggle: include digits in the generated password. */
+"Digits" = "数字";
+/* Toggle: include symbols in the generated password. */
+"Symbols" = "符号";
+/* Button that draws a new password. */
+"Regenerate" = "重新生成";
+/* Button that puts the generated password into the note at the caret. */
+"Insert" = "插入";
+/* Accessibility label of the editor toolbar's timestamp key. */
+"Insert the time" = "插入时间";

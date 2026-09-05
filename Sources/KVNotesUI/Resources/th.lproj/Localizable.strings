@@ -75,3 +75,19 @@
 "Undo" = "เลิกทำ";
 /* Accessibility label of the editor toolbar's redo key. */
 "Redo" = "ทำซ้ำ";
+/* Title of the password generator sheet, and the toolbar key's label. */
+"Generate a password" = "สร้างรหัสผ่าน";
+/* Accessibility label of the generated value shown in the sheet. */
+"Generated password" = "รหัสผ่านที่สร้างขึ้น";
+/* Password length slider label. */
+"Length" = "ความยาว";
+/* Toggle: include digits in the generated password. */
+"Digits" = "ตัวเลข";
+/* Toggle: include symbols in the generated password. */
+"Symbols" = "สัญลักษณ์";
+/* Button that draws a new password. */
+"Regenerate" = "สร้างใหม่";
+/* Button that puts the generated password into the note at the caret. */
+"Insert" = "แทรก";
+/* Accessibility label of the editor toolbar's timestamp key. */
+"Insert the time" = "แทรกเวลา";

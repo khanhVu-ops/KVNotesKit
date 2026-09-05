@@ -15,6 +15,8 @@ struct NoteTextEditor: UIViewRepresentable {
     let onInsert: @MainActor @Sendable (MarkdownToken) -> Void
     let onUndo: @MainActor @Sendable () -> Void
     let onRedo: @MainActor @Sendable () -> Void
+    let onInsertTimestamp: @MainActor @Sendable () -> Void
+    let onOpenGenerator: @MainActor @Sendable () -> Void
     let canUndo: Bool
     let canRedo: Bool
     /// False while read mode is on top. The view stays in the hierarchy — it keeps the caret and
@@ -23,6 +25,8 @@ struct NoteTextEditor: UIViewRepresentable {
     let doneTitle: String
     let undoTitle: String
     let redoTitle: String
+    let timestampTitle: String
+    let generatorTitle: String
     let haptic: @MainActor @Sendable () -> Void
 
     func makeUIView(context: Context) -> UITextView {
@@ -66,6 +70,10 @@ struct NoteTextEditor: UIViewRepresentable {
             let clamped = min(max(pendingCaretOffset, 0), view.text.count)
             if let position = view.position(from: view.beginningOfDocument, offset: clamped) {
                 view.selectedTextRange = view.textRange(from: position, to: position)
+                // Report it back rather than waiting for the delegate: setting the range
+                // programmatically does not reliably call `textViewDidChangeSelection`, and a
+                // binding left behind sends the *next* insertion to where the caret used to be.
+                context.coordinator.reportSelection(of: view)
             }
             Task { @MainActor in onCaretApplied() }
         }
@@ -122,7 +130,13 @@ struct NoteTextEditor: UIViewRepresentable {
             separator.widthAnchor.constraint(equalToConstant: 0.75).isActive = true
             separator.heightAnchor.constraint(equalToConstant: 20).isActive = true
 
-            let keys = UIStackView(arrangedSubviews: [undo, redo, separator]
+            let timestamp = key(symbol: "clock", action: #selector(timestampTapped))
+            timestamp.accessibilityLabel = parent.timestampTitle
+
+            let generator = key(symbol: "key.horizontal", action: #selector(generatorTapped))
+            generator.accessibilityLabel = parent.generatorTitle
+
+            let keys = UIStackView(arrangedSubviews: [undo, redo, separator, timestamp, generator]
                 + MarkdownToken.allCases.enumerated().map { index, token in
                     key(titled: token.keyTitle, tag: index, action: #selector(insertTapped(_:)))
                 })
@@ -230,6 +244,16 @@ struct NoteTextEditor: UIViewRepresentable {
             parent.onRedo()
         }
 
+        @objc private func timestampTapped() {
+            parent.haptic()
+            parent.onInsertTimestamp()
+        }
+
+        @objc private func generatorTapped() {
+            parent.haptic()
+            parent.onOpenGenerator()
+        }
+
         func textViewDidChange(_ textView: UITextView) {
             self.textView = textView
             parent.text = textView.text
@@ -241,7 +265,7 @@ struct NoteTextEditor: UIViewRepresentable {
             reportSelection(of: textView)
         }
 
-        private func reportSelection(of textView: UITextView) {
+        func reportSelection(of textView: UITextView) {
             let value = textView.text ?? ""
             guard let range = Range(textView.selectedRange, in: value) else { return }
             let lower = value.distance(from: value.startIndex, to: range.lowerBound)
@@ -261,12 +285,16 @@ struct NoteTextEditor: View {
     let onInsert: @MainActor @Sendable (MarkdownToken) -> Void
     let onUndo: @MainActor @Sendable () -> Void
     let onRedo: @MainActor @Sendable () -> Void
+    let onInsertTimestamp: @MainActor @Sendable () -> Void
+    let onOpenGenerator: @MainActor @Sendable () -> Void
     let canUndo: Bool
     let canRedo: Bool
     let isActive: Bool
     let doneTitle: String
     let undoTitle: String
     let redoTitle: String
+    let timestampTitle: String
+    let generatorTitle: String
     let haptic: @MainActor @Sendable () -> Void
 
     var body: some View {

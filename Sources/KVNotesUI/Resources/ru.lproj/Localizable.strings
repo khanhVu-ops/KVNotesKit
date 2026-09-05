@@ -75,3 +75,19 @@
 "Undo" = "Отменить";
 /* Accessibility label of the editor toolbar's redo key. */
 "Redo" = "Повторить";
+/* Title of the password generator sheet, and the toolbar key's label. */
+"Generate a password" = "Создать пароль";
+/* Accessibility label of the generated value shown in the sheet. */
+"Generated password" = "Созданный пароль";
+/* Password length slider label. */
+"Length" = "Длина";
+/* Toggle: include digits in the generated password. */
+"Digits" = "Цифры";
+/* Toggle: include symbols in the generated password. */
+"Symbols" = "Символы";
+/* Button that draws a new password. */
+"Regenerate" = "Создать заново";
+/* Button that puts the generated password into the note at the caret. */
+"Insert" = "Вставить";
+/* Accessibility label of the editor toolbar's timestamp key. */
+"Insert the time" = "Вставить время";

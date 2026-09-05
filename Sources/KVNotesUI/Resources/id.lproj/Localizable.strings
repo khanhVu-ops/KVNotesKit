@@ -75,3 +75,19 @@
 "Undo" = "Urungkan";
 /* Accessibility label of the editor toolbar's redo key. */
 "Redo" = "Ulangi";
+/* Title of the password generator sheet, and the toolbar key's label. */
+"Generate a password" = "Buat kata sandi";
+/* Accessibility label of the generated value shown in the sheet. */
+"Generated password" = "Kata sandi yang dibuat";
+/* Password length slider label. */
+"Length" = "Panjang";
+/* Toggle: include digits in the generated password. */
+"Digits" = "Angka";
+/* Toggle: include symbols in the generated password. */
+"Symbols" = "Simbol";
+/* Button that draws a new password. */
+"Regenerate" = "Buat ulang";
+/* Button that puts the generated password into the note at the caret. */
+"Insert" = "Sisipkan";
+/* Accessibility label of the editor toolbar's timestamp key. */
+"Insert the time" = "Sisipkan waktu";

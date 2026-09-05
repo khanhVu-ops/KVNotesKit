@@ -75,3 +75,19 @@
 "Undo" = "取り消す";
 /* Accessibility label of the editor toolbar's redo key. */
 "Redo" = "やり直す";
+/* Title of the password generator sheet, and the toolbar key's label. */
+"Generate a password" = "パスワードを生成";
+/* Accessibility label of the generated value shown in the sheet. */
+"Generated password" = "生成されたパスワード";
+/* Password length slider label. */
+"Length" = "文字数";
+/* Toggle: include digits in the generated password. */
+"Digits" = "数字";
+/* Toggle: include symbols in the generated password. */
+"Symbols" = "記号";
+/* Button that draws a new password. */
+"Regenerate" = "再生成";
+/* Button that puts the generated password into the note at the caret. */
+"Insert" = "挿入";
+/* Accessibility label of the editor toolbar's timestamp key. */
+"Insert the time" = "時刻を挿入";

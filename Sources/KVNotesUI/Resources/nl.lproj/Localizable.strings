@@ -75,3 +75,19 @@
 "Undo" = "Ongedaan maken";
 /* Accessibility label of the editor toolbar's redo key. */
 "Redo" = "Opnieuw";
+/* Title of the password generator sheet, and the toolbar key's label. */
+"Generate a password" = "Wachtwoord genereren";
+/* Accessibility label of the generated value shown in the sheet. */
+"Generated password" = "Gegenereerd wachtwoord";
+/* Password length slider label. */
+"Length" = "Lengte";
+/* Toggle: include digits in the generated password. */
+"Digits" = "Cijfers";
+/* Toggle: include symbols in the generated password. */
+"Symbols" = "Symbolen";
+/* Button that draws a new password. */
+"Regenerate" = "Opnieuw genereren";
+/* Button that puts the generated password into the note at the caret. */
+"Insert" = "Invoegen";
+/* Accessibility label of the editor toolbar's timestamp key. */
+"Insert the time" = "Tijd invoegen";

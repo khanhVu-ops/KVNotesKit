@@ -75,3 +75,19 @@
 "Undo" = "पूर्ववत करें";
 /* Accessibility label of the editor toolbar's redo key. */
 "Redo" = "फिर से करें";
+/* Title of the password generator sheet, and the toolbar key's label. */
+"Generate a password" = "पासवर्ड बनाएँ";
+/* Accessibility label of the generated value shown in the sheet. */
+"Generated password" = "बनाया गया पासवर्ड";
+/* Password length slider label. */
+"Length" = "लंबाई";
+/* Toggle: include digits in the generated password. */
+"Digits" = "अंक";
+/* Toggle: include symbols in the generated password. */
+"Symbols" = "चिह्न";
+/* Button that draws a new password. */
+"Regenerate" = "फिर से बनाएँ";
+/* Button that puts the generated password into the note at the caret. */
+"Insert" = "डालें";
+/* Accessibility label of the editor toolbar's timestamp key. */
+"Insert the time" = "समय डालें";

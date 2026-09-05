@@ -75,3 +75,19 @@
 "Undo" = "Undo";
 /* Accessibility label of the editor toolbar's redo key. */
 "Redo" = "Redo";
+/* Title of the password generator sheet, and the toolbar key's label. */
+"Generate a password" = "Generate a password";
+/* Accessibility label of the generated value shown in the sheet. */
+"Generated password" = "Generated password";
+/* Password length slider label. */
+"Length" = "Length";
+/* Toggle: include digits in the generated password. */
+"Digits" = "Digits";
+/* Toggle: include symbols in the generated password. */
+"Symbols" = "Symbols";
+/* Button that draws a new password. */
+"Regenerate" = "Regenerate";
+/* Button that puts the generated password into the note at the caret. */
+"Insert" = "Insert";
+/* Accessibility label of the editor toolbar's timestamp key. */
+"Insert the time" = "Insert the time";
