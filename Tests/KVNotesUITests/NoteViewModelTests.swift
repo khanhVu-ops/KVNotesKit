@@ -157,11 +157,13 @@ final class NoteViewModelTests: XCTestCase {
         try await settle { first.state.phase == .loaded }
         first.send(.setSortOrder(.title))
         first.send(.setFilter(.locked))
+        first.send(.setLayout(.grid))
 
         // A second screen, as if the user had left the flow and come back.
         let second = NotesListViewModel(store: store, preferences: preferences)
         XCTAssertEqual(second.state.sortOrder, .title)
         XCTAssertEqual(second.state.filter, .locked)
+        XCTAssertEqual(second.state.layout, .grid)
         second.send(.onAppear)
         try await settle { second.state.phase == .loaded }
         XCTAssertEqual(second.state.visibleNotes.map(\.title), ["Hardware wallet"])
@@ -170,6 +172,34 @@ final class NoteViewModelTests: XCTestCase {
         let third = NotesListViewModel(store: store)
         XCTAssertEqual(third.state.sortOrder, .lastEditedNewest)
         XCTAssertEqual(third.state.filter, .all)
+        XCTAssertEqual(third.state.layout, .list)
+    }
+
+    func testTheLayoutIsAViewChoiceAndNotAFilter() async throws {
+        let store = InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies)
+        let viewModel = NotesListViewModel(store: store)
+        viewModel.send(.onAppear)
+        try await settle { viewModel.state.phase == .loaded }
+
+        let rows = viewModel.state.visibleNotes.map(\.id)
+        viewModel.send(.setLayout(.grid))
+
+        // Same notes, same order, same pinned split: the grid draws the list, it does not
+        // compute a different one. `isNarrowed` marks the sort control, and a layout that lit
+        // it would be telling the user their notes are being hidden.
+        XCTAssertEqual(viewModel.state.visibleNotes.map(\.id), rows)
+        XCTAssertEqual(viewModel.state.pinnedCount, 1)
+        XCTAssertFalse(viewModel.state.isNarrowed)
+    }
+
+    func testAPreferencesBlobWrittenBeforeTheLayoutExistedKeepsItsSortAndFilter() throws {
+        // Exactly what a device upgrading from 0.1.0 has on disk.
+        let legacy = Data(#"{"sortOrder":"title","filter":"locked"}"#.utf8)
+        let decoded = try JSONDecoder().decode(NoteListPreferences.self, from: legacy)
+
+        XCTAssertEqual(decoded.sortOrder, .title)
+        XCTAssertEqual(decoded.filter, .locked)
+        XCTAssertEqual(decoded.layout, .list)
     }
 
     func testTickingATaskWritesThroughTheOrdinarySavePipeline() async throws {

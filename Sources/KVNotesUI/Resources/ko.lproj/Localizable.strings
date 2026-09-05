@@ -155,3 +155,5 @@
 "It stays in the vault's trash until you empty it." = "보관함의 휴지통을 비울 때까지 남아 있습니다.";
 /* Accessibility label of a folder row's menu button. */
 "Folder options" = "폴더 옵션";
+"Grid view" = "격자 보기";
+"List view" = "목록 보기";

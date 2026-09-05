@@ -155,3 +155,5 @@
 "It stays in the vault's trash until you empty it." = "保管庫のゴミ箱を空にするまで残ります。";
 /* Accessibility label of a folder row's menu button. */
 "Folder options" = "フォルダオプション";
+"Grid view" = "グリッド表示";
+"List view" = "リスト表示";

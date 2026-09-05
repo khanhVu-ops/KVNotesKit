@@ -155,3 +155,5 @@
 "It stays in the vault's trash until you empty it." = "Catatan tetap di tempat sampah brankas sampai Anda mengosongkannya.";
 /* Accessibility label of a folder row's menu button. */
 "Folder options" = "Opsi folder";
+"Grid view" = "Tampilan kisi";
+"List view" = "Tampilan daftar";

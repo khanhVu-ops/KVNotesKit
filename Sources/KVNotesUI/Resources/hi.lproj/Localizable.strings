@@ -155,3 +155,5 @@
 "It stays in the vault's trash until you empty it." = "यह वॉल्ट के ट्रैश में रहेगा जब तक आप उसे खाली नहीं करते।";
 /* Accessibility label of a folder row's menu button. */
 "Folder options" = "फ़ोल्डर विकल्प";
+"Grid view" = "ग्रिड दृश्य";
+"List view" = "सूची दृश्य";

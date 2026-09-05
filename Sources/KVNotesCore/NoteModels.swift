@@ -191,6 +191,17 @@ public enum NoteFilter: String, CaseIterable, Equatable, Codable, Sendable {
     case hasChecklist
 }
 
+/// How the list draws its notes.
+///
+/// Two shapes for two ways of reading. Rows are the working view — full-width titles, one line of
+/// preview, and a swipe on either edge. The grid trades the swipe for three lines of preview and
+/// twice the notes per screen, which is what a person wants when they are looking *for* a note
+/// rather than working through one.
+public enum NoteListLayout: String, CaseIterable, Equatable, Codable, Sendable {
+    case list
+    case grid
+}
+
 public enum NoteBiometricKind: Equatable, Sendable {
     case faceID
     case touchID

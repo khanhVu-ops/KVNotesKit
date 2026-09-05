@@ -155,3 +155,5 @@
 "It stays in the vault's trash until you empty it." = "Elle reste dans la corbeille du coffre jusqu’à ce que vous la vidiez.";
 /* Accessibility label of a folder row's menu button. */
 "Folder options" = "Options du dossier";
+"Grid view" = "Vue en grille";
+"List view" = "Vue en liste";

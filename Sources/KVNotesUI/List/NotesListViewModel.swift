@@ -8,16 +8,6 @@ public struct NotesListState: Equatable, Sendable {
         let normalized: String
     }
     public enum Phase: Equatable, Sendable { case idle, loading, loaded, failed }
-    /// What the list looks like, as one animatable value.
-    public struct Layout: Equatable, Sendable {
-        public let order: [NoteID]
-        public let pinnedCount: Int
-
-        public init(order: [NoteID], pinnedCount: Int) {
-            self.order = order
-            self.pinnedCount = pinnedCount
-        }
-    }
     public struct FolderChip: Identifiable, Equatable, Sendable {
         public let name: String
         public let count: Int
@@ -30,6 +20,9 @@ public struct NotesListState: Equatable, Sendable {
     public var searchQuery = ""
     public var sortOrder: NoteSortOrder = .lastEditedNewest
     public var filter: NoteFilter = .all
+    /// Rows or cards. It changes nothing about which notes are shown, only how they are drawn,
+    /// so it takes no part in `recompute()`.
+    public var layout: NoteListLayout = .list
     /// The filtered list the screen draws, pinned notes first. One array rather than two, so a
     /// note can never be missing from both or present in both.
     public var visibleNotes: [NoteDigest] = []
@@ -145,6 +138,7 @@ public final class NotesListViewModel {
         case updateSearchQuery(String)
         case setSortOrder(NoteSortOrder)
         case setFilter(NoteFilter)
+        case setLayout(NoteListLayout)
         case togglePin(NoteID)
         case moveToFolder(NoteID, String?)
         case requestDiscard(NoteDigest)
@@ -186,6 +180,7 @@ public final class NotesListViewModel {
         if let stored = preferences?.load() {
             state.sortOrder = stored.sortOrder
             state.filter = stored.filter
+            state.layout = stored.layout
         }
     }
 
@@ -213,6 +208,11 @@ public final class NotesListViewModel {
         case .setFilter(let filter):
             state.filter = filter
             state.recompute()
+            rememberHowTheListIsShown()
+        case .setLayout(let layout):
+            guard state.layout != layout else { return }
+            state.layout = layout
+            // No `recompute()`: the same notes in the same order, drawn differently.
             rememberHowTheListIsShown()
         case .togglePin(let id):
             guard let index = state.index.notes.firstIndex(where: { $0.id == id }) else { return }
@@ -298,7 +298,11 @@ public final class NotesListViewModel {
     }
 
     private func rememberHowTheListIsShown() {
-        preferences?.save(NoteListPreferences(sortOrder: state.sortOrder, filter: state.filter))
+        preferences?.save(NoteListPreferences(
+            sortOrder: state.sortOrder,
+            filter: state.filter,
+            layout: state.layout
+        ))
     }
 
     /// Applies one operation to every selected note, in the order the list shows them.

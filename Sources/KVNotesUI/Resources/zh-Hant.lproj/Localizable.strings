@@ -155,3 +155,5 @@
 "It stays in the vault's trash until you empty it." = "它會留在保險庫的垃圾桶中，直到你清空。";
 /* Accessibility label of a folder row's menu button. */
 "Folder options" = "檔案夾選項";
+"Grid view" = "格狀檢視";
+"List view" = "列表檢視";

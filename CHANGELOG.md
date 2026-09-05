@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add a two-column grid layout to the notes list, toggled from the header and remembered in
+  `NoteListPreferences`. Cards carry a visible menu button in place of the row's swipe actions.
+- `NoteListPreferences` decodes missing keys as defaults, so a blob written by 0.1.0 keeps the
+  sort order and filter it does carry.
+- Remove the unused `NotesListState.Layout`.
 - Fold the list title up beside the back button instead of dropping it, and unfold it whenever the
   list is back at the top.
 - Move the pinned/timeline split into one flat `ForEach` so pinning slides a row instead of

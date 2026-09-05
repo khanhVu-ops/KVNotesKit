@@ -155,3 +155,5 @@
 "It stays in the vault's trash until you empty it." = "تبقى في سلة مهملات الخزنة حتى تفرغها.";
 /* Accessibility label of a folder row's menu button. */
 "Folder options" = "خيارات المجلد";
+"Grid view" = "عرض شبكي";
+"List view" = "عرض قائمة";

@@ -155,3 +155,5 @@
 "It stays in the vault's trash until you empty it." = "Se queda en la papelera de la caja fuerte hasta que la vacíes.";
 /* Accessibility label of a folder row's menu button. */
 "Folder options" = "Opciones de la carpeta";
+"Grid view" = "Vista de cuadrícula";
+"List view" = "Vista de lista";

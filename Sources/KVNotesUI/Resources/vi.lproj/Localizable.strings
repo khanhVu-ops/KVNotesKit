@@ -155,3 +155,5 @@
 "It stays in the vault's trash until you empty it." = "Ghi chú nằm trong thùng rác của két cho tới khi bạn dọn.";
 /* Accessibility label of a folder row's menu button. */
 "Folder options" = "Tuỳ chọn thư mục";
+"Grid view" = "Dạng lưới";
+"List view" = "Dạng danh sách";

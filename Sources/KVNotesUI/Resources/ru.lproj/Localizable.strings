@@ -155,3 +155,5 @@
 "It stays in the vault's trash until you empty it." = "Она останется в корзине хранилища, пока вы её не очистите.";
 /* Accessibility label of a folder row's menu button. */
 "Folder options" = "Параметры папки";
+"Grid view" = "Вид сеткой";
+"List view" = "Вид списком";

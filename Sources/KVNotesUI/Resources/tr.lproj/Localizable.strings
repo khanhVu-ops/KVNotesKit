@@ -155,3 +155,5 @@
 "It stays in the vault's trash until you empty it." = "Kasanın çöpünü boşaltana kadar orada kalır.";
 /* Accessibility label of a folder row's menu button. */
 "Folder options" = "Klasör seçenekleri";
+"Grid view" = "Izgara görünümü";
+"List view" = "Liste görünümü";

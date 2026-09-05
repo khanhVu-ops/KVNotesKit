@@ -155,3 +155,5 @@
 "It stays in the vault's trash until you empty it." = "It stays in the vault's trash until you empty it.";
 /* Accessibility label of a folder row's menu button. */
 "Folder options" = "Folder options";
+"Grid view" = "Grid view";
+"List view" = "List view";

@@ -68,6 +68,13 @@ public struct NotesListScreen: View {
             .onChange(of: viewModel.state.isSelecting) { _, isSelecting in
                 onSelectionChange(isSelecting)
             }
+            // Swapping the `List` for the grid throws away the scroll view that was reporting
+            // offsets, and the first reading from the new one is measured against the old one's
+            // last. Left alone that difference reads as a flick and folds the header.
+            .onChange(of: viewModel.state.layout) { _, _ in
+                lastScrollOffset = 0
+                headerSettlesAt = Date().addingTimeInterval(0.6)
+            }
             .onDisappear { onSelectionChange(false) }
             .onChange(of: searchText) { _, query in
                 searchTask?.cancel()
@@ -160,7 +167,10 @@ public struct NotesListScreen: View {
         case .loaded where viewModel.state.isEmptyBecauseOfFilter:
             scroller { emptyFilter }
         case .loaded:
-            rowList
+            switch viewModel.state.layout {
+            case .list: rowList
+            case .grid: cardGrid
+            }
         }
     }
 
@@ -241,6 +251,8 @@ public struct NotesListScreen: View {
                 Spacer(minLength: theme.xs)
 
                 sortMenu
+
+                layoutToggle
 
                 Button {
                     haptic()
@@ -368,6 +380,29 @@ public struct NotesListScreen: View {
         .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: viewModel.state.isNarrowed)
         .accessibilityLabel(Text(.notesKit("Sort and filter")))
 
+    }
+
+    /// Rows or cards, one tap either way.
+    ///
+    /// The icon names the layout the tap will *produce*, not the one on screen — the same
+    /// grammar as the Photos grid density control, and the reason it needs no label beside it.
+    private var layoutToggle: some View {
+        let isGrid = viewModel.state.layout == .grid
+        return Button {
+            haptic()
+            listChange(.setLayout(isGrid ? .list : .grid))
+        } label: {
+            Image(systemName: isGrid ? "list.bullet" : "square.grid.2x2")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(theme.primaryText)
+                .frame(width: 32, height: 32)
+                .background(theme.card, in: Circle())
+                .overlay { Circle().strokeBorder(theme.separator, lineWidth: 0.75) }
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .buttonStyle(NotePressButtonStyle())
+        .frame(width: 44, height: 44)
+        .accessibilityLabel(Text(isGrid ? .notesKit("List view") : .notesKit("Grid view")))
     }
 
     private static func sortTitle(_ order: NoteSortOrder) -> LocalizedStringResource {
@@ -669,9 +704,123 @@ public struct NotesListScreen: View {
         // animate, and leaves a reload from the store alone.
     }
 
+    /// The same notes, two columns wide.
+    ///
+    /// `LazyVGrid` rather than a second `List`: a `List` cannot lay two cells side by side, and
+    /// that is the whole point of this layout — twice the notes on screen and three lines of
+    /// preview instead of one, for when the user is looking *for* a note rather than working
+    /// through one. Sections here rather than the flat `ForEach` the rows use, because a header
+    /// in a grid has to span both columns and a flat sequence would give it one cell.
+    private var cardGrid: some View {
+        ScrollView {
+            LazyVGrid(columns: Self.gridColumns(spacing: theme.small), spacing: theme.small) {
+                if viewModel.state.pinnedCount > 0 {
+                    Section {
+                        ForEach(entries(viewModel.state.pinnedNotes, group: .pinned)) { entry in
+                            gridCard(entry.note)
+                        }
+                    } header: {
+                        sectionHeader(
+                            Text(.notesKit("Pinned")),
+                            icon: "pin.fill",
+                            horizontalPadding: 0
+                        )
+                    }
+
+                    if viewModel.state.pinnedCount < viewModel.state.visibleNotes.count {
+                        Section {
+                            ForEach(entries(viewModel.state.timelineNotes, group: .timeline)) { entry in
+                                gridCard(entry.note)
+                            }
+                        } header: {
+                            sectionHeader(
+                                Text(.notesKit("All notes")),
+                                icon: nil,
+                                topPadding: theme.small + 4,
+                                horizontalPadding: 0
+                            )
+                        }
+                    }
+                } else {
+                    ForEach(entries(viewModel.state.visibleNotes[...], group: .timeline)) { entry in
+                        gridCard(entry.note)
+                    }
+                }
+            }
+            .padding(.horizontal, theme.medium)
+            .padding(.top, theme.xs)
+            .padding(.bottom, theme.extraLarge)
+        }
+        .scrollIndicators(.hidden)
+        .refreshable { viewModel.send(.refresh) }
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            geometry.contentOffset.y + geometry.contentInsets.top
+        } action: { _, offset in
+            updateHeaderCollapse(for: offset)
+        }
+    }
+
+    /// A note together with the group it is currently drawn in.
+    ///
+    /// The group is half the identity on purpose. `LazyVGrid` flattens its sections into one list
+    /// of items, so a card that moves from the pinned grid to the timeline keeps its note id and
+    /// the move is diffed as a reorder rather than a removal and an insertion — and a lazy
+    /// container does not rebuild the body of an item it believes only moved. A card unpinned
+    /// from its own menu went on wearing its pin for exactly that reason, until something else
+    /// forced the grid to rebuild. Qualifying the id makes the change what it actually is.
+    ///
+    /// The rows do not need this: they are one flat `ForEach` with no sections to move between.
+    private struct GridEntry: Identifiable {
+        enum Group: String { case pinned, timeline }
+
+        let group: Group
+        let note: NoteDigest
+        var id: String { "\(group.rawValue).\(note.id.rawValue.uuidString)" }
+    }
+
+    private func entries(_ notes: ArraySlice<NoteDigest>, group: GridEntry.Group) -> [GridEntry] {
+        notes.map { GridEntry(group: group, note: $0) }
+    }
+
+    private static func gridColumns(spacing: CGFloat) -> [GridItem] {
+        [
+            GridItem(.flexible(), spacing: spacing, alignment: .top),
+            GridItem(.flexible(), spacing: spacing, alignment: .top)
+        ]
+    }
+
+    private func gridCard(_ note: NoteDigest) -> some View {
+        let isSelecting = viewModel.state.isSelecting
+        return NoteGridCard(
+            note: note,
+            theme: theme,
+            isSelecting: isSelecting,
+            isSelected: viewModel.state.selection.contains(note.id),
+            haptic: haptic,
+            onOpen: {
+                if isSelecting {
+                    viewModel.send(.toggleSelection(note.id))
+                } else {
+                    onOpenNote(note)
+                }
+            },
+            actions: { noteActions(note) }
+        )
+        // Short enough that a one-line note is still a card, tall enough that three lines of
+        // preview do not have to fight for the space; a taller neighbour still wins the row.
+        .frame(minHeight: 158)
+        .contextMenu { if isSelecting { EmptyView() } else { noteActions(note) } }
+    }
+
     /// Deliberately not a `.headerProminence` default: the header has to read as the same
     /// typographic family as the count line above the list, not as a grouped-table caption.
-    private func sectionHeader(_ title: Text, icon: String?, topPadding: CGFloat = 0) -> some View {
+    private func sectionHeader(
+        _ title: Text,
+        icon: String?,
+        topPadding: CGFloat = 0,
+        // The grid pads its own gutter, so a header inside it must not pay for it twice.
+        horizontalPadding: CGFloat? = nil
+    ) -> some View {
         HStack(spacing: 5) {
             if let icon {
                 Image(systemName: icon).font(.system(size: 9, weight: .semibold))
@@ -681,7 +830,7 @@ public struct NotesListScreen: View {
         .font(theme.metadataFont)
         .foregroundStyle(theme.secondaryText)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, theme.medium)
+        .padding(.horizontal, horizontalPadding ?? theme.medium)
         .padding(.top, topPadding)
         .padding(.bottom, theme.xs)
         .listRowInsets(EdgeInsets())
@@ -724,32 +873,55 @@ public struct NotesListScreen: View {
                     }
                 }
             }
-            .swipeActions(edge: .leading) { if !isSelecting { pinButton(note) } }
-            .contextMenu {
-                if isSelecting { EmptyView() } else {
-                pinButton(note)
-                if !viewModel.state.index.folders.isEmpty || note.folder != nil {
-                    Menu {
-                        Button { viewModel.send(.moveToFolder(note.id, nil)) } label: {
-                            Label(.notesKit("No folder"), systemImage: note.folder == nil ? "checkmark" : "tray")
-                        }
-                        ForEach(viewModel.state.index.folders, id: \.self) { name in
-                            Button { viewModel.send(.moveToFolder(note.id, name)) } label: {
-                                Label(name, systemImage: note.folder == name ? "checkmark" : "folder")
-                            }
-                        }
-                    } label: {
-                        Label(.notesKit("Move to folder"), systemImage: "folder")
-                    }
-                }
-                Button(role: .destructive) { viewModel.send(.requestDiscard(note)) } label: {
-                    Label(.notesKit("Move to Trash"), systemImage: "trash")
-                }
-                }
-            }
+            .swipeActions(edge: .leading) { if !isSelecting { pinSwipeButton(note) } }
+            .contextMenu { if isSelecting { EmptyView() } else { noteActions(note) } }
     }
 
-    private func pinButton(_ note: NoteDigest) -> some View {
+    /// Everything that can be done to one note, in the one place both layouts read it from.
+    ///
+    /// The grid has no swipe to hang these on, so this is not a convenience — it is where the
+    /// actions live once a card replaces a row, reached from the card's own menu button and from
+    /// the long press. Written once so the two layouts cannot drift into offering different verbs.
+    @ViewBuilder
+    private func noteActions(_ note: NoteDigest) -> some View {
+        pinMenuButton(note)
+        if !viewModel.state.index.folders.isEmpty || note.folder != nil {
+            Menu {
+                Button { viewModel.send(.moveToFolder(note.id, nil)) } label: {
+                    Label(.notesKit("No folder"), systemImage: note.folder == nil ? "checkmark" : "tray")
+                }
+                ForEach(viewModel.state.index.folders, id: \.self) { name in
+                    Button { viewModel.send(.moveToFolder(note.id, name)) } label: {
+                        Label(name, systemImage: note.folder == name ? "checkmark" : "folder")
+                    }
+                }
+            } label: {
+                Label(.notesKit("Move to folder"), systemImage: "folder")
+            }
+        }
+        Button(role: .destructive) { viewModel.send(.requestDiscard(note)) } label: {
+            Label(.notesKit("Move to Trash"), systemImage: "trash")
+        }
+    }
+
+    /// Pin from a menu, where nothing is mid-gesture and the move can start on the same frame.
+    private func pinMenuButton(_ note: NoteDigest) -> some View {
+        Button {
+            haptic()
+            listChange(.togglePin(note.id))
+        } label: {
+            pinLabel(note)
+        }
+    }
+
+    private func pinLabel(_ note: NoteDigest) -> some View {
+        Label(
+            note.isPinned ? .notesKit("Unpin") : .notesKit("Pin"),
+            systemImage: note.isPinned ? "pin.slash" : "pin"
+        )
+    }
+
+    private func pinSwipeButton(_ note: NoteDigest) -> some View {
         Button {
             haptic()
             // A swipe action's row is still collapsing when the action runs, and `List` will not
@@ -764,10 +936,7 @@ public struct NotesListScreen: View {
                 listChange(.togglePin(note.id))
             }
         } label: {
-            Label(
-                note.isPinned ? .notesKit("Unpin") : .notesKit("Pin"),
-                systemImage: note.isPinned ? "pin.slash" : "pin"
-            )
+            pinLabel(note)
         }
         .tint(theme.accent)
     }
