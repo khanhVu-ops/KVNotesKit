@@ -13,7 +13,7 @@ let package = Package(
     ],
     targets: [
         .target(name: "KVNotesCore"),
-        .target(name: "KVNotesUI", dependencies: ["KVNotesCore"]),
+        .target(name: "KVNotesUI", dependencies: ["KVNotesCore", "KVNotesTesting"]),
         .target(name: "KVNotesTesting", dependencies: ["KVNotesCore"]),
         .target(name: "KVNotesKit", dependencies: ["KVNotesCore", "KVNotesUI"]),
         .testTarget(
