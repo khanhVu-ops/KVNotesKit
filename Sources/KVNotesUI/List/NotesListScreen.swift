@@ -276,6 +276,9 @@ public struct NotesListScreen: View {
         .scrollContentBackground(.hidden)
         .scrollIndicators(.hidden)
         .environment(\.defaultMinListRowHeight, 0)
+        // The default section spacing is sized for grouped tables with opaque headers; here it
+        // leaves a band of empty background between the search field and the pinned header.
+        .noteCompactSections(theme.small)
         .refreshable { viewModel.send(.refresh) }
         .animation(NoteMotion.content(reduceMotion: reduceMotion), value: viewModel.state.visibleNotes.map(\.id))
     }
@@ -293,7 +296,6 @@ public struct NotesListScreen: View {
         .foregroundStyle(theme.secondaryText)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, theme.medium)
-        .padding(.top, theme.small)
         .padding(.bottom, theme.xs)
         .listRowInsets(EdgeInsets())
         .listRowBackground(Color.clear)

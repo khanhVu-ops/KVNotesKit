@@ -138,6 +138,16 @@ extension View {
         #endif
     }
 
+    /// Section spacing sized for cards on a plain background rather than for grouped tables.
+    @ViewBuilder
+    func noteCompactSections(_ spacing: CGFloat) -> some View {
+        #if os(iOS)
+        listSectionSpacing(spacing)
+        #else
+        self
+        #endif
+    }
+
     @ViewBuilder
     func noteNeverAutocapitalizes() -> some View {
         #if os(iOS)
