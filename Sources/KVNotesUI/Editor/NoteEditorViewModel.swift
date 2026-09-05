@@ -5,6 +5,7 @@ import Observation
 public struct NoteEditorState: Equatable, Sendable {
     public enum Mode: Equatable, Sendable { case edit, read }
     public enum SaveStatus: Equatable, Sendable { case idle, unsaved, saving, saved(Date), failed }
+    public enum UnlockPhase: Equatable, Sendable { case waiting, authenticating, denied, granted }
 
     public var note: NoteDigest?
     public var title = ""
@@ -17,10 +18,13 @@ public struct NoteEditorState: Equatable, Sendable {
     public var folders: [String] = []
     public var isLoading = false
     public var isLocked = false
-    public var isAuthenticating = false
-    public var authenticationDenied = false
+    public var unlockPhase: UnlockPhase = .waiting
     public var showOptions = false
+    public var showSavedToast = false
     public var pendingCaretOffset: Int?
+
+    public var isAuthenticating: Bool { unlockPhase == .authenticating }
+    public var authenticationDenied: Bool { unlockPhase == .denied }
 
     public var characterCount: Int { body.count }
     public var titlePlaceholder: String { NoteTextDerivation.derivedTitle(from: body) }
@@ -50,6 +54,7 @@ public final class NoteEditorViewModel {
         case toggleBiometricLock
         case openOptions
         case dismissOptions
+        case dismissToast
         case authenticate
         case pinAuthenticated
         case sessionLocked
@@ -60,7 +65,12 @@ public final class NoteEditorViewModel {
     @ObservationIgnored private let unlockAuthority: any NoteUnlockAuthority
     @ObservationIgnored private let onChange: @MainActor @Sendable () -> Void
     @ObservationIgnored private var autosaveTask: Task<Void, Never>?
-    @ObservationIgnored private var workTask: Task<Void, Never>?
+    @ObservationIgnored private var loadTask: Task<Void, Never>?
+    @ObservationIgnored private var authenticationTask: Task<Void, Never>?
+    @ObservationIgnored private var gateTask: Task<Void, Never>?
+    @ObservationIgnored private var saveTask: Task<Void, Never>?
+    @ObservationIgnored private var attributeTask: Task<Void, Never>?
+    @ObservationIgnored private var queuedSave = false
 
     public init(
         note: NoteDigest? = nil,
@@ -83,7 +93,14 @@ public final class NoteEditorViewModel {
         self.state = state
     }
 
-    deinit { autosaveTask?.cancel(); workTask?.cancel() }
+    deinit {
+        autosaveTask?.cancel()
+        loadTask?.cancel()
+        authenticationTask?.cancel()
+        gateTask?.cancel()
+        saveTask?.cancel()
+        attributeTask?.cancel()
+    }
 
     public func send(_ action: Action) {
         switch action {
@@ -97,6 +114,7 @@ public final class NoteEditorViewModel {
             guard body != state.body else { return }
             state.body = body; dirty()
         case .setMode(let mode):
+            guard mode != state.mode else { return }
             if state.isDirty { save() }
             state.mode = mode
         case .insert(let token, let selection):
@@ -110,31 +128,50 @@ public final class NoteEditorViewModel {
             save()
         case .setFolder(let folder):
             state.folder = folder
-            apply(NoteAttributePatch(folder: .set(folder)))
+            if state.note == nil {
+                if state.hasContent { save() }
+            } else {
+                apply(NoteAttributePatch(folder: .set(folder)))
+            }
         case .setIcon(let icon):
             state.icon = icon
-            apply(NoteAttributePatch(icon: .set(icon)))
+            if state.note == nil {
+                if state.hasContent { save() }
+            } else {
+                apply(NoteAttributePatch(icon: .set(icon)))
+            }
         case .toggleBiometricLock:
             state.requiresBiometricUnlock.toggle()
-            apply(NoteAttributePatch(requiresBiometricUnlock: state.requiresBiometricUnlock))
+            if state.note == nil {
+                if state.hasContent { save() }
+            } else {
+                apply(NoteAttributePatch(requiresBiometricUnlock: state.requiresBiometricUnlock))
+            }
         case .openOptions:
             if state.note == nil, state.hasContent { save() }
             state.showOptions = true
         case .dismissOptions:
             state.showOptions = false
+        case .dismissToast:
+            state.showSavedToast = false
         case .authenticate:
             authenticate()
         case .pinAuthenticated:
-            state.isLocked = false
-            state.authenticationDenied = false
-            loadBody()
+            openGate()
         case .sessionLocked:
             autosaveTask?.cancel()
-            workTask?.cancel()
+            loadTask?.cancel()
+            authenticationTask?.cancel()
+            gateTask?.cancel()
+            saveTask?.cancel()
+            attributeTask?.cancel()
+            queuedSave = false
             state.body = ""
             state.title = ""
             state.isLocked = state.note?.requiresBiometricUnlock ?? false
+            state.unlockPhase = .waiting
             state.saveStatus = .idle
+            state.showSavedToast = false
         }
     }
 
@@ -157,7 +194,8 @@ public final class NoteEditorViewModel {
 
     private func loadBody() {
         guard let id = state.note?.id, state.isLoading else { return }
-        workTask = Task { [weak self] in
+        loadTask?.cancel()
+        loadTask = Task { [weak self] in
             guard let self else { return }
             do {
                 state.body = try await store.body(id)
@@ -170,28 +208,48 @@ public final class NoteEditorViewModel {
     }
 
     private func authenticate() {
-        guard state.isLocked, !state.isAuthenticating else { return }
-        state.isAuthenticating = true
-        state.authenticationDenied = false
-        workTask = Task { [weak self] in
+        guard state.isLocked, authenticationTask == nil else { return }
+        guard unlockAuthority.offer.biometric != nil else { return }
+        state.unlockPhase = .authenticating
+        authenticationTask = Task { [weak self] in
             guard let self else { return }
-            defer { state.isAuthenticating = false }
+            defer { authenticationTask = nil }
             do {
                 if try await unlockAuthority.authenticate(reason: .notesKit("Unlocking private note")) {
-                    state.isLocked = false
-                    loadBody()
+                    openGate()
                 } else {
-                    state.authenticationDenied = true
+                    state.unlockPhase = .denied
                 }
             } catch {
-                state.authenticationDenied = true
+                state.unlockPhase = .denied
             }
         }
     }
 
+    private func openGate() {
+        state.unlockPhase = .granted
+        gateTask?.cancel()
+        gateTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(260))
+            guard !Task.isCancelled, let self else { return }
+            state.isLocked = false
+            state.unlockPhase = .waiting
+            loadBody()
+            gateTask = nil
+        }
+    }
+
     private func save() {
-        guard state.hasContent, state.saveStatus != .saving else { return }
         autosaveTask?.cancel()
+        guard state.hasContent else {
+            state.saveStatus = .idle
+            return
+        }
+        guard state.isDirty else { return }
+        if saveTask != nil {
+            queuedSave = true
+            return
+        }
         state.saveStatus = .saving
         let body = state.body
         let title = state.title
@@ -203,7 +261,7 @@ public final class NoteEditorViewModel {
             icon: state.icon,
             requiresBiometricUnlock: state.requiresBiometricUnlock
         )
-        workTask = Task { [weak self] in
+        saveTask = Task { [weak self] in
             guard let self else { return }
             do {
                 let saved = if let existing {
@@ -211,12 +269,37 @@ public final class NoteEditorViewModel {
                 } else {
                     try await store.create(draft)
                 }
+                let desiredFolder = state.folder
+                let desiredIcon = state.icon
+                let desiredLock = state.requiresBiometricUnlock
                 state.note = saved
-                state.folder = saved.folder
-                state.icon = saved.icon
-                state.saveStatus = .saved(saved.lastEditedAt)
+                state.folder = desiredFolder
+                state.icon = desiredIcon
+                state.requiresBiometricUnlock = desiredLock
+                saveTask = nil
                 onChange()
+                let attributePatch = NoteAttributePatch(
+                    folder: saved.folder == desiredFolder ? .unchanged : .set(desiredFolder),
+                    icon: saved.icon == desiredIcon ? .unchanged : .set(desiredIcon),
+                    requiresBiometricUnlock: saved.requiresBiometricUnlock == desiredLock ? nil : desiredLock
+                )
+                if attributePatch.folder != .unchanged
+                    || attributePatch.icon != .unchanged
+                    || attributePatch.requiresBiometricUnlock != nil {
+                    apply(attributePatch)
+                }
+                let changedWhileSaving = state.body != body || state.title != title
+                if changedWhileSaving || queuedSave {
+                    queuedSave = false
+                    state.saveStatus = .unsaved
+                    save()
+                } else {
+                    state.saveStatus = .saved(saved.lastEditedAt)
+                    state.showSavedToast = true
+                }
             } catch {
+                saveTask = nil
+                queuedSave = false
                 state.saveStatus = .failed
             }
         }
@@ -224,7 +307,8 @@ public final class NoteEditorViewModel {
 
     private func apply(_ patch: NoteAttributePatch) {
         guard let id = state.note?.id else { return }
-        workTask = Task { [weak self] in
+        attributeTask?.cancel()
+        attributeTask = Task { [weak self] in
             guard let self else { return }
             do {
                 state.note = try await store.apply(patch, to: id)

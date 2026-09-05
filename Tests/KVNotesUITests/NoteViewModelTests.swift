@@ -52,6 +52,28 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(body, "**never** share")
     }
 
+    func testEditorQueuesTheLatestBufferWhileASaveIsInFlight() async throws {
+        let store = DelayedNoteStore(delay: .milliseconds(60))
+        let viewModel = NoteEditorViewModel(store: store, unlockAuthority: UnlockAuthority())
+
+        viewModel.send(.setBody("first version"))
+        viewModel.send(.save)
+        try await settle { viewModel.state.saveStatus == .saving }
+
+        viewModel.send(.setBody("latest version"))
+        viewModel.send(.save)
+
+        try await settle {
+            guard case .saved = viewModel.state.saveStatus else { return false }
+            return viewModel.state.note != nil
+        }
+        let id = try XCTUnwrap(viewModel.state.note?.id)
+        let storedBody = try await store.body(id)
+        let writeCount = await store.writeCount()
+        XCTAssertEqual(storedBody, "latest version")
+        XCTAssertEqual(writeCount, 2)
+    }
+
     func testLockedEditorDoesNotReadBodyUntilAuthenticationCompletes() async throws {
         let locked = NoteDigest(
             title: "Wallet",
@@ -103,4 +125,38 @@ final class NoteViewModelTests: XCTestCase {
 private struct UnlockAuthority: NoteUnlockAuthority {
     let offer = NoteUnlockOffer(biometric: .faceID)
     func authenticate(reason: LocalizedStringResource) async throws -> Bool { true }
+}
+
+private actor DelayedNoteStore: NoteStore {
+    private let base = InMemoryNoteStore()
+    private let delay: Duration
+    private var writes = 0
+
+    init(delay: Duration) { self.delay = delay }
+
+    func index() async throws -> NoteIndex { await base.index() }
+    func body(_ id: NoteID) async throws -> String { try await base.body(id) }
+
+    func create(_ draft: NoteDraft) async throws -> NoteDigest {
+        try await Task.sleep(for: delay)
+        writes += 1
+        return await base.create(draft)
+    }
+
+    func update(_ id: NoteID, body: String, title: String?) async throws -> NoteDigest {
+        try await Task.sleep(for: delay)
+        writes += 1
+        return try await base.update(id, body: body, title: title)
+    }
+
+    func apply(_ patch: NoteAttributePatch, to id: NoteID) async throws -> NoteDigest {
+        try await base.apply(patch, to: id)
+    }
+
+    func discard(_ id: NoteID) async throws { try await base.discard(id) }
+    func renameFolder(_ name: String, to newName: String) async throws -> Int {
+        await base.renameFolder(name, to: newName)
+    }
+
+    func writeCount() -> Int { writes }
 }

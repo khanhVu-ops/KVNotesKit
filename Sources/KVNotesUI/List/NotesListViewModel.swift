@@ -3,6 +3,10 @@ import KVNotesCore
 import Observation
 
 public struct NotesListState: Equatable, Sendable {
+    private struct SearchHaystackCache: Equatable, Sendable {
+        let source: String
+        let normalized: String
+    }
     public enum Phase: Equatable, Sendable { case idle, loading, loaded, failed }
     public struct FolderChip: Identifiable, Equatable, Sendable {
         public let name: String
@@ -18,6 +22,7 @@ public struct NotesListState: Equatable, Sendable {
     public var folderChips: [FolderChip] = []
     public var pendingDiscard: NoteDigest?
     public var isBusy = false
+    private var normalizedSearchHaystacks: [NoteID: SearchHaystackCache] = [:]
 
     public var isEmptyBecauseStoreIsEmpty: Bool { phase == .loaded && index.isEmpty }
     public var isEmptyBecauseOfFilter: Bool {
@@ -25,6 +30,17 @@ public struct NotesListState: Equatable, Sendable {
     }
 
     mutating func recompute() {
+        let liveIDs = Set(index.notes.map(\.id))
+        normalizedSearchHaystacks = normalizedSearchHaystacks.filter { liveIDs.contains($0.key) }
+        for note in index.notes {
+            let source = note.title + " " + (note.snippet ?? "")
+            if normalizedSearchHaystacks[note.id]?.source != source {
+                normalizedSearchHaystacks[note.id] = SearchHaystackCache(
+                    source: source,
+                    normalized: Self.normalize(source)
+                )
+            }
+        }
         let counts = index.notes.reduce(into: [String: Int]()) { result, note in
             if let folder = note.folder { result[folder, default: 0] += 1 }
         }
@@ -34,7 +50,7 @@ public struct NotesListState: Equatable, Sendable {
         } ?? index.notes
         let tokens = Self.normalize(searchQuery).split(whereSeparator: \.isWhitespace)
         visibleNotes = tokens.isEmpty ? folderNotes : folderNotes.filter { note in
-            let haystack = Self.normalize(note.title + " " + (note.snippet ?? ""))
+            let haystack = normalizedSearchHaystacks[note.id]?.normalized ?? ""
             return tokens.allSatisfy(haystack.contains)
         }
     }
@@ -64,17 +80,22 @@ public final class NotesListViewModel {
     public private(set) var state = NotesListState()
     @ObservationIgnored private let store: any NoteStore
     @ObservationIgnored private let onChange: @MainActor @Sendable () -> Void
-    @ObservationIgnored private var task: Task<Void, Never>?
+    @ObservationIgnored private var loadTask: Task<Void, Never>?
+    @ObservationIgnored private var mutationTask: Task<Void, Never>?
 
     public init(store: any NoteStore, onChange: @escaping @MainActor @Sendable () -> Void = {}) {
         self.store = store
         self.onChange = onChange
     }
 
+    deinit {
+        loadTask?.cancel()
+        mutationTask?.cancel()
+    }
+
     public func send(_ action: Action) {
         switch action {
         case .onAppear:
-            guard state.phase == .idle else { return }
             load()
         case .refresh:
             load()
@@ -101,9 +122,9 @@ public final class NotesListViewModel {
     }
 
     private func load() {
-        task?.cancel()
-        state.phase = .loading
-        task = Task { [weak self] in
+        loadTask?.cancel()
+        if state.phase == .idle { state.phase = .loading }
+        loadTask = Task { [weak self] in
             guard let self else { return }
             do {
                 let index = try await store.index()
@@ -123,7 +144,7 @@ public final class NotesListViewModel {
     private func perform(_ operation: @escaping @Sendable () async throws -> NoteDigest?) {
         guard !state.isBusy else { return }
         state.isBusy = true
-        task = Task { [weak self] in
+        mutationTask = Task { [weak self] in
             guard let self else { return }
             defer { state.isBusy = false }
             do {

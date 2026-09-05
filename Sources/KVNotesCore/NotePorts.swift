@@ -18,5 +18,10 @@ public protocol NoteUnlockAuthority: Sendable {
 
 @MainActor
 public protocol NoteSecretPolicy: Sendable {
+    var transientCopyLifetime: TimeInterval { get }
     func copyTransient(_ value: String)
+}
+
+public extension NoteSecretPolicy {
+    var transientCopyLifetime: TimeInterval { 60 }
 }

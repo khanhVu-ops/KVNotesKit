@@ -15,7 +15,11 @@ struct NoteRowCard: View {
             HStack(alignment: .top, spacing: theme.small + 4) {
                 glyph
                 VStack(alignment: .leading, spacing: 3) {
-                    title.font(theme.rowFont).foregroundStyle(theme.primaryText).lineLimit(1)
+                    title
+                        .font(theme.rowFont)
+                        .foregroundStyle(theme.primaryText)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                     preview
                     metadata.padding(.top, 4)
                 }
@@ -25,7 +29,7 @@ struct NoteRowCard: View {
             .noteCard(theme: theme, padding: theme.small + 4)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(NotePressButtonStyle())
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
     }
@@ -49,7 +53,10 @@ struct NoteRowCard: View {
             .opacity(0.14).frame(height: 15).accessibilityHidden(true)
         } else if let snippet = note.snippet, !snippet.isEmpty {
             Text(verbatim: snippet)
-                .font(theme.monoFont).foregroundStyle(theme.secondaryText).lineLimit(1)
+                .font(theme.monoFont)
+                .foregroundStyle(theme.secondaryText)
+                .lineLimit(1)
+                .truncationMode(.tail)
         }
     }
 
@@ -72,10 +79,27 @@ struct NoteRowCard: View {
         HStack(spacing: theme.small) {
             editedAt
             if let folder = note.folder { dot; Text(verbatim: folder).foregroundStyle(theme.secondaryText) }
-            if note.requiresBiometricUnlock { dot; Image(systemName: "lock.fill") }
-            if note.isFavorite { dot; Image(systemName: "heart.fill").foregroundStyle(theme.error) }
+            if note.requiresBiometricUnlock {
+                dot
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(theme.primaryText)
+                    .accessibilityLabel(Text(.notesKit("Locked")))
+            }
+            if note.isFavorite {
+                dot
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 8))
+                    .foregroundStyle(theme.error)
+                    .accessibilityLabel(Text(.notesKit("Favorite")))
+            }
         }
-        .font(theme.metadataFont).textCase(.uppercase).foregroundStyle(theme.disabledText).lineLimit(1)
+        .font(theme.metadataFont)
+        .tracking(1)
+        .textCase(.uppercase)
+        .foregroundStyle(theme.disabledText)
+        .lineLimit(1)
+        .minimumScaleFactor(0.85)
     }
 
     private var dot: some View { Circle().fill(theme.disabledText).frame(width: 2.5, height: 2.5) }
@@ -84,6 +108,10 @@ struct NoteRowCard: View {
         let elapsed = Date().timeIntervalSince(note.lastEditedAt)
         if elapsed < 60 { Text(.notesKit("Just now")) }
         else if elapsed < 7 * 86_400 { Text(note.lastEditedAt, format: .relative(presentation: .named)) }
-        else { Text(note.lastEditedAt, format: .dateTime.day().month(.abbreviated)) }
+        else if Calendar.current.isDate(note.lastEditedAt, equalTo: Date(), toGranularity: .year) {
+            Text(note.lastEditedAt, format: .dateTime.day().month(.abbreviated))
+        } else {
+            Text(note.lastEditedAt, format: .dateTime.day().month(.abbreviated).year())
+        }
     }
 }

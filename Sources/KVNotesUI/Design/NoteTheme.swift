@@ -14,6 +14,7 @@ public struct NoteTheme {
     public var accent: Color
     public var onAccent: Color
     public var success: Color
+    public var warning: Color
     public var error: Color
 
     public var titleFont: Font
@@ -45,6 +46,7 @@ public struct NoteTheme {
         accent: Color,
         onAccent: Color,
         success: Color,
+        warning: Color = .orange,
         error: Color,
         titleFont: Font,
         sectionFont: Font,
@@ -73,6 +75,7 @@ public struct NoteTheme {
         self.accent = accent
         self.onAccent = onAccent
         self.success = success
+        self.warning = warning
         self.error = error
         self.titleFont = titleFont
         self.sectionFont = sectionFont
@@ -103,6 +106,7 @@ public struct NoteTheme {
         accent: Color(red: 0.84, green: 0.73, blue: 0.49),
         onAccent: .black,
         success: .green,
+        warning: .orange,
         error: .red,
         titleFont: .system(.title2, design: .rounded, weight: .semibold),
         sectionFont: .system(.headline, design: .rounded, weight: .semibold),
@@ -129,6 +133,24 @@ extension View {
     func noteNavigationChrome() -> some View {
         #if os(iOS)
         toolbar(.hidden, for: .navigationBar)
+        #else
+        self
+        #endif
+    }
+
+    @ViewBuilder
+    func noteNeverAutocapitalizes() -> some View {
+        #if os(iOS)
+        textInputAutocapitalization(.never)
+        #else
+        self
+        #endif
+    }
+
+    @ViewBuilder
+    func noteInlineNavigationTitle() -> some View {
+        #if os(iOS)
+        navigationBarTitleDisplayMode(.inline)
         #else
         self
         #endif

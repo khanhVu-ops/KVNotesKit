@@ -4,7 +4,10 @@ import SwiftUI
 public struct NoteEditorScreen: View {
     @State private var viewModel: NoteEditorViewModel
     @State private var selection = 0..<0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.locale) private var locale
     @Environment(\.scenePhase) private var scenePhase
+
     private let unlockAuthority: any NoteUnlockAuthority
     private let secretPolicy: any NoteSecretPolicy
     private let theme: NoteTheme
@@ -38,122 +41,243 @@ public struct NoteEditorScreen: View {
     }
 
     public var body: some View {
-        Group {
-            if viewModel.state.isLocked, let note = viewModel.state.note {
-                NoteUnlockGate(
-                    note: note,
-                    offer: unlockAuthority.offer,
-                    isAuthenticating: viewModel.state.isAuthenticating,
-                    denied: viewModel.state.authenticationDenied,
-                    theme: theme,
-                    onUnlock: { viewModel.send(.authenticate) },
-                    onUsePIN: { onRequestPIN { viewModel.send(.pinAuthenticated) } },
-                    onCancel: onClose
-                )
-            } else {
-                editor
+        editor
+            .overlay {
+                if viewModel.state.isLocked, let note = viewModel.state.note {
+                    NoteUnlockGate(
+                        note: note,
+                        offer: unlockAuthority.offer,
+                        phase: viewModel.state.unlockPhase,
+                        theme: theme,
+                        onUnlock: { viewModel.send(.authenticate) },
+                        onUsePIN: { onRequestPIN { viewModel.send(.pinAuthenticated) } },
+                        onCancel: onClose
+                    )
+                    .transition(.opacity)
+                }
             }
-        }
-        .background(theme.background)
-        .noteNavigationChrome()
-        .onAppear { viewModel.send(.onAppear) }
-        .onDisappear { if viewModel.state.isDirty { viewModel.send(.save) } }
-        .onChange(of: scenePhase) { _, phase in
-            if phase != .active, viewModel.state.isDirty { viewModel.send(.save) }
-        }
-        .sheet(isPresented: Binding(
-            get: { viewModel.state.showOptions },
-            set: { if !$0 { viewModel.send(.dismissOptions) } }
-        )) { options }
+            .animation(NoteMotion.content(reduceMotion: reduceMotion), value: viewModel.state.isLocked)
+            .background(theme.background)
+            .navigationTitle("")
+            .noteInlineNavigationTitle()
+            .toolbar { toolbarContent }
+            .onAppear { viewModel.send(.onAppear) }
+            .onDisappear { if viewModel.state.isDirty { viewModel.send(.save) } }
+            .onChange(of: scenePhase) { _, phase in
+                if phase != .active, viewModel.state.isDirty { viewModel.send(.save) }
+            }
+            .sheet(isPresented: Binding(
+                get: { viewModel.state.showOptions },
+                set: { if !$0 { viewModel.send(.dismissOptions) } }
+            )) { options }
     }
 
     private var editor: some View {
         VStack(spacing: 0) {
             header
-            titleField
-            modePicker
-            if viewModel.state.mode == .edit { editBody } else { readBody }
+            if viewModel.state.mode == .edit {
+                editBody.transition(.opacity)
+            } else {
+                readBody.transition(.opacity)
+            }
         }
+        .background(theme.background)
+        .animation(NoteMotion.content(reduceMotion: reduceMotion), value: viewModel.state.mode)
+        .overlay(alignment: .bottom) { savedToast }
     }
 
     private var header: some View {
-        HStack {
-            Button { if viewModel.state.isDirty { viewModel.send(.save) }; onClose() } label: {
-                Image(systemName: "chevron.left")
-                    .foregroundStyle(theme.primaryText)
-                    .frame(width: 44, height: 44)
-            }.accessibilityLabel(Text(.notesKit("Back")))
-            Spacer()
-            saveStatus
-            Button { viewModel.send(.openOptions) } label: {
-                Image(systemName: "ellipsis")
-                    .foregroundStyle(theme.primaryText)
-                    .frame(width: 44, height: 44)
-            }.accessibilityLabel(Text(.notesKit("Note options")))
-        }.foregroundStyle(theme.primaryText).padding(.horizontal, theme.small)
-    }
+        VStack(alignment: .leading, spacing: 0) {
+            TextField(
+                text: Binding(get: { viewModel.state.title }, set: { viewModel.send(.setTitle($0)) }),
+                prompt: titlePrompt.foregroundStyle(theme.disabledText)
+            ) { Text(.notesKit("Title")) }
+                .textFieldStyle(.plain)
+                .font(theme.titleFont)
+                .foregroundStyle(theme.primaryText)
+                .disabled(viewModel.state.mode == .read)
+                .autocorrectionDisabled()
+                .noteNeverAutocapitalizes()
+                .lineLimit(2)
+                .padding(.horizontal, theme.medium)
+                .padding(.top, theme.small)
 
-    private var titleField: some View {
-        TextField(
-            text: Binding(get: { viewModel.state.title }, set: { viewModel.send(.setTitle($0)) }),
-            prompt: Text(verbatim: viewModel.state.titlePlaceholder)
-        ) { Text(.notesKit("Title")) }
-        .font(theme.titleFont).foregroundStyle(theme.primaryText).textFieldStyle(.plain)
-        .padding(.horizontal, theme.medium).padding(.vertical, theme.small)
-        .autocorrectionDisabled()
-    }
-
-    private var modePicker: some View {
-        HStack(spacing: 0) {
-            modeButton(.notesKit("Edit"), .edit)
-            modeButton(.notesKit("Read"), .read)
-        }.padding(3).background(theme.card, in: Capsule()).padding(.horizontal, theme.medium)
-    }
-
-    private func modeButton(_ title: LocalizedStringResource, _ mode: NoteEditorState.Mode) -> some View {
-        Button { haptic(); viewModel.send(.setMode(mode)) } label: {
-            Text(title).font(theme.modeFont).textCase(.uppercase).frame(maxWidth: .infinity).frame(height: 30)
-                .foregroundStyle(viewModel.state.mode == mode ? theme.onAccent : theme.secondaryText)
-                .background(viewModel.state.mode == mode ? theme.accent : .clear, in: Capsule())
-        }.buttonStyle(.plain)
-    }
-
-    private var editBody: some View {
-        VStack(spacing: 0) {
-            NoteTextEditor(
-                text: Binding(get: { viewModel.state.body }, set: { viewModel.send(.setBody($0)) }),
-                pendingCaretOffset: viewModel.state.pendingCaretOffset,
-                theme: theme,
-                onSelection: { selection = $0 },
-                onCaretApplied: { viewModel.send(.caretApplied) }
-            )
-            toolbar
+            metaRow
         }
     }
 
-    private var toolbar: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: theme.small) {
-                ForEach(MarkdownToken.allCases) { token in
-                    Button { haptic(); viewModel.send(.insert(token, selection)) } label: {
-                        Text(verbatim: token.keyTitle).font(theme.modeFont).frame(minWidth: 36, minHeight: 36)
-                            .background(theme.card, in: RoundedRectangle(cornerRadius: theme.smallRadius))
-                    }.buttonStyle(.plain)
+    private var titlePrompt: Text {
+        viewModel.state.titlePlaceholder.isEmpty
+            ? Text(.notesKit("Untitled note"))
+            : Text(verbatim: viewModel.state.titlePlaceholder)
+    }
+
+    private var metaRow: some View {
+        HStack(spacing: theme.small) {
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark.seal").font(.system(size: 9, weight: .semibold))
+                Text(verbatim: "AES-256-GCM")
+            }
+            .foregroundStyle(theme.success)
+
+            if let folder = viewModel.state.folder {
+                divider
+                Text(verbatim: folder)
+            }
+            if viewModel.state.requiresBiometricUnlock {
+                divider
+                HStack(spacing: 3) {
+                    Image(systemName: "lock.fill").font(.system(size: 8, weight: .semibold))
+                    Text(.notesKit("Locked"))
                 }
-            }.padding(.horizontal, theme.medium).padding(.vertical, theme.small)
-        }.scrollIndicators(.hidden).foregroundStyle(theme.primaryText)
+            }
+            Spacer(minLength: theme.small)
+            saveStatus
+        }
+        .font(theme.metadataFont)
+        .tracking(1.1)
+        .textCase(.uppercase)
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+        .foregroundStyle(theme.secondaryText)
+        .padding(.horizontal, theme.medium)
+        .padding(.top, theme.small)
+        .padding(.bottom, theme.small + 4)
+    }
+
+    private var divider: some View {
+        Rectangle().fill(theme.disabledText).frame(width: 10, height: 0.75)
+    }
+
+    @ViewBuilder
+    private var saveStatus: some View {
+        HStack(spacing: 5) {
+            Circle().fill(saveTone).frame(width: 6, height: 6)
+            switch viewModel.state.saveStatus {
+            case .idle:
+                Text(viewModel.state.characterCount, format: .number)
+                Text(.notesKit("Characters"))
+            case .unsaved:
+                Text(.notesKit("Unsaved"))
+            case .saving:
+                Text(.notesKit("Saving…"))
+            case .saved(let date):
+                Text(date, format: .dateTime.hour().minute())
+            case .failed:
+                Text(.notesKit("Not saved"))
+            }
+        }
+        .foregroundStyle(saveTone)
+        .contentTransition(.opacity)
+        .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: viewModel.state.saveStatus)
+    }
+
+    private var saveTone: Color {
+        switch viewModel.state.saveStatus {
+        case .idle: theme.disabledText
+        case .unsaved: theme.warning
+        case .saving: theme.secondaryText
+        case .saved: theme.success
+        case .failed: theme.error
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        #if os(iOS)
+        ToolbarItem(placement: .principal) { modeSwitch }
+        ToolbarItem(placement: .topBarTrailing) { optionsButton }
+        #else
+        ToolbarItem { modeSwitch }
+        ToolbarItem { optionsButton }
+        #endif
+    }
+
+    private var optionsButton: some View {
+        Button { viewModel.send(.openOptions) } label: {
+            Image(systemName: viewModel.state.requiresBiometricUnlock ? "lock.fill" : "ellipsis")
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(viewModel.state.requiresBiometricUnlock ? theme.success : theme.primaryText)
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .accessibilityLabel(Text(.notesKit("Note options")))
+    }
+
+    private var modeSwitch: some View {
+        HStack(spacing: 2) {
+            modeButton(.edit, title: .notesKit("Edit"))
+            modeButton(.read, title: .notesKit("Read"))
+        }
+        .padding(3)
+        .background(theme.elevatedCard, in: Capsule())
+    }
+
+    private func modeButton(_ mode: NoteEditorState.Mode, title: LocalizedStringResource) -> some View {
+        let isSelected = viewModel.state.mode == mode
+        return Button {
+            haptic()
+            viewModel.send(.setMode(mode))
+        } label: {
+            Text(title)
+                .font(theme.modeFont)
+                .textCase(.uppercase)
+                .tracking(1.2)
+                .foregroundStyle(isSelected ? theme.onAccent : theme.secondaryText)
+                .padding(.horizontal, theme.small + 4)
+                .frame(height: 26)
+                .background { if isSelected { Capsule().fill(theme.accent) } }
+        }
+        .buttonStyle(NotePressButtonStyle())
+        .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: isSelected)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    private var editBody: some View {
+        NoteTextEditor(
+            text: Binding(get: { viewModel.state.body }, set: { viewModel.send(.setBody($0)) }),
+            selection: $selection,
+            pendingCaretOffset: viewModel.state.pendingCaretOffset,
+            theme: theme,
+            onCaretApplied: { viewModel.send(.caretApplied) },
+            onInsert: { viewModel.send(.insert($0, selection)) },
+            doneTitle: NotesLocalization.string("Done", locale: locale),
+            haptic: haptic
+        )
     }
 
     private var readBody: some View {
-        NoteMarkdownView(markdown: viewModel.state.body, theme: theme) { secretPolicy.copyTransient($0) }
+        NoteMarkdownView(
+            markdown: viewModel.state.body,
+            theme: theme,
+            clipboardLifetime: secretPolicy.transientCopyLifetime
+        ) {
+            secretPolicy.copyTransient($0)
+        }
     }
 
-    @ViewBuilder private var saveStatus: some View {
-        switch viewModel.state.saveStatus {
-        case .saving: Text(.notesKit("Saving…"))
-        case .saved: Text(.notesKit("Saved to vault"))
-        case .failed: Text(.notesKit("Not saved"))
-        case .idle, .unsaved: EmptyView()
+    @ViewBuilder
+    private var savedToast: some View {
+        if viewModel.state.showSavedToast {
+            HStack(spacing: theme.small) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 13))
+                    .foregroundStyle(theme.success)
+                Text(.notesKit("Saved to vault"))
+                    .font(theme.modeFont)
+                    .textCase(.uppercase)
+                    .tracking(1.2)
+                    .foregroundStyle(theme.primaryText)
+            }
+            .padding(.horizontal, theme.medium)
+            .padding(.vertical, theme.small + 2)
+            .background(theme.card, in: Capsule())
+            .overlay { Capsule().strokeBorder(theme.separator, lineWidth: 0.75) }
+            .padding(.bottom, theme.extraLarge)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .task {
+                try? await Task.sleep(for: .seconds(2))
+                viewModel.send(.dismissToast)
+            }
         }
     }
 
