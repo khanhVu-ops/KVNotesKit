@@ -51,6 +51,7 @@ public final class NoteEditorViewModel {
         case openOptions
         case dismissOptions
         case authenticate
+        case pinAuthenticated
         case sessionLocked
     }
 
@@ -123,6 +124,10 @@ public final class NoteEditorViewModel {
             state.showOptions = false
         case .authenticate:
             authenticate()
+        case .pinAuthenticated:
+            state.isLocked = false
+            state.authenticationDenied = false
+            loadBody()
         case .sessionLocked:
             autosaveTask?.cancel()
             workTask?.cancel()

@@ -8,6 +8,7 @@ struct NoteUnlockGate: View {
     let denied: Bool
     let theme: NoteTheme
     let onUnlock: () -> Void
+    let onUsePIN: () -> Void
     let onCancel: () -> Void
 
     var body: some View {
@@ -29,6 +30,10 @@ struct NoteUnlockGate: View {
                         .font(theme.modeFont).foregroundStyle(theme.onAccent).frame(maxWidth: .infinity).frame(height: 48)
                         .background(theme.accent, in: Capsule())
                 }.disabled(isAuthenticating)
+                if offer.allowsPINFallback {
+                    Button(.notesKit("Use PIN instead"), action: onUsePIN)
+                        .foregroundStyle(theme.primaryText)
+                }
                 Button(.notesKit("Cancel"), action: onCancel).foregroundStyle(theme.secondaryText)
             }.padding(theme.large)
         }

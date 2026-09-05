@@ -7,3 +7,4 @@
 - Own Markdown parsing, insertion, and note-summary derivation in Foundation-only Core.
 - Add host-independent list and editor screens driven only by Core ports and `NoteTheme`.
 - Ship all KVNotesUI interface strings in the package for the app's 19 locales.
+- Add a PIN fallback hand-off so hosts retain ownership of credential entry.

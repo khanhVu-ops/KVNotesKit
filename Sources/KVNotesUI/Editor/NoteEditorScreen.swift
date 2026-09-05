@@ -4,10 +4,12 @@ import SwiftUI
 public struct NoteEditorScreen: View {
     @State private var viewModel: NoteEditorViewModel
     @State private var selection = 0..<0
+    @Environment(\.scenePhase) private var scenePhase
     private let unlockAuthority: any NoteUnlockAuthority
     private let secretPolicy: any NoteSecretPolicy
     private let theme: NoteTheme
     private let onClose: @MainActor @Sendable () -> Void
+    private let onRequestPIN: @MainActor @Sendable (@escaping @MainActor @Sendable () -> Void) -> Void
     private let haptic: @MainActor @Sendable () -> Void
 
     public init(
@@ -17,6 +19,7 @@ public struct NoteEditorScreen: View {
         secretPolicy: any NoteSecretPolicy,
         theme: NoteTheme,
         onClose: @escaping @MainActor @Sendable () -> Void,
+        onRequestPIN: @escaping @MainActor @Sendable (@escaping @MainActor @Sendable () -> Void) -> Void = { _ in },
         onChange: @escaping @MainActor @Sendable () -> Void = {},
         haptic: @escaping @MainActor @Sendable () -> Void = {}
     ) {
@@ -30,6 +33,7 @@ public struct NoteEditorScreen: View {
         self.secretPolicy = secretPolicy
         self.theme = theme
         self.onClose = onClose
+        self.onRequestPIN = onRequestPIN
         self.haptic = haptic
     }
 
@@ -43,6 +47,7 @@ public struct NoteEditorScreen: View {
                     denied: viewModel.state.authenticationDenied,
                     theme: theme,
                     onUnlock: { viewModel.send(.authenticate) },
+                    onUsePIN: { onRequestPIN { viewModel.send(.pinAuthenticated) } },
                     onCancel: onClose
                 )
             } else {
@@ -53,6 +58,9 @@ public struct NoteEditorScreen: View {
         .noteNavigationChrome()
         .onAppear { viewModel.send(.onAppear) }
         .onDisappear { if viewModel.state.isDirty { viewModel.send(.save) } }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active, viewModel.state.isDirty { viewModel.send(.save) }
+        }
         .sheet(isPresented: Binding(
             get: { viewModel.state.showOptions },
             set: { if !$0 { viewModel.send(.dismissOptions) } }

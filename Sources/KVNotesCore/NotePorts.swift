@@ -10,11 +10,13 @@ public protocol NoteStore: Sendable {
     func renameFolder(_ name: String, to newName: String) async throws -> Int
 }
 
+@MainActor
 public protocol NoteUnlockAuthority: Sendable {
     var offer: NoteUnlockOffer { get }
     func authenticate(reason: LocalizedStringResource) async throws -> Bool
 }
 
+@MainActor
 public protocol NoteSecretPolicy: Sendable {
     func copyTransient(_ value: String)
 }
