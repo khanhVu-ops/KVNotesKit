@@ -48,3 +48,26 @@
 "Untitled note" = "Nota sin título";
 "Copy" = "Copiar";
 "Copied" = "Copiado";
+
+/* Menu section header above the notes list sort options. */
+"Sort by" = "Ordenar por";
+/* Menu section header above the notes list filter options. */
+"Show" = "Mostrar";
+/* Sort option: most recently edited note first. */
+"Last edited" = "Última edición";
+/* Sort option: least recently edited note first. */
+"Oldest edit first" = "Edición más antigua primero";
+/* Sort option: newest created note first. */
+"Date created" = "Fecha de creación";
+/* Sort option: alphabetical by note title. */
+"Title" = "Título";
+/* Filter option: only notes behind the biometric gate. */
+"Locked only" = "Solo bloqueadas";
+/* Filter option: only notes containing a task list. */
+"With a checklist" = "Con lista de tareas";
+/* Accessibility label of the notes list sort/filter button. */
+"Sort and filter" = "Ordenar y filtrar";
+/* Empty state under an active filter. */
+"No note in this vault matches the filter you have on." = "Ninguna nota de esta caja fuerte coincide con el filtro activo.";
+/* Button that clears the notes list filter. */
+"Show all notes" = "Mostrar todas las notas";

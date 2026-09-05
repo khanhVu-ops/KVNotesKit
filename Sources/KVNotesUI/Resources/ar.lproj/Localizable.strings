@@ -48,3 +48,26 @@
 "Untitled note" = "ملاحظة بدون عنوان";
 "Copy" = "نسخ";
 "Copied" = "تم النسخ";
+
+/* Menu section header above the notes list sort options. */
+"Sort by" = "ترتيب حسب";
+/* Menu section header above the notes list filter options. */
+"Show" = "إظهار";
+/* Sort option: most recently edited note first. */
+"Last edited" = "آخر تعديل";
+/* Sort option: least recently edited note first. */
+"Oldest edit first" = "الأقدم تعديلًا أولًا";
+/* Sort option: newest created note first. */
+"Date created" = "تاريخ الإنشاء";
+/* Sort option: alphabetical by note title. */
+"Title" = "العنوان";
+/* Filter option: only notes behind the biometric gate. */
+"Locked only" = "المقفلة فقط";
+/* Filter option: only notes containing a task list. */
+"With a checklist" = "التي بها قائمة مهام";
+/* Accessibility label of the notes list sort/filter button. */
+"Sort and filter" = "الترتيب والتصفية";
+/* Empty state under an active filter. */
+"No note in this vault matches the filter you have on." = "لا توجد ملاحظة في هذه الخزنة تطابق عامل التصفية المفعّل.";
+/* Button that clears the notes list filter. */
+"Show all notes" = "إظهار كل الملاحظات";

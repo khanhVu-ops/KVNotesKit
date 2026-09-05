@@ -18,6 +18,8 @@ public struct NotesListState: Equatable, Sendable {
     public var index = NoteIndex()
     public var selectedFolder: String?
     public var searchQuery = ""
+    public var sortOrder: NoteSortOrder = .lastEditedNewest
+    public var filter: NoteFilter = .all
     /// The filtered list the screen draws, pinned notes first. One array rather than two, so a
     /// note can never be missing from both or present in both.
     public var visibleNotes: [NoteDigest] = []
@@ -28,6 +30,11 @@ public struct NotesListState: Equatable, Sendable {
     public var pendingDiscard: NoteDigest?
     public var isBusy = false
     private var normalizedSearchHaystacks: [NoteID: SearchHaystackCache] = [:]
+
+    /// Whether anything narrows the list beyond the folder chips, which the header already
+    /// shows. Drives the marker on the sort control: a filter left on and forgotten looks
+    /// exactly like a vault that lost its notes.
+    public var isNarrowed: Bool { filter != .all || sortOrder != .lastEditedNewest }
 
     public var isEmptyBecauseStoreIsEmpty: Bool { phase == .loaded && index.isEmpty }
     public var isEmptyBecauseOfFilter: Bool {
@@ -54,15 +61,43 @@ public struct NotesListState: Equatable, Sendable {
             index.notes.filter { $0.folder == folder }
         } ?? index.notes
         let tokens = Self.normalize(searchQuery).split(whereSeparator: \.isWhitespace)
-        let matched = tokens.isEmpty ? folderNotes : folderNotes.filter { note in
+        let searched = tokens.isEmpty ? folderNotes : folderNotes.filter { note in
             let haystack = normalizedSearchHaystacks[note.id]?.normalized ?? ""
             return tokens.allSatisfy(haystack.contains)
         }
+        let matched = Self.sorted(searched.filter(passes), by: sortOrder)
         // A stable partition: the store already ordered these by last edit, and pinning must
         // not reshuffle the notes around the one that was pinned.
         let pinned = matched.filter(\.isPinned)
         pinnedCount = pinned.count
         visibleNotes = pinned + matched.filter { !$0.isPinned }
+    }
+
+    private func passes(_ note: NoteDigest) -> Bool {
+        switch filter {
+        case .all: return true
+        case .locked: return note.requiresBiometricUnlock
+        // A locked note reports `false` whatever it holds (see `withheldWhereLocked`), so this
+        // filter never reaches behind the gate.
+        case .hasChecklist: return note.hasChecklist
+        }
+    }
+
+    private static func sorted(_ notes: [NoteDigest], by order: NoteSortOrder) -> [NoteDigest] {
+        switch order {
+        case .lastEditedNewest: return notes.sorted { $0.lastEditedAt > $1.lastEditedAt }
+        case .lastEditedOldest: return notes.sorted { $0.lastEditedAt < $1.lastEditedAt }
+        case .createdNewest: return notes.sorted { $0.createdAt > $1.createdAt }
+        case .title:
+            // `localizedStandardCompare` and not `<`: Vietnamese sorts `Đ` after `D` and before
+            // `E`, and a raw String comparison puts every accented title after `Z`.
+            return notes.sorted { left, right in
+                let comparison = left.title.localizedStandardCompare(right.title)
+                return comparison == .orderedSame
+                    ? left.lastEditedAt > right.lastEditedAt
+                    : comparison == .orderedAscending
+            }
+        }
     }
 
     public var pinnedNotes: ArraySlice<NoteDigest> { visibleNotes.prefix(pinnedCount) }
@@ -83,6 +118,8 @@ public final class NotesListViewModel {
         case refresh
         case selectFolder(String?)
         case updateSearchQuery(String)
+        case setSortOrder(NoteSortOrder)
+        case setFilter(NoteFilter)
         case togglePin(NoteID)
         case moveToFolder(NoteID, String?)
         case requestDiscard(NoteDigest)
@@ -117,6 +154,12 @@ public final class NotesListViewModel {
             state.recompute()
         case .updateSearchQuery(let query):
             state.searchQuery = query
+            state.recompute()
+        case .setSortOrder(let order):
+            state.sortOrder = order
+            state.recompute()
+        case .setFilter(let filter):
+            state.filter = filter
             state.recompute()
         case .togglePin(let id):
             guard let note = state.index.notes.first(where: { $0.id == id }) else { return }

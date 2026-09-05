@@ -48,3 +48,26 @@
 "Untitled note" = "बिना शीर्षक नोट";
 "Copy" = "कॉपी करें";
 "Copied" = "कॉपी हो गया";
+
+/* Menu section header above the notes list sort options. */
+"Sort by" = "इसके अनुसार क्रमबद्ध करें";
+/* Menu section header above the notes list filter options. */
+"Show" = "दिखाएँ";
+/* Sort option: most recently edited note first. */
+"Last edited" = "अंतिम संपादन";
+/* Sort option: least recently edited note first. */
+"Oldest edit first" = "सबसे पुराना संपादन पहले";
+/* Sort option: newest created note first. */
+"Date created" = "बनाने की तारीख";
+/* Sort option: alphabetical by note title. */
+"Title" = "शीर्षक";
+/* Filter option: only notes behind the biometric gate. */
+"Locked only" = "केवल लॉक किए गए";
+/* Filter option: only notes containing a task list. */
+"With a checklist" = "चेकलिस्ट वाले";
+/* Accessibility label of the notes list sort/filter button. */
+"Sort and filter" = "क्रमबद्ध करें और फ़िल्टर करें";
+/* Empty state under an active filter. */
+"No note in this vault matches the filter you have on." = "इस वॉल्ट का कोई नोट आपके चालू फ़िल्टर से मेल नहीं खाता।";
+/* Button that clears the notes list filter. */
+"Show all notes" = "सभी नोट दिखाएँ";

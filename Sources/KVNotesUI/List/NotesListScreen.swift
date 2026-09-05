@@ -115,6 +115,8 @@ public struct NotesListScreen: View {
 
                 Spacer(minLength: theme.small)
 
+                sortMenu
+
                 Button(action: onCreateNote) {
                     Image(systemName: "plus")
                         .font(.system(size: 15, weight: .medium))
@@ -139,6 +141,76 @@ public struct NotesListScreen: View {
                 .padding(.top, theme.xs)
         }
         .background(theme.background)
+    }
+
+    /// Sort and filter in one menu rather than two controls.
+    ///
+    /// They answer the same question — "show me a different slice of this list" — and the header
+    /// has room for one more 32pt circle, not two. The dot marks a list that is narrowed, because
+    /// a filter left on looks exactly like a vault that lost its notes.
+    private var sortMenu: some View {
+        Menu {
+            Section {
+                ForEach(NoteSortOrder.allCases, id: \.self) { order in
+                    Button { viewModel.send(.setSortOrder(order)) } label: {
+                        Label {
+                            Text(Self.sortTitle(order))
+                        } icon: {
+                            if viewModel.state.sortOrder == order { Image(systemName: "checkmark") }
+                        }
+                    }
+                }
+            } header: {
+                Text(.notesKit("Sort by"))
+            }
+
+            Section {
+                ForEach(NoteFilter.allCases, id: \.self) { filter in
+                    Button { viewModel.send(.setFilter(filter)) } label: {
+                        Label {
+                            Text(Self.filterTitle(filter))
+                        } icon: {
+                            if viewModel.state.filter == filter { Image(systemName: "checkmark") }
+                        }
+                    }
+                }
+            } header: {
+                Text(.notesKit("Show"))
+            }
+        } label: {
+            Image(systemName: "line.3.horizontal.decrease")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(viewModel.state.isNarrowed ? theme.onAccent : theme.primaryText)
+                .frame(width: 32, height: 32)
+                .background(viewModel.state.isNarrowed ? theme.accent : theme.card, in: Circle())
+                .overlay {
+                    Circle().strokeBorder(
+                        viewModel.state.isNarrowed ? .clear : theme.separator,
+                        lineWidth: 0.75
+                    )
+                }
+        }
+        .frame(width: 44, height: 44)
+        .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: viewModel.state.isNarrowed)
+        .accessibilityLabel(Text(.notesKit("Sort and filter")))
+
+    }
+
+    private static func sortTitle(_ order: NoteSortOrder) -> LocalizedStringResource {
+        switch order {
+        case .lastEditedNewest: .notesKit("Last edited")
+        case .lastEditedOldest: .notesKit("Oldest edit first")
+        case .createdNewest: .notesKit("Date created")
+        case .title: .notesKit("Title")
+        }
+    }
+
+    private static func filterTitle(_ filter: NoteFilter) -> LocalizedStringResource {
+        switch filter {
+        case .all: .notesKit("All notes")
+        case .locked: .notesKit("Locked only")
+        case .hasChecklist: .notesKit("With a checklist")
+        }
     }
 
     private var countLine: some View {
@@ -408,14 +480,32 @@ public struct NotesListScreen: View {
         .frame(minHeight: 380)
     }
 
+    /// Two different dead ends, and saying which one this is decides what the user does next.
+    /// A filter that hides everything is undone with one tap; a search that finds nothing is not.
+    @ViewBuilder
     private var emptyFilter: some View {
+        let isFiltered = viewModel.state.filter != .all
         VStack(spacing: theme.medium) {
-            stateMark(icon: "magnifyingglass", tone: theme.secondaryText)
+            stateMark(
+                icon: isFiltered ? "line.3.horizontal.decrease" : "magnifyingglass",
+                tone: theme.secondaryText
+            )
             VStack(spacing: theme.xs) {
                 Text(.notesKit("No matching notes"))
                     .font(theme.titleFont).textCase(.uppercase).tracking(1.4).foregroundStyle(theme.primaryText)
-                Text(.notesKit("Titles and previews are searchable. The body of a note is not."))
+                Text(isFiltered
+                    ? .notesKit("No note in this vault matches the filter you have on.")
+                    : .notesKit("Titles and previews are searchable. The body of a note is not."))
                     .font(theme.bodyFont).multilineTextAlignment(.center).foregroundStyle(theme.secondaryText)
+            }
+            if isFiltered {
+                Button(.notesKit("Show all notes")) { viewModel.send(.setFilter(.all)) }
+                    .font(theme.modeFont).textCase(.uppercase).tracking(1.4)
+                    .foregroundStyle(theme.onAccent)
+                    .padding(.horizontal, theme.large).frame(height: 44)
+                    .background(theme.accent, in: Capsule())
+                    .buttonStyle(NotePressButtonStyle())
+                    .padding(.top, theme.xs)
             }
         }
         .padding(.horizontal, theme.large)

@@ -48,3 +48,26 @@
 "Untitled note" = "无标题笔记";
 "Copy" = "复制";
 "Copied" = "已复制";
+
+/* Menu section header above the notes list sort options. */
+"Sort by" = "排序方式";
+/* Menu section header above the notes list filter options. */
+"Show" = "显示";
+/* Sort option: most recently edited note first. */
+"Last edited" = "最近编辑";
+/* Sort option: least recently edited note first. */
+"Oldest edit first" = "最早编辑在前";
+/* Sort option: newest created note first. */
+"Date created" = "创建日期";
+/* Sort option: alphabetical by note title. */
+"Title" = "标题";
+/* Filter option: only notes behind the biometric gate. */
+"Locked only" = "仅已锁定";
+/* Filter option: only notes containing a task list. */
+"With a checklist" = "含清单";
+/* Accessibility label of the notes list sort/filter button. */
+"Sort and filter" = "排序和筛选";
+/* Empty state under an active filter. */
+"No note in this vault matches the filter you have on." = "此保险库中没有符合当前筛选条件的笔记。";
+/* Button that clears the notes list filter. */
+"Show all notes" = "显示全部笔记";

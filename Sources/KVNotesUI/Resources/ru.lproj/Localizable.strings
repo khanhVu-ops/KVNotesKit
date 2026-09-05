@@ -48,3 +48,26 @@
 "Untitled note" = "Заметка без названия";
 "Copy" = "Копировать";
 "Copied" = "Скопировано";
+
+/* Menu section header above the notes list sort options. */
+"Sort by" = "Сортировать по";
+/* Menu section header above the notes list filter options. */
+"Show" = "Показывать";
+/* Sort option: most recently edited note first. */
+"Last edited" = "Последнее изменение";
+/* Sort option: least recently edited note first. */
+"Oldest edit first" = "Сначала старые изменения";
+/* Sort option: newest created note first. */
+"Date created" = "Дата создания";
+/* Sort option: alphabetical by note title. */
+"Title" = "Заголовок";
+/* Filter option: only notes behind the biometric gate. */
+"Locked only" = "Только заблокированные";
+/* Filter option: only notes containing a task list. */
+"With a checklist" = "Со списком задач";
+/* Accessibility label of the notes list sort/filter button. */
+"Sort and filter" = "Сортировка и фильтр";
+/* Empty state under an active filter. */
+"No note in this vault matches the filter you have on." = "Ни одна заметка в этом хранилище не подходит под включённый фильтр.";
+/* Button that clears the notes list filter. */
+"Show all notes" = "Показать все заметки";

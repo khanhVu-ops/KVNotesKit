@@ -112,6 +112,39 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state.saveStatus, .idle)
     }
 
+    func testSortAndFilterNarrowTheListWithoutLosingThePinnedSection() async throws {
+        let store = InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies)
+        let viewModel = NotesListViewModel(store: store)
+
+        viewModel.send(.onAppear)
+        try await settle { viewModel.state.phase == .loaded }
+        XCTAssertFalse(viewModel.state.isNarrowed)
+
+        viewModel.send(.setSortOrder(.title))
+        // Pinned notes keep the head of the list; the sort orders within each group.
+        XCTAssertEqual(viewModel.state.pinnedNotes.map(\.title), ["Hardware wallet"])
+        XCTAssertEqual(viewModel.state.timelineNotes.map(\.title), ["Bank details", "Friday journal"])
+        XCTAssertTrue(viewModel.state.isNarrowed)
+
+        viewModel.send(.setSortOrder(.lastEditedOldest))
+        XCTAssertEqual(viewModel.state.timelineNotes.map(\.title), ["Friday journal", "Bank details"])
+
+        viewModel.send(.setFilter(.locked))
+        XCTAssertEqual(viewModel.state.visibleNotes.map(\.title), ["Hardware wallet"])
+
+        // No fixture carries a checklist, so this is the empty-because-of-filter state rather
+        // than an empty vault — the two show different screens.
+        viewModel.send(.setFilter(.hasChecklist))
+        XCTAssertTrue(viewModel.state.visibleNotes.isEmpty)
+        XCTAssertTrue(viewModel.state.isEmptyBecauseOfFilter)
+        XCTAssertFalse(viewModel.state.isEmptyBecauseStoreIsEmpty)
+
+        viewModel.send(.setFilter(.all))
+        viewModel.send(.setSortOrder(.lastEditedNewest))
+        XCTAssertFalse(viewModel.state.isNarrowed)
+        XCTAssertEqual(viewModel.state.visibleNotes.count, 3)
+    }
+
     private func settle(
         until condition: @escaping @MainActor () -> Bool,
         file: StaticString = #filePath,
@@ -163,4 +196,5 @@ private actor DelayedNoteStore: NoteStore {
     }
 
     func writeCount() -> Int { writes }
+
 }

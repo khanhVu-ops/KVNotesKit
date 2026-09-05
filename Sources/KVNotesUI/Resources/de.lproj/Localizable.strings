@@ -48,3 +48,26 @@
 "Untitled note" = "Notiz ohne Titel";
 "Copy" = "Kopieren";
 "Copied" = "Kopiert";
+
+/* Menu section header above the notes list sort options. */
+"Sort by" = "Sortieren nach";
+/* Menu section header above the notes list filter options. */
+"Show" = "Anzeigen";
+/* Sort option: most recently edited note first. */
+"Last edited" = "Zuletzt bearbeitet";
+/* Sort option: least recently edited note first. */
+"Oldest edit first" = "Älteste Bearbeitung zuerst";
+/* Sort option: newest created note first. */
+"Date created" = "Erstellungsdatum";
+/* Sort option: alphabetical by note title. */
+"Title" = "Titel";
+/* Filter option: only notes behind the biometric gate. */
+"Locked only" = "Nur gesperrte";
+/* Filter option: only notes containing a task list. */
+"With a checklist" = "Mit Checkliste";
+/* Accessibility label of the notes list sort/filter button. */
+"Sort and filter" = "Sortieren und filtern";
+/* Empty state under an active filter. */
+"No note in this vault matches the filter you have on." = "Keine Notiz in diesem Tresor entspricht dem aktiven Filter.";
+/* Button that clears the notes list filter. */
+"Show all notes" = "Alle Notizen anzeigen";

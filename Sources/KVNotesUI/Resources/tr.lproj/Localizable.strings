@@ -48,3 +48,26 @@
 "Untitled note" = "Başlıksız not";
 "Copy" = "Kopyala";
 "Copied" = "Kopyalandı";
+
+/* Menu section header above the notes list sort options. */
+"Sort by" = "Sıralama ölçütü";
+/* Menu section header above the notes list filter options. */
+"Show" = "Göster";
+/* Sort option: most recently edited note first. */
+"Last edited" = "Son düzenlenen";
+/* Sort option: least recently edited note first. */
+"Oldest edit first" = "Önce en eski düzenleme";
+/* Sort option: newest created note first. */
+"Date created" = "Oluşturulma tarihi";
+/* Sort option: alphabetical by note title. */
+"Title" = "Başlık";
+/* Filter option: only notes behind the biometric gate. */
+"Locked only" = "Yalnızca kilitliler";
+/* Filter option: only notes containing a task list. */
+"With a checklist" = "Kontrol listesi olanlar";
+/* Accessibility label of the notes list sort/filter button. */
+"Sort and filter" = "Sırala ve filtrele";
+/* Empty state under an active filter. */
+"No note in this vault matches the filter you have on." = "Bu kasada, açık olan filtreyle eşleşen not yok.";
+/* Button that clears the notes list filter. */
+"Show all notes" = "Tüm notları göster";

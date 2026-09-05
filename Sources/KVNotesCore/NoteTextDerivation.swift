@@ -5,6 +5,12 @@ public struct NoteTextSummary: Equatable, Sendable {
     public let snippet: String
     public let characterCount: Int
     public let isTitleUserProvided: Bool
+    /// Whether the note contains at least one Markdown task item.
+    ///
+    /// Derived here, at write time, because the list's *has checklist* filter must be answerable
+    /// from metadata alone. Opening one content blob per note to answer it would decrypt the
+    /// whole vault to draw one filter chip.
+    public let hasChecklist: Bool
 }
 
 /// Pure Markdown-to-list derivation shared by the package UI and the host's persisted schema.
@@ -31,8 +37,29 @@ public enum NoteTextDerivation {
             title: resolvedTitle,
             snippet: requiresBiometricUnlock ? "" : snippet(from: markdown, alreadyShowing: resolvedTitle),
             characterCount: markdown.count,
-            isTitleUserProvided: isTitleUserProvided
+            isTitleUserProvided: isTitleUserProvided,
+            hasChecklist: containsChecklist(markdown)
         )
+    }
+
+    /// A Markdown task item: a bullet marker, then `[ ]` or `[x]`, then a space.
+    ///
+    /// Deliberately strict about the trailing space so a note that merely mentions `- [x]` inside
+    /// a sentence, or a line reading `- [draft]`, is not counted.
+    public static func containsChecklist(_ markdown: String) -> Bool {
+        markdown.split(whereSeparator: \.isNewline).contains { line in
+            var rest = Substring(line).drop { $0 == " " || $0 == "\t" }
+            guard let marker = rest.first, marker == "-" || marker == "*" || marker == "+" else {
+                return false
+            }
+            rest = rest.dropFirst().drop { $0 == " " }
+            guard rest.first == "[" else { return false }
+            rest = rest.dropFirst()
+            guard let box = rest.first, box == " " || box == "x" || box == "X" else { return false }
+            rest = rest.dropFirst()
+            guard rest.first == "]" else { return false }
+            return rest.dropFirst().first == " "
+        }
     }
 
     public static func normalizedFolder(_ folder: String?) -> String? {

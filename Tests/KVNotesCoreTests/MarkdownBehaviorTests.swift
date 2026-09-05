@@ -50,4 +50,25 @@ final class MarkdownBehaviorTests: XCTestCase {
         XCTAssertLessThanOrEqual(NoteTextDerivation.derivedTitle(from: markdown).count, NoteTextDerivation.titleLimit)
         XCTAssertLessThanOrEqual(NoteTextDerivation.snippet(from: markdown).count, NoteTextDerivation.snippetLimit)
     }
+
+    func testChecklistDetectionAcceptsEveryMarkerAndRejectsLookalikes() {
+        XCTAssertTrue(NoteTextDerivation.containsChecklist("Groceries\n- [ ] milk"))
+        XCTAssertTrue(NoteTextDerivation.containsChecklist("* [x] done"))
+        XCTAssertTrue(NoteTextDerivation.containsChecklist("  + [X] indented"))
+
+        XCTAssertFalse(NoteTextDerivation.containsChecklist("- [draft] not a box"))
+        XCTAssertFalse(NoteTextDerivation.containsChecklist("- [x]no space after the box"))
+        XCTAssertFalse(NoteTextDerivation.containsChecklist("a sentence mentioning - [ ] mid-line"))
+        XCTAssertFalse(NoteTextDerivation.containsChecklist(""))
+    }
+
+    func testSummaryCarriesTheChecklistFlagAndLockingIsNotItsJob() {
+        XCTAssertTrue(
+            NoteTextDerivation.summary(
+                markdown: "Trip\n- [ ] passport",
+                title: nil,
+                requiresBiometricUnlock: true
+            ).hasChecklist
+        )
+    }
 }

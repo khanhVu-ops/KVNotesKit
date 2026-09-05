@@ -29,6 +29,9 @@ public struct NoteDigest: Identifiable, Equatable, Sendable {
     /// Pinned notes lead the list under their own header. Notes have Pin where the rest of the
     /// vault has Favourite, and never both — two "keep this at the top" gestures on one row.
     public var isPinned: Bool
+    /// `false` for a locked note whatever it contains — the host withholds this the way it
+    /// withholds the snippet, so *has checklist* cannot be used to probe a note behind the gate.
+    public var hasChecklist: Bool
     public var createdAt: Date
     public var lastEditedAt: Date
 
@@ -42,6 +45,7 @@ public struct NoteDigest: Identifiable, Equatable, Sendable {
         requiresBiometricUnlock: Bool = false,
         isTitleUserProvided: Bool = false,
         isPinned: Bool = false,
+        hasChecklist: Bool = false,
         createdAt: Date = Date(),
         lastEditedAt: Date = Date()
     ) {
@@ -54,6 +58,7 @@ public struct NoteDigest: Identifiable, Equatable, Sendable {
         self.requiresBiometricUnlock = requiresBiometricUnlock
         self.isTitleUserProvided = isTitleUserProvided
         self.isPinned = isPinned
+        self.hasChecklist = hasChecklist
         self.createdAt = createdAt
         self.lastEditedAt = lastEditedAt
     }

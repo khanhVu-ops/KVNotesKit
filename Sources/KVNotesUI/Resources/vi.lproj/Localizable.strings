@@ -48,3 +48,26 @@
 "Untitled note" = "Ghi chú chưa có tiêu đề";
 "Copy" = "Sao chép";
 "Copied" = "Đã sao chép";
+
+/* Menu section header above the notes list sort options. */
+"Sort by" = "Sắp xếp theo";
+/* Menu section header above the notes list filter options. */
+"Show" = "Hiển thị";
+/* Sort option: most recently edited note first. */
+"Last edited" = "Sửa gần nhất";
+/* Sort option: least recently edited note first. */
+"Oldest edit first" = "Sửa cũ nhất trước";
+/* Sort option: newest created note first. */
+"Date created" = "Ngày tạo";
+/* Sort option: alphabetical by note title. */
+"Title" = "Tiêu đề";
+/* Filter option: only notes behind the biometric gate. */
+"Locked only" = "Chỉ ghi chú đã khoá";
+/* Filter option: only notes containing a task list. */
+"With a checklist" = "Có danh sách việc";
+/* Accessibility label of the notes list sort/filter button. */
+"Sort and filter" = "Sắp xếp và lọc";
+/* Empty state under an active filter. */
+"No note in this vault matches the filter you have on." = "Không ghi chú nào trong két khớp với bộ lọc đang bật.";
+/* Button that clears the notes list filter. */
+"Show all notes" = "Hiện tất cả ghi chú";

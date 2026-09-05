@@ -48,3 +48,26 @@
 "Untitled note" = "Catatan tanpa judul";
 "Copy" = "Salin";
 "Copied" = "Disalin";
+
+/* Menu section header above the notes list sort options. */
+"Sort by" = "Urutkan berdasarkan";
+/* Menu section header above the notes list filter options. */
+"Show" = "Tampilkan";
+/* Sort option: most recently edited note first. */
+"Last edited" = "Terakhir diedit";
+/* Sort option: least recently edited note first. */
+"Oldest edit first" = "Edit terlama dahulu";
+/* Sort option: newest created note first. */
+"Date created" = "Tanggal dibuat";
+/* Sort option: alphabetical by note title. */
+"Title" = "Judul";
+/* Filter option: only notes behind the biometric gate. */
+"Locked only" = "Hanya yang terkunci";
+/* Filter option: only notes containing a task list. */
+"With a checklist" = "Dengan daftar centang";
+/* Accessibility label of the notes list sort/filter button. */
+"Sort and filter" = "Urutkan dan saring";
+/* Empty state under an active filter. */
+"No note in this vault matches the filter you have on." = "Tidak ada catatan di brankas ini yang cocok dengan filter yang aktif.";
+/* Button that clears the notes list filter. */
+"Show all notes" = "Tampilkan semua catatan";
