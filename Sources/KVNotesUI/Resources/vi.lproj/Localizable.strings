@@ -187,3 +187,8 @@
 "Storage" = "Lưu trữ";
 "Cipher" = "Mã hoá";
 "Note info" = "Thông tin ghi chú";
+
+"Export note" = "Xuất ghi chú";
+"Export as Markdown" = "Xuất dưới dạng Markdown";
+"Export as Plain Text" = "Xuất dưới dạng văn bản thuần";
+"The exported file will not be encrypted. Anyone with access to this file can read its contents." = "Tệp xuất ra sẽ không được mã hóa. Bất kỳ ai có quyền truy cập vào tệp này đều có thể đọc nội dung của nó.";

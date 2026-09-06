@@ -187,3 +187,8 @@
 "Storage" = "พื้นที่จัดเก็บ";
 "Cipher" = "การเข้ารหัส";
 "Note info" = "ข้อมูลโน้ต";
+
+"Export note" = "ส่งออกโน้ต";
+"Export as Markdown" = "ส่งออกเป็น Markdown";
+"Export as Plain Text" = "ส่งออกเป็นข้อความธรรมดา";
+"The exported file will not be encrypted. Anyone with access to this file can read its contents." = "ไฟล์ที่ส่งออกจะไม่ได้รับการเข้ารหัส ทุกคนที่มีสิทธิ์เข้าถึงไฟล์นี้จะสามารถอ่านเนื้อหาได้";

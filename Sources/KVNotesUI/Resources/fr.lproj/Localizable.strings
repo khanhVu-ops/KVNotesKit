@@ -187,3 +187,8 @@
 "Storage" = "Stockage";
 "Cipher" = "Chiffrement";
 "Note info" = "Infos de la note";
+
+"Export note" = "Exporter la note";
+"Export as Markdown" = "Exporter au format Markdown";
+"Export as Plain Text" = "Exporter en texte brut";
+"The exported file will not be encrypted. Anyone with access to this file can read its contents." = "Le fichier exporté ne sera pas chiffré. Toute personne ayant accès à ce fichier pourra lire son contenu.";

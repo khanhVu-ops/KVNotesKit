@@ -187,3 +187,8 @@
 "Storage" = "Opslag";
 "Cipher" = "Versleuteling";
 "Note info" = "Notitie-info";
+
+"Export note" = "Notitie exporteren";
+"Export as Markdown" = "Exporteren als Markdown";
+"Export as Plain Text" = "Exporteren als platte tekst";
+"The exported file will not be encrypted. Anyone with access to this file can read its contents." = "Het geëxporteerde bestand wordt niet versleuteld. Iedereen met toegang tot dit bestand kan de inhoud ervan lezen.";

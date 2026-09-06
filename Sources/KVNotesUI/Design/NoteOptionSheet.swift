@@ -214,9 +214,10 @@ extension View {
     /// Presents an option sheet over this view.
     func noteOptionSheet(
         isPresented: Binding<Bool>,
+        onDismiss: (() -> Void)? = nil,
         sheet: NoteOptionSheetView
     ) -> some View {
-        self.sheet(isPresented: isPresented) {
+        self.sheet(isPresented: isPresented, onDismiss: onDismiss) {
             sheet
                 .presentationDetents([.height(sheet.estimatedHeight)])
                 .presentationDragIndicator(.hidden)

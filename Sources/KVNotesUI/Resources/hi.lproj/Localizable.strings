@@ -187,3 +187,8 @@
 "Storage" = "स्टोरेज";
 "Cipher" = "साइफ़र";
 "Note info" = "नोट जानकारी";
+
+"Export note" = "नोट निर्यात करें";
+"Export as Markdown" = "Markdown के रूप में निर्यात करें";
+"Export as Plain Text" = "सादा पाठ के रूप में निर्यात करें";
+"The exported file will not be encrypted. Anyone with access to this file can read its contents." = "निर्यात की गई फ़ाइल एन्क्रिप्ट नहीं की जाएगी। इस फ़ाइल तक पहुँच रखने वाला कोई भी व्यक्ति इसकी सामग्री पढ़ सकता है।";

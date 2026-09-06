@@ -187,3 +187,8 @@
 "Storage" = "儲存空間";
 "Cipher" = "加密演算法";
 "Note info" = "筆記資訊";
+
+"Export note" = "匯出筆記";
+"Export as Markdown" = "匯出為 Markdown";
+"Export as Plain Text" = "匯出為純文字";
+"The exported file will not be encrypted. Anyone with access to this file can read its contents." = "匯出的檔案將不會被加密。任何有權存取此檔案的人都可以讀取其內容。";

@@ -15,6 +15,7 @@ struct NoteOptionsSheet: View {
     let onToggleLock: () -> Void
     let onToggleHiddenPreview: () -> Void
     let onDismiss: () -> Void
+    var onExport: (() -> Void)? = nil
 
     @State private var selectedCategory: NoteIconLibrary.Category = .general
     @State private var customEmojiInput = ""
@@ -28,6 +29,9 @@ struct NoteOptionsSheet: View {
                 iconSection
                 folderSection
                 securitySection
+                if let onExport {
+                    exportSection(onExport)
+                }
                 if let metrics {
                     detailsSection(metrics)
                 }
@@ -443,6 +447,34 @@ struct NoteOptionsSheet: View {
                 .tracking(1.4)
                 .foregroundStyle(theme.secondaryText)
             content()
+        }
+    }
+
+    private func exportSection(_ action: @escaping () -> Void) -> some View {
+        section(.notesKit("Export note")) {
+            Button {
+                haptic()
+                onDismiss()
+                action()
+            } label: {
+                HStack(spacing: theme.small + 4) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 15))
+                        .foregroundStyle(theme.accent)
+                        .frame(width: 28)
+                    Text(.notesKit("Export note"))
+                        .font(theme.rowFont)
+                        .foregroundStyle(theme.primaryText)
+                    Spacer(minLength: theme.small)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(theme.secondaryText)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .noteCard(theme: theme, padding: theme.small + 4)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(NotePressButtonStyle())
         }
     }
 

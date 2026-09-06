@@ -187,3 +187,8 @@
 "Storage" = "Storage";
 "Cipher" = "Cipher";
 "Note info" = "Note info";
+
+"Export note" = "Export note";
+"Export as Markdown" = "Export as Markdown";
+"Export as Plain Text" = "Export as Plain Text";
+"The exported file will not be encrypted. Anyone with access to this file can read its contents." = "The exported file will not be encrypted. Anyone with access to this file can read its contents.";

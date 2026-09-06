@@ -13,6 +13,9 @@ public struct NotesListScreen: View {
     /// 120 times a second. Only `NotesListHeader` reads it.
     @State private var collapse = NotesHeaderCollapse()
     @State private var inspectingNote: NoteDigest?
+    @State private var exportingNote: NoteDigest?
+    @State private var showListExportConfirmation = false
+    @State private var pendingListExport = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let theme: NoteTheme
@@ -20,6 +23,7 @@ public struct NotesListScreen: View {
     private let onOpenNote: @MainActor @Sendable (NoteDigest) -> Void
     private let onCreateNote: @MainActor @Sendable (NoteTemplate) -> Void
     private let onSelectionChange: @MainActor @Sendable (Bool) -> Void
+    private let onExportNote: (@MainActor @Sendable (NoteDigest, NoteExportFormat) -> Void)?
     private let haptic: @MainActor @Sendable () -> Void
 
     public init(
@@ -33,6 +37,7 @@ public struct NotesListScreen: View {
         /// The host hides its dock while a selection is live; the package cannot reach that
         /// modifier, and should not know it exists.
         onSelectionChange: @escaping @MainActor @Sendable (Bool) -> Void = { _ in },
+        onExportNote: (@MainActor @Sendable (NoteDigest, NoteExportFormat) -> Void)? = nil,
         haptic: @escaping @MainActor @Sendable () -> Void = {}
     ) {
         _viewModel = State(initialValue: NotesListViewModel(
@@ -45,6 +50,7 @@ public struct NotesListScreen: View {
         self.onOpenNote = onOpenNote
         self.onCreateNote = onCreateNote
         self.onSelectionChange = onSelectionChange
+        self.onExportNote = onExportNote
         self.haptic = haptic
     }
 
@@ -57,6 +63,7 @@ public struct NotesListScreen: View {
         onCreateNote: @escaping @MainActor @Sendable () -> Void,
         onChange: @escaping @MainActor @Sendable () -> Void = {},
         onSelectionChange: @escaping @MainActor @Sendable (Bool) -> Void = { _ in },
+        onExportNote: (@MainActor @Sendable (NoteDigest, NoteExportFormat) -> Void)? = nil,
         haptic: @escaping @MainActor @Sendable () -> Void = {}
     ) {
         self.init(
@@ -68,6 +75,7 @@ public struct NotesListScreen: View {
             onCreateNote: { _ in onCreateNote() },
             onChange: onChange,
             onSelectionChange: onSelectionChange,
+            onExportNote: onExportNote,
             haptic: haptic
         )
     }
@@ -153,8 +161,39 @@ public struct NotesListScreen: View {
                     get: { viewModel.state.optionSheet != nil },
                     set: { if !$0 { viewModel.send(.closeOptions) } }
                 ),
+                onDismiss: {
+                    if pendingListExport {
+                        pendingListExport = false
+                        showListExportConfirmation = true
+                    }
+                },
                 sheet: optionSheet
             )
+            .confirmationDialog(
+                Text(.notesKit("Export note")),
+                isPresented: $showListExportConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button(action: {
+                    if let note = exportingNote {
+                        onExportNote?(note, .markdown)
+                    }
+                }) {
+                    Text(.notesKit("Export as Markdown"))
+                }
+                Button(action: {
+                    if let note = exportingNote {
+                        onExportNote?(note, .plainText)
+                    }
+                }) {
+                    Text(.notesKit("Export as Plain Text"))
+                }
+                Button(role: .cancel, action: {}) {
+                    Text(.notesKit("Cancel"))
+                }
+            } message: {
+                Text(.notesKit("The exported file will not be encrypted. Anyone with access to this file can read its contents."))
+            }
             .sheet(item: $inspectingNote) { note in
                 NoteInspectorSheet(
                     noteTitle: note.title,
@@ -644,25 +683,43 @@ public struct NotesListScreen: View {
     }
 
     private func noteOptionGroups(_ note: NoteDigest) -> [NoteOptionGroup] {
+        var actionItems: [NoteOptionItem] = [
+            NoteOptionItem(
+                id: "pin",
+                title: .localized(note.isPinned ? .notesKit("Unpin") : .notesKit("Pin")),
+                systemImage: note.isPinned ? "pin.slash" : "pin"
+            ) { listChange(.togglePin(note.id)) },
+            NoteOptionItem(
+                id: "info",
+                title: .localized(.notesKit("Note info")),
+                systemImage: "info.circle"
+            ) { inspectingNote = note }
+        ]
+
+        if onExportNote != nil {
+            actionItems.append(
+                NoteOptionItem(
+                    id: "export",
+                    title: .localized(.notesKit("Export note")),
+                    systemImage: "square.and.arrow.up"
+                ) {
+                    exportingNote = note
+                    pendingListExport = true
+                }
+            )
+        }
+
+        actionItems.append(
+            NoteOptionItem(
+                id: "trash",
+                title: .localized(.notesKit("Move to Trash")),
+                systemImage: "trash",
+                isDestructive: true
+            ) { viewModel.send(.requestDiscard(note)) }
+        )
+
         var groups = [
-            NoteOptionGroup(id: "actions", items: [
-                NoteOptionItem(
-                    id: "pin",
-                    title: .localized(note.isPinned ? .notesKit("Unpin") : .notesKit("Pin")),
-                    systemImage: note.isPinned ? "pin.slash" : "pin"
-                ) { listChange(.togglePin(note.id)) },
-                NoteOptionItem(
-                    id: "info",
-                    title: .localized(.notesKit("Note info")),
-                    systemImage: "info.circle"
-                ) { inspectingNote = note },
-                NoteOptionItem(
-                    id: "trash",
-                    title: .localized(.notesKit("Move to Trash")),
-                    systemImage: "trash",
-                    isDestructive: true
-                ) { viewModel.send(.requestDiscard(note)) }
-            ])
+            NoteOptionGroup(id: "actions", items: actionItems)
         ]
 
         if !viewModel.state.index.folders.isEmpty || note.folder != nil {

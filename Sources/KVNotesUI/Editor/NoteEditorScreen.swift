@@ -4,6 +4,8 @@ import SwiftUI
 public struct NoteEditorScreen: View {
     @State private var viewModel: NoteEditorViewModel
     @State private var showsGenerator = false
+    @State private var showExportConfirmation = false
+    @State private var pendingExport = false
     @Namespace private var modeNamespace
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.locale) private var locale
@@ -14,6 +16,7 @@ public struct NoteEditorScreen: View {
     private let theme: NoteTheme
     private let onClose: @MainActor @Sendable () -> Void
     private let onRequestPIN: @MainActor @Sendable (@escaping @MainActor @Sendable () -> Void) -> Void
+    private let onExport: (@MainActor @Sendable (String, String, NoteExportFormat) -> Void)?
     private let haptic: @MainActor @Sendable () -> Void
 
     public init(
@@ -26,6 +29,7 @@ public struct NoteEditorScreen: View {
         onClose: @escaping @MainActor @Sendable () -> Void,
         onRequestPIN: @escaping @MainActor @Sendable (@escaping @MainActor @Sendable () -> Void) -> Void = { _ in },
         onChange: @escaping @MainActor @Sendable () -> Void = {},
+        onExport: (@MainActor @Sendable (String, String, NoteExportFormat) -> Void)? = nil,
         haptic: @escaping @MainActor @Sendable () -> Void = {}
     ) {
         _viewModel = State(initialValue: NoteEditorViewModel(
@@ -40,6 +44,7 @@ public struct NoteEditorScreen: View {
         self.theme = theme
         self.onClose = onClose
         self.onRequestPIN = onRequestPIN
+        self.onExport = onExport
         self.haptic = haptic
     }
 
@@ -69,10 +74,39 @@ public struct NoteEditorScreen: View {
             .onChange(of: scenePhase) { _, phase in
                 if phase != .active, viewModel.state.isDirty { viewModel.send(.save) }
             }
-            .sheet(isPresented: Binding(
-                get: { viewModel.state.showOptions },
-                set: { if !$0 { viewModel.send(.dismissOptions) } }
-            )) { options }
+            .sheet(
+                isPresented: Binding(
+                    get: { viewModel.state.showOptions },
+                    set: { if !$0 { viewModel.send(.dismissOptions) } }
+                ),
+                onDismiss: {
+                    if pendingExport {
+                        pendingExport = false
+                        showExportConfirmation = true
+                    }
+                }
+            ) { options }
+            .confirmationDialog(
+                Text(.notesKit("Export note")),
+                isPresented: $showExportConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button(action: {
+                    onExport?(viewModel.state.title, viewModel.state.body, .markdown)
+                }) {
+                    Text(.notesKit("Export as Markdown"))
+                }
+                Button(action: {
+                    onExport?(viewModel.state.title, viewModel.state.body, .plainText)
+                }) {
+                    Text(.notesKit("Export as Plain Text"))
+                }
+                Button(role: .cancel, action: {}) {
+                    Text(.notesKit("Cancel"))
+                }
+            } message: {
+                Text(.notesKit("The exported file will not be encrypted. Anyone with access to this file can read its contents."))
+            }
             .sheet(isPresented: $showsGenerator) {
                 PasswordGeneratorSheet(
                     theme: theme,
@@ -393,10 +427,7 @@ public struct NoteEditorScreen: View {
             indentTitle: NotesLocalization.string("Indent", locale: locale),
             outdentTitle: NotesLocalization.string("Outdent", locale: locale),
             haptic: haptic,
-            onToggleTask: viewModel.state.isLocked || viewModel.state.isLoading ? nil : { line in
-                haptic()
-                viewModel.send(.toggleTask(line: line))
-            }
+            onToggleTask: taskToggleHandler
         )
     }
 
@@ -406,11 +437,16 @@ public struct NoteEditorScreen: View {
             theme: theme,
             clipboardLifetime: secretPolicy.transientCopyLifetime,
             copy: { secretPolicy.copyTransient($0) },
-            toggleTask: viewModel.state.isLocked || viewModel.state.isLoading ? nil : { line in
-                haptic()
-                viewModel.send(.toggleTask(line: line))
-            }
+            toggleTask: taskToggleHandler
         )
+    }
+
+    private var taskToggleHandler: (@MainActor @Sendable (Int) -> Void)? {
+        guard !viewModel.state.isLocked, !viewModel.state.isLoading else { return nil }
+        return { line in
+            haptic()
+            viewModel.send(.toggleTask(line: line))
+        }
     }
 
     @ViewBuilder
@@ -453,7 +489,8 @@ public struct NoteEditorScreen: View {
             onFolder: { viewModel.send(.setFolder($0)) },
             onToggleLock: { viewModel.send(.toggleBiometricLock) },
             onToggleHiddenPreview: { viewModel.send(.toggleHiddenPreview) },
-            onDismiss: { viewModel.send(.dismissOptions) }
+            onDismiss: { viewModel.send(.dismissOptions) },
+            onExport: onExport != nil ? { pendingExport = true } : nil
         )
     }
 }

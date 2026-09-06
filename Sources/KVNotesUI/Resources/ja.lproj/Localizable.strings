@@ -187,3 +187,8 @@
 "Storage" = "ストレージ";
 "Cipher" = "暗号化方式";
 "Note info" = "ノート情報";
+
+"Export note" = "メモを書き出す";
+"Export as Markdown" = "Markdownとして書き出す";
+"Export as Plain Text" = "プレーンテキストとして書き出す";
+"The exported file will not be encrypted. Anyone with access to this file can read its contents." = "書き出されたファイルは暗号化されません。このファイルにアクセスできる人は誰でも内容を読み取ることができます。";

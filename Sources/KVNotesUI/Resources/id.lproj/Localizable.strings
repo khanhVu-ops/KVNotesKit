@@ -187,3 +187,8 @@
 "Storage" = "Penyimpanan";
 "Cipher" = "Sandi";
 "Note info" = "Info catatan";
+
+"Export note" = "Ekspor catatan";
+"Export as Markdown" = "Ekspor sebagai Markdown";
+"Export as Plain Text" = "Ekspor sebagai Teks Biasa";
+"The exported file will not be encrypted. Anyone with access to this file can read its contents." = "File yang diekspor tidak akan dienkripsi. Siapa pun yang memiliki akses ke file ini dapat membaca isinya.";
