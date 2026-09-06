@@ -13,6 +13,7 @@ struct NoteTextEditor: UIViewRepresentable {
     let theme: NoteTheme
     let onCaretApplied: @MainActor @Sendable () -> Void
     let onInsert: @MainActor @Sendable (MarkdownToken) -> Void
+    let onContinuation: (@MainActor @Sendable (String, Int) -> Void)?
     let onUndo: @MainActor @Sendable () -> Void
     let onRedo: @MainActor @Sendable () -> Void
     let onInsertTimestamp: @MainActor @Sendable () -> Void
@@ -370,6 +371,38 @@ struct NoteTextEditor: UIViewRepresentable {
             reportSelection(of: textView)
         }
 
+        func textView(
+            _ textView: UITextView,
+            shouldChangeTextIn range: NSRange,
+            replacementText text: String
+        ) -> Bool {
+            guard text == "\n" else { return true }
+            let fullText = textView.text ?? ""
+            guard let textRange = Range(range, in: fullText) else { return true }
+            let lower = fullText.distance(from: fullText.startIndex, to: textRange.lowerBound)
+            let upper = fullText.distance(from: fullText.startIndex, to: textRange.upperBound)
+            guard let result = MarkdownListContinuation.continueOrExitList(
+                in: fullText,
+                selection: lower..<upper
+            ) else {
+                return true
+            }
+
+            textView.text = result.text
+            let charIdx = result.text.index(
+                result.text.startIndex,
+                offsetBy: min(max(result.caretOffset, 0), result.text.count)
+            )
+            let utf16Offset = NSRange(charIdx..<charIdx, in: result.text).location
+            textView.selectedRange = NSRange(location: utf16Offset, length: 0)
+            textView.scrollRangeToVisible(textView.selectedRange)
+            styleEditedParagraph(in: textView)
+            parent.text = result.text
+            reportSelection(of: textView)
+            parent.onContinuation?(result.text, result.caretOffset)
+            return false
+        }
+
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
             guard let view = scrollView as? UITextView else { return }
             // Scrolling styles what has come into view. Cheap for the same reason the keystroke
@@ -400,6 +433,7 @@ struct NoteTextEditor: View {
     let theme: NoteTheme
     let onCaretApplied: @MainActor @Sendable () -> Void
     let onInsert: @MainActor @Sendable (MarkdownToken) -> Void
+    let onContinuation: (@MainActor @Sendable (String, Int) -> Void)?
     let onUndo: @MainActor @Sendable () -> Void
     let onRedo: @MainActor @Sendable () -> Void
     let onInsertTimestamp: @MainActor @Sendable () -> Void

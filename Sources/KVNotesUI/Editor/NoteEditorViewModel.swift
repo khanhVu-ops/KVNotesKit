@@ -98,6 +98,7 @@ public final class NoteEditorViewModel {
         case setMode(NoteEditorState.Mode)
         case insert(MarkdownToken, Range<Int>)
         case insertText(String, Range<Int>)
+        case applyContinuation(text: String, caretOffset: Int)
         case setSelection(Range<Int>)
         case openFind
         case closeFind
@@ -219,6 +220,11 @@ public final class NoteEditorViewModel {
             state.body.replaceSubrange(start..<end, with: value)
             let caret = lower + value.count
             state.pendingCaretOffset = caret
+            state.selection = caret..<caret
+            dirty()
+        case .applyContinuation(let text, let caret):
+            recordUndoSnapshot(coalescingTyping: false)
+            state.body = text
             state.selection = caret..<caret
             dirty()
         case .setSelection(let range):

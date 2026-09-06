@@ -369,6 +369,7 @@ public struct NoteEditorScreen: View {
             theme: theme,
             onCaretApplied: { viewModel.send(.caretApplied) },
             onInsert: { viewModel.send(.insert($0, viewModel.state.selection)) },
+            onContinuation: { text, caret in viewModel.send(.applyContinuation(text: text, caretOffset: caret)) },
             onUndo: { viewModel.send(.undo) },
             onRedo: { viewModel.send(.redo) },
             onInsertTimestamp: {

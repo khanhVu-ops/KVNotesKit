@@ -257,6 +257,17 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state.body, "- [ ] milk")
     }
 
+    func testListContinuationIsUndoable() async throws {
+        let viewModel = NoteEditorViewModel(store: InMemoryNoteStore(), unlockAuthority: UnlockAuthority())
+        viewModel.send(.setBody("- [ ] milk"))
+        viewModel.send(.applyContinuation(text: "- [ ] milk\n- [ ] ", caretOffset: 17))
+        XCTAssertEqual(viewModel.state.body, "- [ ] milk\n- [ ] ")
+        XCTAssertEqual(viewModel.state.selection, 17..<17)
+
+        viewModel.send(.undo)
+        XCTAssertEqual(viewModel.state.body, "- [ ] milk")
+    }
+
     func testHistoryDiesWithTheSession() async throws {
         let viewModel = NoteEditorViewModel(store: InMemoryNoteStore(), unlockAuthority: UnlockAuthority())
 
