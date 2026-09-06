@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Redesign note detail more options into a card-based NavigationStack sheet with dedicated sub-destinations for icon picker, folder picker, export format sheet, and note details; add trailing toolbar icon button for direct icon access; replace confirmationDialog popover on export with dedicated NoteExportSheet.
 - Export a note as Markdown (.md) or Plain Text (.txt) via the system share sheet, behind an explicit unencrypted security warning confirmation, with immediate ephemeral file cleanup on dismissal and vault locking (NK-450, PN-590).
 - Toggle Markdown checkboxes directly by tapping on them in Edit mode, preserving caret position and undo stack without triggering keyboard disruption or mode switching (NK-237).
 - Add note inspector showing word, character, and line counts, created and modified dates, padded 1 KiB block storage size, and AES-256-GCM cipher status, withholding content metrics when a note is locked to prevent length leakage across the security boundary (NK-420).

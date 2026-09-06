@@ -4,8 +4,7 @@ import SwiftUI
 public struct NoteEditorScreen: View {
     @State private var viewModel: NoteEditorViewModel
     @State private var showsGenerator = false
-    @State private var showExportConfirmation = false
-    @State private var pendingExport = false
+    @State private var initialOptionsDestination: NoteOptionsDestination? = nil
     @Namespace private var modeNamespace
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.locale) private var locale
@@ -74,39 +73,10 @@ public struct NoteEditorScreen: View {
             .onChange(of: scenePhase) { _, phase in
                 if phase != .active, viewModel.state.isDirty { viewModel.send(.save) }
             }
-            .sheet(
-                isPresented: Binding(
-                    get: { viewModel.state.showOptions },
-                    set: { if !$0 { viewModel.send(.dismissOptions) } }
-                ),
-                onDismiss: {
-                    if pendingExport {
-                        pendingExport = false
-                        showExportConfirmation = true
-                    }
-                }
-            ) { options }
-            .confirmationDialog(
-                Text(.notesKit("Export note")),
-                isPresented: $showExportConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button(action: {
-                    onExport?(viewModel.state.title, viewModel.state.body, .markdown)
-                }) {
-                    Text(.notesKit("Export as Markdown"))
-                }
-                Button(action: {
-                    onExport?(viewModel.state.title, viewModel.state.body, .plainText)
-                }) {
-                    Text(.notesKit("Export as Plain Text"))
-                }
-                Button(role: .cancel, action: {}) {
-                    Text(.notesKit("Cancel"))
-                }
-            } message: {
-                Text(.notesKit("The exported file will not be encrypted. Anyone with access to this file can read its contents."))
-            }
+            .sheet(isPresented: Binding(
+                get: { viewModel.state.showOptions },
+                set: { if !$0 { viewModel.send(.dismissOptions) } }
+            )) { options }
             .sheet(isPresented: $showsGenerator) {
                 PasswordGeneratorSheet(
                     theme: theme,
@@ -249,11 +219,39 @@ public struct NoteEditorScreen: View {
     private var toolbarContent: some ToolbarContent {
         #if os(iOS)
         ToolbarItem(placement: .principal) { modeSwitch }
-        ToolbarItem(placement: .topBarTrailing) { optionsButton }
+        ToolbarItem(placement: .topBarTrailing) {
+            HStack(spacing: theme.small) {
+                if let icon = viewModel.state.icon {
+                    Button {
+                        haptic()
+                        initialOptionsDestination = .icon
+                        viewModel.send(.openOptions)
+                    } label: {
+                        NoteIconBadge(icon: icon, theme: theme)
+                    }
+                    .accessibilityLabel(Text(.notesKit("Icon")))
+                }
+                optionsButton
+            }
+        }
         ToolbarItem(placement: .topBarLeading) { findButton }
         #else
         ToolbarItem { modeSwitch }
-        ToolbarItem { optionsButton }
+        ToolbarItem {
+            HStack(spacing: theme.small) {
+                if let icon = viewModel.state.icon {
+                    Button {
+                        haptic()
+                        initialOptionsDestination = .icon
+                        viewModel.send(.openOptions)
+                    } label: {
+                        NoteIconBadge(icon: icon, theme: theme)
+                    }
+                    .accessibilityLabel(Text(.notesKit("Icon")))
+                }
+                optionsButton
+            }
+        }
         ToolbarItem { findButton }
         #endif
     }
@@ -274,7 +272,10 @@ public struct NoteEditorScreen: View {
     }
 
     private var optionsButton: some View {
-        Button { viewModel.send(.openOptions) } label: {
+        Button {
+            initialOptionsDestination = nil
+            viewModel.send(.openOptions)
+        } label: {
             Image(systemName: viewModel.state.requiresBiometricUnlock ? "lock.fill" : "ellipsis")
                 .font(.system(size: 16, weight: .regular))
                 .foregroundStyle(viewModel.state.requiresBiometricUnlock ? theme.success : theme.primaryText)
@@ -483,6 +484,7 @@ public struct NoteEditorScreen: View {
             isLocked: viewModel.state.requiresBiometricUnlock,
             hidesPreview: viewModel.state.hidesPreview,
             metrics: viewModel.state.metrics,
+            initialDestination: initialOptionsDestination,
             theme: theme,
             haptic: haptic,
             onIcon: { viewModel.send(.setIcon($0)) },
@@ -490,7 +492,9 @@ public struct NoteEditorScreen: View {
             onToggleLock: { viewModel.send(.toggleBiometricLock) },
             onToggleHiddenPreview: { viewModel.send(.toggleHiddenPreview) },
             onDismiss: { viewModel.send(.dismissOptions) },
-            onExport: onExport != nil ? { pendingExport = true } : nil
+            onExport: onExport != nil ? { @MainActor @Sendable format in
+                onExport?(viewModel.state.title, viewModel.state.body, format)
+            } : nil
         )
     }
 }

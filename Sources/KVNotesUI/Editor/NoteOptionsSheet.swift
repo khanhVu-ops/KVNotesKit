@@ -1,13 +1,21 @@
 import KVNotesCore
 import SwiftUI
 
+public enum NoteOptionsDestination: Hashable, Sendable {
+    case icon
+    case folder
+    case export
+    case details
+}
+
 struct NoteOptionsSheet: View {
     let icon: String?
     let folder: String?
     let folders: [String]
     let isLocked: Bool
     let hidesPreview: Bool
-    var metrics: NoteMetrics? = nil
+    let metrics: NoteMetrics?
+    let initialDestination: NoteOptionsDestination?
     let theme: NoteTheme
     let haptic: @MainActor @Sendable () -> Void
     let onIcon: (String?) -> Void
@@ -15,78 +23,435 @@ struct NoteOptionsSheet: View {
     let onToggleLock: () -> Void
     let onToggleHiddenPreview: () -> Void
     let onDismiss: () -> Void
-    var onExport: (() -> Void)? = nil
+    let onExport: (@MainActor @Sendable (NoteExportFormat) -> Void)?
+
+    init(
+        icon: String?,
+        folder: String?,
+        folders: [String],
+        isLocked: Bool,
+        hidesPreview: Bool,
+        metrics: NoteMetrics? = nil,
+        initialDestination: NoteOptionsDestination? = nil,
+        theme: NoteTheme,
+        haptic: @escaping @MainActor @Sendable () -> Void = {},
+        onIcon: @escaping (String?) -> Void,
+        onFolder: @escaping (String?) -> Void,
+        onToggleLock: @escaping () -> Void,
+        onToggleHiddenPreview: @escaping () -> Void,
+        onDismiss: @escaping () -> Void,
+        onExport: (@MainActor @Sendable (NoteExportFormat) -> Void)? = nil
+    ) {
+        self.icon = icon
+        self.folder = folder
+        self.folders = folders
+        self.isLocked = isLocked
+        self.hidesPreview = hidesPreview
+        self.metrics = metrics
+        self.initialDestination = initialDestination
+        self.theme = theme
+        self.haptic = haptic
+        self.onIcon = onIcon
+        self.onFolder = onFolder
+        self.onToggleLock = onToggleLock
+        self.onToggleHiddenPreview = onToggleHiddenPreview
+        self.onDismiss = onDismiss
+        self.onExport = onExport
+    }
+
+    @State private var path: [NoteOptionsDestination] = []
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            rootView
+                .navigationTitle("")
+                .noteInlineNavigationTitle()
+                .toolbar {
+                    ToolbarItem(placement: .principal) {
+                        Text(.notesKit("Note options"))
+                            .font(theme.sectionFont)
+                            .textCase(.uppercase)
+                            .tracking(1.8)
+                            .foregroundStyle(theme.primaryText)
+                    }
+                    #if os(iOS)
+                    ToolbarItem(placement: .topBarTrailing) { doneButton }
+                    #else
+                    ToolbarItem { doneButton }
+                    #endif
+                }
+                .navigationDestination(for: NoteOptionsDestination.self) { destination in
+                    switch destination {
+                    case .icon:
+                        NoteIconPickerView(
+                            icon: icon,
+                            theme: theme,
+                            haptic: haptic,
+                            onIcon: onIcon
+                        )
+                    case .folder:
+                        NoteFolderPickerView(
+                            folder: folder,
+                            folders: folders,
+                            theme: theme,
+                            haptic: haptic,
+                            onFolder: onFolder
+                        )
+                    case .export:
+                        NoteExportOptionView(
+                            theme: theme,
+                            haptic: haptic,
+                            onSelect: { format in
+                                onDismiss()
+                                onExport?(format)
+                            }
+                        )
+                    case .details:
+                        if let metrics {
+                            NoteInspectorDetailView(metrics: metrics, theme: theme)
+                        }
+                    }
+                }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationBackground(theme.sheet)
+        .onAppear {
+            if let initialDestination {
+                path = [initialDestination]
+            }
+        }
+    }
+
+    private var doneButton: some View {
+        Button(action: onDismiss) {
+            Text(.notesKit("Done"))
+                .font(theme.modeFont)
+                .textCase(.uppercase)
+                .tracking(1.2)
+                .foregroundStyle(theme.onAccent)
+                .padding(.horizontal, theme.medium)
+                .frame(height: 32)
+                .background(theme.accent, in: Capsule())
+        }
+        .buttonStyle(NotePressButtonStyle())
+    }
+
+    private var rootView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: theme.medium) {
+                organizationCard
+                securityCard
+                actionsCard
+            }
+            .padding(.horizontal, theme.medium)
+            .padding(.top, theme.small)
+            .padding(.bottom, theme.large)
+        }
+        .scrollIndicators(.hidden)
+        .background(theme.sheet)
+    }
+
+    private var organizationCard: some View {
+        VStack(spacing: 0) {
+            NavigationLink(value: NoteOptionsDestination.icon) {
+                HStack(spacing: theme.small + 4) {
+                    iconBadge(icon: icon)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(.notesKit("Icon"))
+                            .font(theme.rowFont)
+                            .foregroundStyle(theme.primaryText)
+                        iconSubtitle
+                            .font(theme.captionFont)
+                            .foregroundStyle(theme.secondaryText)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(theme.secondaryText)
+                }
+                .padding(.horizontal, theme.small + 4)
+                .frame(minHeight: 56)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(NotePressButtonStyle())
+
+            Rectangle()
+                .fill(theme.separator)
+                .frame(height: 0.75)
+                .padding(.leading, 32 + theme.small + 4)
+
+            NavigationLink(value: NoteOptionsDestination.folder) {
+                HStack(spacing: theme.small + 4) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: theme.smallRadius - 2, style: .continuous)
+                            .fill(theme.accent.opacity(0.12))
+                        Image(systemName: "folder")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(theme.accent)
+                    }
+                    .frame(width: 32, height: 32)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(.notesKit("Folder"))
+                            .font(theme.rowFont)
+                            .foregroundStyle(theme.primaryText)
+                        if let folder {
+                            Text(verbatim: folder)
+                                .font(theme.captionFont)
+                                .foregroundStyle(theme.secondaryText)
+                                .lineLimit(1)
+                        } else {
+                            Text(.notesKit("No folder"))
+                                .font(theme.captionFont)
+                                .foregroundStyle(theme.secondaryText)
+                        }
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(theme.secondaryText)
+                }
+                .padding(.horizontal, theme.small + 4)
+                .frame(minHeight: 56)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(NotePressButtonStyle())
+        }
+        .noteCard(theme: theme, padding: 0)
+    }
+
+    private func iconBadge(icon: String?) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: theme.smallRadius - 2, style: .continuous)
+                .fill(theme.accent.opacity(0.12))
+            if let icon, let parsed = NoteIcon.parse(icon) {
+                switch parsed {
+                case .emoji(let emoji):
+                    Text(verbatim: emoji)
+                        .font(.system(size: 16))
+                case .symbol(let name):
+                    Image(systemName: name)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(theme.accent)
+                }
+            } else {
+                Image(systemName: "textformat")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(theme.secondaryText)
+            }
+        }
+        .frame(width: 32, height: 32)
+    }
+
+    @ViewBuilder
+    private var iconSubtitle: some View {
+        if let icon, let parsed = NoteIcon.parse(icon) {
+            switch parsed {
+            case .emoji(let emoji):
+                Text(verbatim: emoji)
+            case .symbol(let name):
+                Text(verbatim: name)
+            }
+        } else {
+            Text(.notesKit("Monogram"))
+        }
+    }
+
+    private var securityCard: some View {
+        VStack(spacing: 0) {
+            toggleRow(
+                icon: isLocked ? "lock.fill" : "lock.open",
+                tone: isLocked ? theme.success : theme.secondaryText,
+                title: .notesKit("Lock this note"),
+                caption: .notesKit("Even inside an unlocked vault, this note asks to unlock again before it opens."),
+                isOn: isLocked,
+                action: onToggleLock
+            )
+
+            Rectangle()
+                .fill(theme.separator)
+                .frame(height: 0.75)
+                .padding(.leading, 32 + theme.small + 4)
+
+            toggleRow(
+                icon: hidesPreview ? "eye.slash.fill" : "eye",
+                tone: hidesPreview ? theme.success : theme.secondaryText,
+                title: .notesKit("Hide preview"),
+                caption: isLocked
+                    ? .notesKit("The lock already hides it. This is what the list shows if you unlock the note again.")
+                    : .notesKit("The list shows this note's name and nothing else. It still opens with one tap."),
+                isOn: hidesPreview,
+                action: onToggleHiddenPreview
+            )
+        }
+        .noteCard(theme: theme, padding: 0)
+    }
+
+    private var actionsCard: some View {
+        VStack(spacing: 0) {
+            if onExport != nil {
+                NavigationLink(value: NoteOptionsDestination.export) {
+                    HStack(spacing: theme.small + 4) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: theme.smallRadius - 2, style: .continuous)
+                                .fill(theme.accent.opacity(0.12))
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(theme.accent)
+                        }
+                        .frame(width: 32, height: 32)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(.notesKit("Export note"))
+                                .font(theme.rowFont)
+                                .foregroundStyle(theme.primaryText)
+                            Text(.notesKit("Export as Markdown"))
+                                .font(theme.captionFont)
+                                .foregroundStyle(theme.secondaryText)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(theme.secondaryText)
+                    }
+                    .padding(.horizontal, theme.small + 4)
+                    .frame(minHeight: 56)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(NotePressButtonStyle())
+            }
+
+            if metrics != nil {
+                if onExport != nil {
+                    Rectangle()
+                        .fill(theme.separator)
+                        .frame(height: 0.75)
+                        .padding(.leading, 32 + theme.small + 4)
+                }
+
+                NavigationLink(value: NoteOptionsDestination.details) {
+                    HStack(spacing: theme.small + 4) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: theme.smallRadius - 2, style: .continuous)
+                                .fill(theme.accent.opacity(0.12))
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(theme.accent)
+                        }
+                        .frame(width: 32, height: 32)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(.notesKit("Note info"))
+                                .font(theme.rowFont)
+                                .foregroundStyle(theme.primaryText)
+                            Text(.notesKit("Details"))
+                                .font(theme.captionFont)
+                                .foregroundStyle(theme.secondaryText)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(theme.secondaryText)
+                    }
+                    .padding(.horizontal, theme.small + 4)
+                    .frame(minHeight: 56)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(NotePressButtonStyle())
+            }
+        }
+        .noteCard(theme: theme, padding: 0)
+    }
+
+    private func toggleRow(
+        icon: String,
+        tone: Color,
+        title: LocalizedStringResource,
+        caption: LocalizedStringResource,
+        isOn: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button {
+            haptic()
+            action()
+        } label: {
+            HStack(spacing: theme.small + 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 15))
+                    .foregroundStyle(tone)
+                    .frame(width: 28)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(theme.rowFont)
+                        .foregroundStyle(theme.primaryText)
+                    Text(caption)
+                        .font(theme.captionFont)
+                        .foregroundStyle(theme.secondaryText)
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: theme.small)
+                LockSwitch(isOn: isOn, theme: theme)
+            }
+            .padding(.horizontal, theme.small + 4)
+            .frame(minHeight: 60)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(NotePressButtonStyle())
+        .accessibilityAddTraits(isOn ? [.isSelected] : [])
+    }
+}
+
+// MARK: - Subviews
+
+struct NoteIconPickerView: View {
+    let icon: String?
+    let theme: NoteTheme
+    let haptic: @MainActor @Sendable () -> Void
+    let onIcon: (String?) -> Void
 
     @State private var selectedCategory: NoteIconLibrary.Category = .general
     @State private var customEmojiInput = ""
-    @State private var newFolder = ""
-    @FocusState private var isNamingFolder: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: theme.large) {
-                iconSection
-                folderSection
-                securitySection
-                if let onExport {
-                    exportSection(onExport)
-                }
-                if let metrics {
-                    detailsSection(metrics)
-                }
-            }
-            .padding(.horizontal, theme.medium)
-            .padding(.top, theme.small)
-            .padding(.bottom, theme.extraLarge)
-        }
-        .scrollIndicators(.hidden)
-        .scrollDismissesKeyboard(.interactively)
-        .background(theme.sheet)
-        .safeAreaInset(edge: .top, spacing: 0) { header }
-        .presentationDetents([.medium, .large])
-        .presentationBackground(theme.sheet)
-        .onAppear {
-            selectedCategory = NoteIconLibrary.category(for: icon)
-            if let icon, NoteIcon.parse(icon)?.emoji != nil && !NoteIconLibrary.curatedEmojis.contains(icon) {
-                customEmojiInput = icon
-            }
-        }
-    }
-
-    private var header: some View {
-        HStack {
-            Text(.notesKit("Note options"))
-                .font(theme.sectionFont)
-                .textCase(.uppercase)
-                .tracking(1.8)
-                .foregroundStyle(theme.primaryText)
-            Spacer()
-            Button(action: onDismiss) {
-                Text(.notesKit("Done"))
-                    .font(theme.modeFont)
-                    .textCase(.uppercase)
-                    .tracking(1.2)
-                    .foregroundStyle(theme.onAccent)
-                    .padding(.horizontal, theme.medium)
-                    .frame(height: 32)
-                    .background(theme.accent, in: Capsule())
-            }
-            .buttonStyle(NotePressButtonStyle())
-        }
-        .padding(.horizontal, theme.medium)
-        .padding(.vertical, theme.small + 4)
-        .background(theme.sheet)
-    }
-
-    private var iconSection: some View {
-        section(.notesKit("Icon")) {
             VStack(alignment: .leading, spacing: theme.small) {
                 categoryPicker
                 iconGrid
                 if selectedCategory == .emoji {
                     customEmojiField
                 }
+            }
+            .padding(.horizontal, theme.medium)
+            .padding(.top, theme.small)
+            .padding(.bottom, theme.large)
+        }
+        .scrollIndicators(.hidden)
+        .background(theme.sheet)
+        .onAppear {
+            selectedCategory = NoteIconLibrary.category(for: icon)
+            if let icon, NoteIcon.parse(icon)?.emoji != nil && !NoteIconLibrary.curatedEmojis.contains(icon) {
+                customEmojiInput = icon
+            }
+        }
+        .navigationTitle("")
+        .noteInlineNavigationTitle()
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(.notesKit("Icon"))
+                    .font(theme.sectionFont)
+                    .textCase(.uppercase)
+                    .tracking(1.8)
+                    .foregroundStyle(theme.primaryText)
             }
         }
     }
@@ -282,45 +647,105 @@ struct NoteOptionsSheet: View {
                     .strokeBorder(isSelected ? Color.clear : theme.separator, lineWidth: 0.75)
             }
     }
+}
 
-    private var folderSection: some View {
-        section(.notesKit("Folder")) {
-            VStack(alignment: .leading, spacing: theme.small) {
-                FlowRow(spacing: theme.xs + 2) {
-                    folderChip(title: Text(.notesKit("No folder")), isSelected: folder == nil) {
-                        onFolder(nil)
-                    }
-                    ForEach(folders, id: \.self) { name in
-                        folderChip(title: Text(verbatim: name), isSelected: folder == name) {
-                            onFolder(name)
-                        }
-                    }
-                }
+struct NoteFolderPickerView: View {
+    let folder: String?
+    let folders: [String]
+    let theme: NoteTheme
+    let haptic: @MainActor @Sendable () -> Void
+    let onFolder: (String?) -> Void
+
+    @State private var newFolder = ""
+    @FocusState private var isNamingFolder: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: theme.medium) {
+                folderListCard
                 newFolderField
+            }
+            .padding(.horizontal, theme.medium)
+            .padding(.top, theme.small)
+            .padding(.bottom, theme.large)
+        }
+        .scrollIndicators(.hidden)
+        .background(theme.sheet)
+        .navigationTitle("")
+        .noteInlineNavigationTitle()
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(.notesKit("Folder"))
+                    .font(theme.sectionFont)
+                    .textCase(.uppercase)
+                    .tracking(1.8)
+                    .foregroundStyle(theme.primaryText)
             }
         }
     }
 
-    private func folderChip(title: Text, isSelected: Bool, action: @escaping () -> Void) -> some View {
+    private var folderListCard: some View {
+        VStack(spacing: 0) {
+            folderRow(
+                title: Text(.notesKit("No folder")),
+                isSelected: folder == nil
+            ) {
+                onFolder(nil)
+            }
+
+            ForEach(folders, id: \.self) { name in
+                Rectangle()
+                    .fill(theme.separator)
+                    .frame(height: 0.75)
+                    .padding(.leading, 32 + theme.small + 4)
+
+                folderRow(
+                    title: Text(verbatim: name),
+                    isSelected: folder == name
+                ) {
+                    onFolder(name)
+                }
+            }
+        }
+        .noteCard(theme: theme, padding: 0)
+    }
+
+    private func folderRow(
+        title: Text,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
         Button {
             haptic()
             action()
         } label: {
-            title
-                .font(theme.modeFont)
-                .textCase(.uppercase)
-                .tracking(1.2)
-                .foregroundStyle(isSelected ? theme.onAccent : theme.secondaryText)
-                .padding(.horizontal, theme.small + 4)
-                .frame(height: 34)
-                .background {
-                    if isSelected { Capsule().fill(theme.accent) }
-                    else { Capsule().strokeBorder(theme.separator, lineWidth: 0.75) }
+            HStack(spacing: theme.small + 4) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: theme.smallRadius - 2, style: .continuous)
+                        .fill(isSelected ? theme.accent.opacity(0.18) : theme.card)
+                    Image(systemName: isSelected ? "folder.fill" : "folder")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(isSelected ? theme.accent : theme.secondaryText)
                 }
+                .frame(width: 32, height: 32)
+
+                title
+                    .font(theme.rowFont)
+                    .foregroundStyle(theme.primaryText)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(theme.accent)
+                }
+            }
+            .padding(.horizontal, theme.small + 4)
+            .frame(minHeight: 52)
+            .contentShape(Rectangle())
         }
         .buttonStyle(NotePressButtonStyle())
-        .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: isSelected)
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     private var newFolderField: some View {
@@ -366,121 +791,160 @@ struct NoteOptionsSheet: View {
         newFolder = ""
         isNamingFolder = false
     }
+}
 
-    /// Two settings, deliberately in the same section and deliberately not the same size.
-    ///
-    /// The lock is the strong one and costs a prompt on every open. Hiding the preview is the
-    /// cheap one and the one most notes actually want: the list stops drawing the opening line,
-    /// and nothing else changes. Their captions have to say which is which, because a person
-    /// choosing between them is choosing how much friction to buy.
-    private var securitySection: some View {
-        section(.notesKit("Security")) {
-            VStack(spacing: theme.small) {
-                toggleRow(
-                    icon: isLocked ? "lock.fill" : "lock.open",
-                    tone: isLocked ? theme.success : theme.secondaryText,
-                    title: .notesKit("Lock this note"),
-                    caption: .notesKit("Even inside an unlocked vault, this note asks to unlock again before it opens."),
-                    isOn: isLocked,
-                    action: onToggleLock
-                )
+struct NoteExportOptionView: View {
+    let theme: NoteTheme
+    var haptic: @MainActor @Sendable () -> Void = {}
+    let onSelect: @MainActor @Sendable (NoteExportFormat) -> Void
 
-                toggleRow(
-                    icon: hidesPreview ? "eye.slash.fill" : "eye",
-                    tone: hidesPreview ? theme.success : theme.secondaryText,
-                    title: .notesKit("Hide preview"),
-                    caption: isLocked
-                        ? .notesKit("The lock already hides it. This is what the list shows if you unlock the note again.")
-                        : .notesKit("The list shows this note's name and nothing else. It still opens with one tap."),
-                    isOn: hidesPreview,
-                    action: onToggleHiddenPreview
-                )
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: theme.medium) {
+                warningCard
+                formatCards
+            }
+            .padding(.horizontal, theme.medium)
+            .padding(.top, theme.small)
+            .padding(.bottom, theme.large)
+        }
+        .scrollIndicators(.hidden)
+        .background(theme.sheet)
+        .navigationTitle("")
+        .noteInlineNavigationTitle()
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(.notesKit("Export note"))
+                    .font(theme.sectionFont)
+                    .textCase(.uppercase)
+                    .tracking(1.8)
+                    .foregroundStyle(theme.primaryText)
             }
         }
     }
 
-    private func toggleRow(
-        icon: String,
-        tone: Color,
+    private var warningCard: some View {
+        HStack(alignment: .top, spacing: theme.small + 2) {
+            Image(systemName: "exclamationmark.shield.fill")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(theme.warning)
+                .frame(width: 24, height: 24)
+
+            Text(.notesKit("The exported file will not be encrypted. Anyone with access to this file can read its contents."))
+                .font(theme.captionFont)
+                .foregroundStyle(theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(theme.small + 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: theme.smallRadius, style: .continuous)
+                .fill(theme.card)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: theme.smallRadius, style: .continuous)
+                .strokeBorder(theme.warning.opacity(0.3), lineWidth: 0.75)
+        }
+    }
+
+    private var formatCards: some View {
+        VStack(spacing: 0) {
+            formatRow(
+                title: .notesKit("Export as Markdown"),
+                badge: ".md",
+                icon: "doc.text",
+                format: .markdown
+            )
+
+            Rectangle()
+                .fill(theme.separator)
+                .frame(height: 0.75)
+                .padding(.leading, 32 + theme.small + 4)
+
+            formatRow(
+                title: .notesKit("Export as Plain Text"),
+                badge: ".txt",
+                icon: "text.alignleft",
+                format: .plainText
+            )
+        }
+        .background {
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
+                .fill(theme.card)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
+                .strokeBorder(theme.separator, lineWidth: 0.75)
+        }
+    }
+
+    private func formatRow(
         title: LocalizedStringResource,
-        caption: LocalizedStringResource,
-        isOn: Bool,
-        action: @escaping () -> Void
+        badge: String,
+        icon: String,
+        format: NoteExportFormat
     ) -> some View {
         Button {
             haptic()
-            action()
+            onSelect(format)
         } label: {
             HStack(spacing: theme.small + 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 15))
-                    .foregroundStyle(tone)
-                    .frame(width: 28)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
-                        .font(theme.rowFont)
-                        .foregroundStyle(theme.primaryText)
-                    Text(caption)
-                        .font(theme.captionFont)
-                        .foregroundStyle(theme.secondaryText)
-                        .multilineTextAlignment(.leading)
+                ZStack {
+                    RoundedRectangle(cornerRadius: theme.smallRadius - 2, style: .continuous)
+                        .fill(theme.accent.opacity(0.12))
+                    Image(systemName: icon)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(theme.accent)
                 }
-                Spacer(minLength: theme.small)
-                LockSwitch(isOn: isOn, theme: theme)
+                .frame(width: 32, height: 32)
+
+                Text(title)
+                    .font(theme.rowFont)
+                    .foregroundStyle(theme.primaryText)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text(verbatim: badge)
+                    .font(theme.monoFont)
+                    .foregroundStyle(theme.secondaryText)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(theme.elevatedCard, in: Capsule())
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(theme.secondaryText)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .noteCard(theme: theme, padding: theme.small + 4)
+            .padding(.horizontal, theme.small + 4)
+            .frame(minHeight: 54)
             .contentShape(Rectangle())
         }
         .buttonStyle(NotePressButtonStyle())
-        .accessibilityAddTraits(isOn ? [.isSelected] : [])
     }
+}
 
-    private func section<Content: View>(
-        _ title: LocalizedStringResource,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: theme.small) {
-            Text(title)
-                .font(theme.sectionFont)
-                .textCase(.uppercase)
-                .tracking(1.4)
-                .foregroundStyle(theme.secondaryText)
-            content()
-        }
-    }
+struct NoteInspectorDetailView: View {
+    let metrics: NoteMetrics
+    let theme: NoteTheme
 
-    private func exportSection(_ action: @escaping () -> Void) -> some View {
-        section(.notesKit("Export note")) {
-            Button {
-                haptic()
-                onDismiss()
-                action()
-            } label: {
-                HStack(spacing: theme.small + 4) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 15))
-                        .foregroundStyle(theme.accent)
-                        .frame(width: 28)
-                    Text(.notesKit("Export note"))
-                        .font(theme.rowFont)
-                        .foregroundStyle(theme.primaryText)
-                    Spacer(minLength: theme.small)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(theme.secondaryText)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .noteCard(theme: theme, padding: theme.small + 4)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(NotePressButtonStyle())
-        }
-    }
-
-    private func detailsSection(_ metrics: NoteMetrics) -> some View {
-        section(.notesKit("Details")) {
+    var body: some View {
+        ScrollView {
             NoteInspectorView(metrics: metrics, theme: theme)
+                .padding(.horizontal, theme.medium)
+                .padding(.top, theme.small)
+                .padding(.bottom, theme.large)
+        }
+        .scrollIndicators(.hidden)
+        .background(theme.sheet)
+        .navigationTitle("")
+        .noteInlineNavigationTitle()
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(.notesKit("Details"))
+                    .font(theme.sectionFont)
+                    .textCase(.uppercase)
+                    .tracking(1.8)
+                    .foregroundStyle(theme.primaryText)
+            }
         }
     }
 }
@@ -506,48 +970,20 @@ private struct LockSwitch: View {
     }
 }
 
-struct FlowRow: Layout {
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = proposal.replacingUnspecifiedDimensions().width
-        let rows = layout(subviews: subviews, in: width)
-        return CGSize(width: width, height: rows.last.map { $0.y + $0.height } ?? 0)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        for row in layout(subviews: subviews, in: bounds.width) {
-            for item in row.items {
-                subviews[item.index].place(
-                    at: CGPoint(x: bounds.minX + item.x, y: bounds.minY + row.y),
-                    proposal: ProposedViewSize(item.size)
-                )
-            }
-        }
-    }
-
-    private struct Row {
-        var y: CGFloat
-        var height: CGFloat
-        var items: [(index: Int, x: CGFloat, size: CGSize)]
-    }
-
-    private func layout(subviews: Subviews, in width: CGFloat) -> [Row] {
-        var rows: [Row] = []
-        var current = Row(y: 0, height: 0, items: [])
-        var x: CGFloat = 0
-        for index in subviews.indices {
-            let size = subviews[index].sizeThatFits(.unspecified)
-            if x > 0, x + size.width > width {
-                rows.append(current)
-                current = Row(y: current.y + current.height + spacing, height: 0, items: [])
-                x = 0
-            }
-            current.items.append((index, x, size))
-            current.height = max(current.height, size.height)
-            x += size.width + spacing
-        }
-        if !current.items.isEmpty { rows.append(current) }
-        return rows
-    }
+#Preview {
+    NoteOptionsSheet(
+        icon: "🔑",
+        folder: "Work",
+        folders: ["Work", "Personal", "Finance"],
+        isLocked: false,
+        hidesPreview: false,
+        metrics: nil,
+        theme: .preview,
+        haptic: {},
+        onIcon: { _ in },
+        onFolder: { _ in },
+        onToggleLock: {},
+        onToggleHiddenPreview: {},
+        onDismiss: {}
+    )
 }

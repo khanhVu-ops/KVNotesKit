@@ -169,30 +169,25 @@ public struct NotesListScreen: View {
                 },
                 sheet: optionSheet
             )
-            .confirmationDialog(
-                Text(.notesKit("Export note")),
-                isPresented: $showListExportConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button(action: {
-                    if let note = exportingNote {
-                        onExportNote?(note, .markdown)
-                    }
-                }) {
-                    Text(.notesKit("Export as Markdown"))
+            .sheet(isPresented: $showListExportConfirmation) {
+                if let note = exportingNote {
+                    NoteExportSheet(
+                        theme: theme,
+                        haptic: haptic,
+                        onSelect: { format in
+                            showListExportConfirmation = false
+                            let target = note
+                            exportingNote = nil
+                            onExportNote?(target, format)
+                        },
+                        onCancel: {
+                            showListExportConfirmation = false
+                            exportingNote = nil
+                        }
+                    )
+                    .presentationDetents([.height(340)])
+                    .presentationBackground(theme.sheet)
                 }
-                Button(action: {
-                    if let note = exportingNote {
-                        onExportNote?(note, .plainText)
-                    }
-                }) {
-                    Text(.notesKit("Export as Plain Text"))
-                }
-                Button(role: .cancel, action: {}) {
-                    Text(.notesKit("Cancel"))
-                }
-            } message: {
-                Text(.notesKit("The exported file will not be encrypted. Anyone with access to this file can read its contents."))
             }
             .sheet(item: $inspectingNote) { note in
                 NoteInspectorSheet(
