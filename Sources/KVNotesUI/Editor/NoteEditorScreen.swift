@@ -287,7 +287,7 @@ public struct NoteEditorScreen: View {
         } label: {
             Image(systemName: viewModel.state.requiresBiometricUnlock ? "lock.fill" : "ellipsis")
                 .font(.system(size: 16, weight: .regular))
-                .foregroundStyle(viewModel.state.requiresBiometricUnlock ? theme.success : theme.primaryText)
+                .foregroundStyle(viewModel.state.requiresBiometricUnlock ? theme.accent : theme.primaryText)
                 .contentTransition(.symbolEffect(.replace))
         }
         .accessibilityLabel(Text(.notesKit("Note options")))

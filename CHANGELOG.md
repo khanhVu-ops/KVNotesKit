@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fix toggle switch and row icon tint colors in NoteOptionsSheet to match SettingsThemeToggle (`AppColor.Brand.primary` / `theme.accent` and `theme.background` instead of green `theme.success`).
 - Polish sheet UI/UX across Note options, Export, Inspector, and Folders: eliminate default drag indicators (`.presentationDragIndicator(.hidden)`), standardize card corner radii to 18pt (`theme.largeRadius`), align row hairline separators to text baseline (56pt inset), add tactile haptics, spring selection animations, and unified press styles across all buttons and option cards.
 - Redesign note detail more options into a card-based NavigationStack sheet with dedicated sub-destinations for icon picker, folder picker, export format sheet, and note details; add trailing toolbar icon button for direct icon access; replace confirmationDialog popover on export with dedicated NoteExportSheet.
 - Export a note as Markdown (.md) or Plain Text (.txt) via the system share sheet, behind an explicit unencrypted security warning confirmation, with immediate ephemeral file cleanup on dismissal and vault locking (NK-450, PN-590).

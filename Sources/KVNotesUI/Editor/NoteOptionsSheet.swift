@@ -299,7 +299,6 @@ struct NoteOptionsSheet: View {
         VStack(spacing: 0) {
             toggleRow(
                 icon: isLocked ? "lock.fill" : "lock.open",
-                tone: isLocked ? theme.success : theme.secondaryText,
                 title: .notesKit("Lock this note"),
                 caption: .notesKit("Even inside an unlocked vault, this note asks to unlock again before it opens."),
                 isOn: isLocked,
@@ -313,7 +312,6 @@ struct NoteOptionsSheet: View {
 
             toggleRow(
                 icon: hidesPreview ? "eye.slash.fill" : "eye",
-                tone: hidesPreview ? theme.success : theme.secondaryText,
                 title: .notesKit("Hide preview"),
                 caption: isLocked
                     ? .notesKit("The lock already hides it. This is what the list shows if you unlock the note again.")
@@ -421,7 +419,6 @@ struct NoteOptionsSheet: View {
 
     private func toggleRow(
         icon: String,
-        tone: Color,
         title: LocalizedStringResource,
         caption: LocalizedStringResource,
         isOn: Bool,
@@ -436,10 +433,10 @@ struct NoteOptionsSheet: View {
             HStack(spacing: theme.small + 4) {
                 ZStack {
                     RoundedRectangle(cornerRadius: theme.smallRadius - 2, style: .continuous)
-                        .fill(tone.opacity(isOn ? 0.18 : 0.08))
+                        .fill(theme.accent.opacity(isOn ? 0.12 : 0.06))
                     Image(systemName: icon)
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(tone)
+                        .foregroundStyle(isOn ? theme.accent : theme.secondaryText)
                 }
                 .frame(width: 32, height: 32)
 
@@ -1098,22 +1095,30 @@ private struct LockSwitch: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        Capsule()
-            .fill(isOn ? theme.success : theme.elevatedCard)
-            .frame(width: 48, height: 28)
-            .overlay {
-                Capsule()
-                    .strokeBorder(theme.separator, lineWidth: isOn ? 0 : 0.75)
-            }
-            .overlay(alignment: isOn ? .trailing : .leading) {
-                Circle()
-                    .fill(theme.onAccent)
-                    .frame(width: 22, height: 22)
-                    .padding(3)
-                    .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
-            }
-            .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: isOn)
-            .accessibilityHidden(true)
+        ZStack(alignment: isOn ? .trailing : .leading) {
+            Capsule(style: .continuous)
+                .fill(isOn ? theme.accent : theme.elevatedCard)
+
+            Circle()
+                .fill(isOn ? theme.background : theme.secondaryText)
+                .padding(3)
+                .shadow(color: Color.black.opacity(isOn ? 0.2 : 0.08), radius: 2, y: 1)
+        }
+        .frame(width: 48, height: 28)
+        .overlay {
+            Capsule(style: .continuous)
+                .strokeBorder(
+                    isOn
+                        ? theme.accent.opacity(0.72)
+                        : theme.separator,
+                    lineWidth: 1
+                )
+        }
+        .animation(
+            reduceMotion ? nil : .easeInOut(duration: 0.2),
+            value: isOn
+        )
+        .accessibilityHidden(true)
     }
 }
 
