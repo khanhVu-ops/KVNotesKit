@@ -60,26 +60,11 @@ struct NoteOptionsSheet: View {
     }
 
     @State private var path: [NoteOptionsDestination] = []
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         NavigationStack(path: $path) {
             rootView
-                .navigationTitle("")
-                .noteInlineNavigationTitle()
-                .toolbar {
-                    ToolbarItem(placement: .principal) {
-                        Text(.notesKit("Note options"))
-                            .font(theme.sectionFont)
-                            .textCase(.uppercase)
-                            .tracking(1.8)
-                            .foregroundStyle(theme.primaryText)
-                    }
-                    #if os(iOS)
-                    ToolbarItem(placement: .topBarTrailing) { doneButton }
-                    #else
-                    ToolbarItem { doneButton }
-                    #endif
-                }
                 .navigationDestination(for: NoteOptionsDestination.self) { destination in
                     switch destination {
                     case .icon:
@@ -87,7 +72,8 @@ struct NoteOptionsSheet: View {
                             icon: icon,
                             theme: theme,
                             haptic: haptic,
-                            onIcon: onIcon
+                            onIcon: onIcon,
+                            onDismiss: onDismiss
                         )
                     case .folder:
                         NoteFolderPickerView(
@@ -95,7 +81,8 @@ struct NoteOptionsSheet: View {
                             folders: folders,
                             theme: theme,
                             haptic: haptic,
-                            onFolder: onFolder
+                            onFolder: onFolder,
+                            onDismiss: onDismiss
                         )
                     case .export:
                         NoteExportOptionView(
@@ -104,22 +91,62 @@ struct NoteOptionsSheet: View {
                             onSelect: { format in
                                 onDismiss()
                                 onExport?(format)
-                            }
+                            },
+                            onDismiss: onDismiss
                         )
                     case .details:
                         if let metrics {
-                            NoteInspectorDetailView(metrics: metrics, theme: theme)
+                            NoteInspectorDetailView(
+                                metrics: metrics,
+                                theme: theme,
+                                onDismiss: onDismiss
+                            )
                         }
                     }
                 }
         }
         .presentationDetents([.medium, .large])
         .presentationBackground(theme.sheet)
+        .presentationDragIndicator(.hidden)
         .onAppear {
             if let initialDestination {
                 path = [initialDestination]
             }
         }
+    }
+
+    private var rootView: some View {
+        VStack(spacing: 0) {
+            header
+            ScrollView {
+                VStack(alignment: .leading, spacing: theme.medium) {
+                    organizationCard
+                    securitySection
+                    actionsCard
+                }
+                .padding(.horizontal, theme.medium)
+                .padding(.bottom, theme.large)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .background(theme.sheet)
+        .noteNavigationChrome()
+    }
+
+    private var header: some View {
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(.notesKit("Note options"))
+                    .font(theme.titleFont)
+                    .foregroundStyle(theme.primaryText)
+                    .accessibilityAddTraits(.isHeader)
+            }
+            Spacer()
+            doneButton
+        }
+        .padding(.horizontal, theme.medium)
+        .padding(.top, theme.large)
+        .padding(.bottom, theme.small + 4)
     }
 
     private var doneButton: some View {
@@ -130,25 +157,10 @@ struct NoteOptionsSheet: View {
                 .tracking(1.2)
                 .foregroundStyle(theme.onAccent)
                 .padding(.horizontal, theme.medium)
-                .frame(height: 32)
+                .frame(height: 34)
                 .background(theme.accent, in: Capsule())
         }
         .buttonStyle(NotePressButtonStyle())
-    }
-
-    private var rootView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: theme.medium) {
-                organizationCard
-                securityCard
-                actionsCard
-            }
-            .padding(.horizontal, theme.medium)
-            .padding(.top, theme.small)
-            .padding(.bottom, theme.large)
-        }
-        .scrollIndicators(.hidden)
-        .background(theme.sheet)
     }
 
     private var organizationCard: some View {
@@ -181,7 +193,7 @@ struct NoteOptionsSheet: View {
             Rectangle()
                 .fill(theme.separator)
                 .frame(height: 0.75)
-                .padding(.leading, 32 + theme.small + 4)
+                .padding(.leading, 56)
 
             NavigationLink(value: NoteOptionsDestination.folder) {
                 HStack(spacing: theme.small + 4) {
@@ -222,7 +234,14 @@ struct NoteOptionsSheet: View {
             }
             .buttonStyle(NotePressButtonStyle())
         }
-        .noteCard(theme: theme, padding: 0)
+        .background {
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
+                .fill(theme.card)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
+                .strokeBorder(theme.separator, lineWidth: 0.75)
+        }
     }
 
     private func iconBadge(icon: String?) -> some View {
@@ -262,6 +281,20 @@ struct NoteOptionsSheet: View {
         }
     }
 
+    private var securitySection: some View {
+        VStack(alignment: .leading, spacing: theme.xs + 2) {
+            Text(.notesKit("Security"))
+                .font(theme.metadataFont)
+                .textCase(.uppercase)
+                .tracking(1.4)
+                .foregroundStyle(theme.secondaryText)
+                .padding(.horizontal, theme.xs)
+                .accessibilityAddTraits(.isHeader)
+
+            securityCard
+        }
+    }
+
     private var securityCard: some View {
         VStack(spacing: 0) {
             toggleRow(
@@ -276,7 +309,7 @@ struct NoteOptionsSheet: View {
             Rectangle()
                 .fill(theme.separator)
                 .frame(height: 0.75)
-                .padding(.leading, 32 + theme.small + 4)
+                .padding(.leading, 56)
 
             toggleRow(
                 icon: hidesPreview ? "eye.slash.fill" : "eye",
@@ -289,7 +322,14 @@ struct NoteOptionsSheet: View {
                 action: onToggleHiddenPreview
             )
         }
-        .noteCard(theme: theme, padding: 0)
+        .background {
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
+                .fill(theme.card)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
+                .strokeBorder(theme.separator, lineWidth: 0.75)
+        }
     }
 
     private var actionsCard: some View {
@@ -333,7 +373,7 @@ struct NoteOptionsSheet: View {
                     Rectangle()
                         .fill(theme.separator)
                         .frame(height: 0.75)
-                        .padding(.leading, 32 + theme.small + 4)
+                        .padding(.leading, 56)
                 }
 
                 NavigationLink(value: NoteOptionsDestination.details) {
@@ -369,7 +409,14 @@ struct NoteOptionsSheet: View {
                 .buttonStyle(NotePressButtonStyle())
             }
         }
-        .noteCard(theme: theme, padding: 0)
+        .background {
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
+                .fill(theme.card)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
+                .strokeBorder(theme.separator, lineWidth: 0.75)
+        }
     }
 
     private func toggleRow(
@@ -382,13 +429,20 @@ struct NoteOptionsSheet: View {
     ) -> some View {
         Button {
             haptic()
-            action()
+            withAnimation(NoteMotion.selection(reduceMotion: reduceMotion)) {
+                action()
+            }
         } label: {
             HStack(spacing: theme.small + 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 15))
-                    .foregroundStyle(tone)
-                    .frame(width: 28)
+                ZStack {
+                    RoundedRectangle(cornerRadius: theme.smallRadius - 2, style: .continuous)
+                        .fill(tone.opacity(isOn ? 0.18 : 0.08))
+                    Image(systemName: icon)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(tone)
+                }
+                .frame(width: 32, height: 32)
+
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
                         .font(theme.rowFont)
@@ -402,7 +456,7 @@ struct NoteOptionsSheet: View {
                 LockSwitch(isOn: isOn, theme: theme)
             }
             .padding(.horizontal, theme.small + 4)
-            .frame(minHeight: 60)
+            .frame(minHeight: 62)
             .contentShape(Rectangle())
         }
         .buttonStyle(NotePressButtonStyle())
@@ -417,6 +471,7 @@ struct NoteIconPickerView: View {
     let theme: NoteTheme
     let haptic: @MainActor @Sendable () -> Void
     let onIcon: (String?) -> Void
+    let onDismiss: @MainActor @Sendable () -> Void
 
     @State private var selectedCategory: NoteIconLibrary.Category = .general
     @State private var customEmojiInput = ""
@@ -453,7 +508,26 @@ struct NoteIconPickerView: View {
                     .tracking(1.8)
                     .foregroundStyle(theme.primaryText)
             }
+            #if os(iOS)
+            ToolbarItem(placement: .topBarTrailing) { doneButton }
+            #else
+            ToolbarItem { doneButton }
+            #endif
         }
+    }
+
+    private var doneButton: some View {
+        Button(action: onDismiss) {
+            Text(.notesKit("Done"))
+                .font(theme.modeFont)
+                .textCase(.uppercase)
+                .tracking(1.2)
+                .foregroundStyle(theme.onAccent)
+                .padding(.horizontal, theme.medium)
+                .frame(height: 32)
+                .background(theme.accent, in: Capsule())
+        }
+        .buttonStyle(NotePressButtonStyle())
     }
 
     private var categoryPicker: some View {
@@ -655,6 +729,7 @@ struct NoteFolderPickerView: View {
     let theme: NoteTheme
     let haptic: @MainActor @Sendable () -> Void
     let onFolder: (String?) -> Void
+    let onDismiss: @MainActor @Sendable () -> Void
 
     @State private var newFolder = ""
     @FocusState private var isNamingFolder: Bool
@@ -682,7 +757,26 @@ struct NoteFolderPickerView: View {
                     .tracking(1.8)
                     .foregroundStyle(theme.primaryText)
             }
+            #if os(iOS)
+            ToolbarItem(placement: .topBarTrailing) { doneButton }
+            #else
+            ToolbarItem { doneButton }
+            #endif
         }
+    }
+
+    private var doneButton: some View {
+        Button(action: onDismiss) {
+            Text(.notesKit("Done"))
+                .font(theme.modeFont)
+                .textCase(.uppercase)
+                .tracking(1.2)
+                .foregroundStyle(theme.onAccent)
+                .padding(.horizontal, theme.medium)
+                .frame(height: 32)
+                .background(theme.accent, in: Capsule())
+        }
+        .buttonStyle(NotePressButtonStyle())
     }
 
     private var folderListCard: some View {
@@ -698,7 +792,7 @@ struct NoteFolderPickerView: View {
                 Rectangle()
                     .fill(theme.separator)
                     .frame(height: 0.75)
-                    .padding(.leading, 32 + theme.small + 4)
+                    .padding(.leading, 56)
 
                 folderRow(
                     title: Text(verbatim: name),
@@ -708,7 +802,14 @@ struct NoteFolderPickerView: View {
                 }
             }
         }
-        .noteCard(theme: theme, padding: 0)
+        .background {
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
+                .fill(theme.card)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
+                .strokeBorder(theme.separator, lineWidth: 0.75)
+        }
     }
 
     private func folderRow(
@@ -718,7 +819,9 @@ struct NoteFolderPickerView: View {
     ) -> some View {
         Button {
             haptic()
-            action()
+            withAnimation(NoteMotion.selection(reduceMotion: reduceMotion)) {
+                action()
+            }
         } label: {
             HStack(spacing: theme.small + 4) {
                 ZStack {
@@ -742,7 +845,7 @@ struct NoteFolderPickerView: View {
                 }
             }
             .padding(.horizontal, theme.small + 4)
-            .frame(minHeight: 52)
+            .frame(minHeight: 54)
             .contentShape(Rectangle())
         }
         .buttonStyle(NotePressButtonStyle())
@@ -797,6 +900,7 @@ struct NoteExportOptionView: View {
     let theme: NoteTheme
     var haptic: @MainActor @Sendable () -> Void = {}
     let onSelect: @MainActor @Sendable (NoteExportFormat) -> Void
+    let onDismiss: @MainActor @Sendable () -> Void
 
     var body: some View {
         ScrollView {
@@ -820,7 +924,26 @@ struct NoteExportOptionView: View {
                     .tracking(1.8)
                     .foregroundStyle(theme.primaryText)
             }
+            #if os(iOS)
+            ToolbarItem(placement: .topBarTrailing) { doneButton }
+            #else
+            ToolbarItem { doneButton }
+            #endif
         }
+    }
+
+    private var doneButton: some View {
+        Button(action: onDismiss) {
+            Text(.notesKit("Done"))
+                .font(theme.modeFont)
+                .textCase(.uppercase)
+                .tracking(1.2)
+                .foregroundStyle(theme.onAccent)
+                .padding(.horizontal, theme.medium)
+                .frame(height: 32)
+                .background(theme.accent, in: Capsule())
+        }
+        .buttonStyle(NotePressButtonStyle())
     }
 
     private var warningCard: some View {
@@ -838,12 +961,12 @@ struct NoteExportOptionView: View {
         .padding(theme.small + 4)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            RoundedRectangle(cornerRadius: theme.smallRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
                 .fill(theme.card)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: theme.smallRadius, style: .continuous)
-                .strokeBorder(theme.warning.opacity(0.3), lineWidth: 0.75)
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
+                .strokeBorder(theme.warning.opacity(0.35), lineWidth: 0.75)
         }
     }
 
@@ -859,7 +982,7 @@ struct NoteExportOptionView: View {
             Rectangle()
                 .fill(theme.separator)
                 .frame(height: 0.75)
-                .padding(.leading, 32 + theme.small + 4)
+                .padding(.leading, 56)
 
             formatRow(
                 title: .notesKit("Export as Plain Text"),
@@ -915,7 +1038,7 @@ struct NoteExportOptionView: View {
                     .foregroundStyle(theme.secondaryText)
             }
             .padding(.horizontal, theme.small + 4)
-            .frame(minHeight: 54)
+            .frame(minHeight: 56)
             .contentShape(Rectangle())
         }
         .buttonStyle(NotePressButtonStyle())
@@ -925,6 +1048,7 @@ struct NoteExportOptionView: View {
 struct NoteInspectorDetailView: View {
     let metrics: NoteMetrics
     let theme: NoteTheme
+    let onDismiss: @MainActor @Sendable () -> Void
 
     var body: some View {
         ScrollView {
@@ -945,7 +1069,26 @@ struct NoteInspectorDetailView: View {
                     .tracking(1.8)
                     .foregroundStyle(theme.primaryText)
             }
+            #if os(iOS)
+            ToolbarItem(placement: .topBarTrailing) { doneButton }
+            #else
+            ToolbarItem { doneButton }
+            #endif
         }
+    }
+
+    private var doneButton: some View {
+        Button(action: onDismiss) {
+            Text(.notesKit("Done"))
+                .font(theme.modeFont)
+                .textCase(.uppercase)
+                .tracking(1.2)
+                .foregroundStyle(theme.onAccent)
+                .padding(.horizontal, theme.medium)
+                .frame(height: 32)
+                .background(theme.accent, in: Capsule())
+        }
+        .buttonStyle(NotePressButtonStyle())
     }
 }
 
@@ -957,13 +1100,17 @@ private struct LockSwitch: View {
     var body: some View {
         Capsule()
             .fill(isOn ? theme.success : theme.elevatedCard)
-            .frame(width: 46, height: 28)
+            .frame(width: 48, height: 28)
+            .overlay {
+                Capsule()
+                    .strokeBorder(theme.separator, lineWidth: isOn ? 0 : 0.75)
+            }
             .overlay(alignment: isOn ? .trailing : .leading) {
                 Circle()
                     .fill(theme.onAccent)
                     .frame(width: 22, height: 22)
                     .padding(3)
-                    .shadow(color: .black.opacity(0.18), radius: 2, y: 1)
+                    .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
             }
             .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: isOn)
             .accessibilityHidden(true)

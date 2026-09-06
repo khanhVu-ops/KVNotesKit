@@ -20,13 +20,21 @@ struct NoteExportSheet: View {
         .padding(.bottom, theme.medium)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(theme.sheet)
+        .presentationDragIndicator(.hidden)
     }
 
     private var header: some View {
-        Text(.notesKit("Export note"))
-            .font(theme.titleFont)
-            .foregroundStyle(theme.primaryText)
-            .accessibilityAddTraits(.isHeader)
+        VStack(alignment: .leading, spacing: 2) {
+            Text(.notesKit("Export note"))
+                .font(theme.titleFont)
+                .foregroundStyle(theme.primaryText)
+                .accessibilityAddTraits(.isHeader)
+            Text(.notesKit("Security"))
+                .font(theme.metadataFont)
+                .textCase(.uppercase)
+                .tracking(1.3)
+                .foregroundStyle(theme.secondaryText)
+        }
     }
 
     private var warningCard: some View {
@@ -44,12 +52,12 @@ struct NoteExportSheet: View {
         .padding(theme.small + 4)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            RoundedRectangle(cornerRadius: theme.smallRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
                 .fill(theme.card)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: theme.smallRadius, style: .continuous)
-                .strokeBorder(theme.warning.opacity(0.3), lineWidth: 0.75)
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
+                .strokeBorder(theme.warning.opacity(0.35), lineWidth: 0.75)
         }
     }
 
@@ -65,7 +73,7 @@ struct NoteExportSheet: View {
             Rectangle()
                 .fill(theme.separator)
                 .frame(height: 0.75)
-                .padding(.leading, 32 + theme.small + 4)
+                .padding(.leading, 56)
 
             formatRow(
                 title: .notesKit("Export as Plain Text"),
@@ -121,7 +129,7 @@ struct NoteExportSheet: View {
                     .foregroundStyle(theme.secondaryText)
             }
             .padding(.horizontal, theme.small + 4)
-            .frame(minHeight: 54)
+            .frame(minHeight: 56)
             .contentShape(Rectangle())
         }
         .buttonStyle(NotePressButtonStyle())

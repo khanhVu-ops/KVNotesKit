@@ -111,9 +111,12 @@ struct NoteInspectorView: View {
                 }
             }
         }
-        .background(theme.card, in: RoundedRectangle(cornerRadius: theme.smallRadius, style: .continuous))
+        .background {
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
+                .fill(theme.card)
+        }
         .overlay {
-            RoundedRectangle(cornerRadius: theme.smallRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.largeRadius, style: .continuous)
                 .strokeBorder(theme.separator, lineWidth: 0.75)
         }
     }
@@ -138,12 +141,13 @@ struct NoteInspectorView: View {
             value()
         }
         .padding(.horizontal, theme.medium)
-        .frame(height: 44)
+        .frame(minHeight: 48)
     }
 
     private var separator: some View {
-        Divider()
-            .overlay(theme.separator)
+        Rectangle()
+            .fill(theme.separator)
+            .frame(height: 0.75)
             .padding(.leading, theme.medium + 28)
     }
 }
@@ -171,6 +175,7 @@ struct NoteInspectorSheet: View {
         .background(theme.sheet)
         .presentationDetents([.medium])
         .presentationBackground(theme.sheet)
+        .presentationDragIndicator(.hidden)
     }
 
     private var header: some View {

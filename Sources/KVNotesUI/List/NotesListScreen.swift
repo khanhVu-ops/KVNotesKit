@@ -185,8 +185,9 @@ public struct NotesListScreen: View {
                             exportingNote = nil
                         }
                     )
-                    .presentationDetents([.height(340)])
+                    .presentationDetents([.height(350)])
                     .presentationBackground(theme.sheet)
+                    .presentationDragIndicator(.hidden)
                 }
             }
             .sheet(item: $inspectingNote) { note in
@@ -196,6 +197,7 @@ public struct NotesListScreen: View {
                     theme: theme,
                     onDismiss: { inspectingNote = nil }
                 )
+                .presentationDragIndicator(.hidden)
             }
             .noteConfirmSheet(
                 isPresented: Binding(

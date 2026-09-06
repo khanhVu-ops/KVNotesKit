@@ -75,8 +75,16 @@ public struct NoteEditorScreen: View {
             }
             .sheet(isPresented: Binding(
                 get: { viewModel.state.showOptions },
-                set: { if !$0 { viewModel.send(.dismissOptions) } }
-            )) { options }
+                set: {
+                    if !$0 {
+                        initialOptionsDestination = nil
+                        viewModel.send(.dismissOptions)
+                    }
+                }
+            )) {
+                options
+                    .presentationDragIndicator(.hidden)
+            }
             .sheet(isPresented: $showsGenerator) {
                 PasswordGeneratorSheet(
                     theme: theme,
@@ -87,6 +95,7 @@ public struct NoteEditorScreen: View {
                     onCancel: { showsGenerator = false }
                 )
                 .presentationDetents([.medium])
+                .presentationDragIndicator(.hidden)
             }
     }
 
@@ -491,7 +500,10 @@ public struct NoteEditorScreen: View {
             onFolder: { viewModel.send(.setFolder($0)) },
             onToggleLock: { viewModel.send(.toggleBiometricLock) },
             onToggleHiddenPreview: { viewModel.send(.toggleHiddenPreview) },
-            onDismiss: { viewModel.send(.dismissOptions) },
+            onDismiss: {
+                initialOptionsDestination = nil
+                viewModel.send(.dismissOptions)
+            },
             onExport: onExport != nil ? { @MainActor @Sendable format in
                 onExport?(viewModel.state.title, viewModel.state.body, format)
             } : nil
