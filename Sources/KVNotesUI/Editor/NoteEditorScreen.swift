@@ -18,6 +18,7 @@ public struct NoteEditorScreen: View {
 
     public init(
         note: NoteDigest? = nil,
+        template: NoteTemplate? = nil,
         store: any NoteStore,
         unlockAuthority: any NoteUnlockAuthority,
         secretPolicy: any NoteSecretPolicy,
@@ -29,6 +30,7 @@ public struct NoteEditorScreen: View {
     ) {
         _viewModel = State(initialValue: NoteEditorViewModel(
             note: note,
+            template: template,
             store: store,
             unlockAuthority: unlockAuthority,
             onChange: onChange

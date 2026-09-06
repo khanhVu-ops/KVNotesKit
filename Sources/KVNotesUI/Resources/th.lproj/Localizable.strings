@@ -161,3 +161,10 @@
 "Preview hidden" = "ซ่อนตัวอย่างแล้ว";
 "The list shows this note's name and nothing else. It still opens with one tap." = "รายการจะแสดงเฉพาะชื่อของโน้ตนี้เท่านั้น และยังเปิดได้ด้วยการแตะครั้งเดียว";
 "The lock already hides it. This is what the list shows if you unlock the note again." = "การล็อกซ่อนไว้อยู่แล้ว นี่คือสิ่งที่รายการจะแสดงหากคุณปลดล็อกโน้ตอีกครั้ง";
+
+/* Note templates offered when creating a note. */
+"Blank note" = "โน้ตเปล่า";
+"Crypto seed phrase" = "ชุดคำกู้คืนคริปโต";
+"Bank & card" = "ธนาคารและบัตร";
+"Credentials" = "ข้อมูลเข้าสู่ระบบ";
+"Checklist" = "รายการตรวจสอบ";

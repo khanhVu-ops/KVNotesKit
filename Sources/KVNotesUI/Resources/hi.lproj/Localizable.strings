@@ -161,3 +161,10 @@
 "Preview hidden" = "पूर्वावलोकन छिपा है";
 "The list shows this note's name and nothing else. It still opens with one tap." = "सूची में इस नोट का सिर्फ़ नाम दिखता है, और कुछ नहीं। यह अब भी एक टैप में खुलता है।";
 "The lock already hides it. This is what the list shows if you unlock the note again." = "लॉक इसे पहले से छिपा रहा है। नोट फिर से अनलॉक करने पर सूची यही दिखाएगी।";
+
+/* Note templates offered when creating a note. */
+"Blank note" = "खाली नोट";
+"Crypto seed phrase" = "क्रिप्टो रिकवरी फ़्रेज़";
+"Bank & card" = "बैंक और कार्ड";
+"Credentials" = "लॉगिन क्रेडेंशियल";
+"Checklist" = "चेकलिस्ट";

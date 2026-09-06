@@ -56,11 +56,18 @@ public struct NoteEditorState: Equatable, Sendable {
     public var isAuthenticating: Bool { unlockPhase == .authenticating }
     public var authenticationDenied: Bool { unlockPhase == .denied }
 
+    public var initialTemplateMarkdown: String?
+
     public var characterCount: Int { body.count }
     public var titlePlaceholder: String { NoteTextDerivation.derivedTitle(from: body) }
     public var hasContent: Bool {
-        !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            || !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedTitle.isEmpty { return true }
+        let trimmedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let initial = initialTemplateMarkdown?.trimmingCharacters(in: .whitespacesAndNewlines) {
+            return trimmedBody != initial && !trimmedBody.isEmpty
+        }
+        return !trimmedBody.isEmpty
     }
     public var isDirty: Bool {
         switch saveStatus { case .unsaved, .failed: true; default: false }
@@ -130,6 +137,7 @@ public final class NoteEditorViewModel {
 
     public init(
         note: NoteDigest? = nil,
+        template: NoteTemplate? = nil,
         store: any NoteStore,
         unlockAuthority: any NoteUnlockAuthority,
         onChange: @escaping @MainActor @Sendable () -> Void = {}
@@ -141,12 +149,18 @@ public final class NoteEditorViewModel {
         state.note = note
         state.title = note?.isTitleUserProvided == true ? note?.title ?? "" : ""
         state.folder = note?.folder
-        state.icon = note?.icon
+        state.icon = note?.icon ?? template?.defaultIcon
         state.requiresBiometricUnlock = note?.requiresBiometricUnlock ?? false
         state.hidesPreview = note?.hidesPreview ?? false
         state.mode = note == nil ? .edit : .read
         state.isLoading = note != nil
         state.isLocked = note?.requiresBiometricUnlock ?? false
+        if note == nil, let template, !template.initialMarkdown.isEmpty {
+            state.body = template.initialMarkdown
+            state.initialTemplateMarkdown = template.initialMarkdown
+            state.pendingCaretOffset = template.initialCaretOffset
+            state.selection = template.initialCaretOffset..<template.initialCaretOffset
+        }
         self.state = state
     }
 
@@ -456,6 +470,7 @@ public final class NoteEditorViewModel {
                 let desiredLock = state.requiresBiometricUnlock
                 let desiredHiding = state.hidesPreview
                 state.note = saved
+                state.initialTemplateMarkdown = nil
                 state.folder = desiredFolder
                 state.icon = desiredIcon
                 state.requiresBiometricUnlock = desiredLock

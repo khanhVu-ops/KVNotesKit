@@ -161,3 +161,10 @@
 "Preview hidden" = "預覽已隱藏";
 "The list shows this note's name and nothing else. It still opens with one tap." = "列表只顯示這則筆記的名稱，不顯示其他內容。仍可一觸開啟。";
 "The lock already hides it. This is what the list shows if you unlock the note again." = "鎖定已經隱藏了它。這是解鎖筆記後列表會顯示的內容。";
+
+/* Note templates offered when creating a note. */
+"Blank note" = "空白備忘錄";
+"Crypto seed phrase" = "加密助記詞";
+"Bank & card" = "銀行與卡片";
+"Credentials" = "登入憑證";
+"Checklist" = "核對清單";

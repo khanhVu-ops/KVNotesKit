@@ -161,3 +161,10 @@
 "Preview hidden" = "Preview hidden";
 "The list shows this note's name and nothing else. It still opens with one tap." = "The list shows this note's name and nothing else. It still opens with one tap.";
 "The lock already hides it. This is what the list shows if you unlock the note again." = "The lock already hides it. This is what the list shows if you unlock the note again.";
+
+/* Note templates offered when creating a note. */
+"Blank note" = "Blank note";
+"Crypto seed phrase" = "Crypto seed phrase";
+"Bank & card" = "Bank & card";
+"Credentials" = "Credentials";
+"Checklist" = "Checklist";

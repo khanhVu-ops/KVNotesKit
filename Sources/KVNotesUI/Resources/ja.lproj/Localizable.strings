@@ -161,3 +161,10 @@
 "Preview hidden" = "プレビュー非表示";
 "The list shows this note's name and nothing else. It still opens with one tap." = "リストにはこのメモの名前だけが表示されます。ワンタップで開けるのは変わりません。";
 "The lock already hides it. This is what the list shows if you unlock the note again." = "ロックがすでに隠しています。メモのロックを解除すると、リストにはこれが表示されます。";
+
+/* Note templates offered when creating a note. */
+"Blank note" = "新規メモ";
+"Crypto seed phrase" = "暗号資産シードフレーズ";
+"Bank & card" = "銀行とカード";
+"Credentials" = "認証情報";
+"Checklist" = "チェックリスト";

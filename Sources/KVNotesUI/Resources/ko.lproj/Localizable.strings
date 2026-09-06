@@ -161,3 +161,10 @@
 "Preview hidden" = "미리보기 숨김";
 "The list shows this note's name and nothing else. It still opens with one tap." = "목록에는 이 메모의 이름만 표시됩니다. 한 번 눌러 여는 것은 그대로입니다.";
 "The lock already hides it. This is what the list shows if you unlock the note again." = "잠금이 이미 숨기고 있습니다. 메모를 다시 잠금 해제하면 목록에 이것이 표시됩니다.";
+
+/* Note templates offered when creating a note. */
+"Blank note" = "빈 메모";
+"Crypto seed phrase" = "크립토 시드 구문";
+"Bank & card" = "은행 및 카드";
+"Credentials" = "로그인 자격 증명";
+"Checklist" = "체크리스트";

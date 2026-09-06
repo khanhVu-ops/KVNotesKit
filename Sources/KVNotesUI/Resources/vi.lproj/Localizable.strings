@@ -161,3 +161,10 @@
 "Preview hidden" = "Đã ẩn xem trước";
 "The list shows this note's name and nothing else. It still opens with one tap." = "Danh sách chỉ hiện tên ghi chú, không hiện gì thêm. Vẫn mở bằng một chạm.";
 "The lock already hides it. This is what the list shows if you unlock the note again." = "Khoá đã ẩn sẵn rồi. Đây là thứ danh sách sẽ hiện nếu bạn mở khoá ghi chú lại.";
+
+/* Note templates offered when creating a note. */
+"Blank note" = "Ghi chú trống";
+"Crypto seed phrase" = "Cụm từ khôi phục ví";
+"Bank & card" = "Ngân hàng & thẻ";
+"Credentials" = "Thông tin đăng nhập";
+"Checklist" = "Danh sách kiểm tra";

@@ -161,3 +161,10 @@
 "Preview hidden" = "Önizleme gizli";
 "The list shows this note's name and nothing else. It still opens with one tap." = "Liste bu notun yalnızca adını gösterir, başka bir şey değil. Yine tek dokunuşla açılır.";
 "The lock already hides it. This is what the list shows if you unlock the note again." = "Kilit onu zaten gizliyor. Notun kilidini yeniden açarsanız liste bunu gösterir.";
+
+/* Note templates offered when creating a note. */
+"Blank note" = "Boş not";
+"Crypto seed phrase" = "Kripto kurtarma ifadesi";
+"Bank & card" = "Banka ve kart";
+"Credentials" = "Kimlik bilgileri";
+"Checklist" = "Kontrol listesi";

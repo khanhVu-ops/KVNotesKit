@@ -161,3 +161,10 @@
 "Preview hidden" = "Aperçu masqué";
 "The list shows this note's name and nothing else. It still opens with one tap." = "La liste affiche le nom de cette note et rien d'autre. Elle s'ouvre toujours d'une seule touche.";
 "The lock already hides it. This is what the list shows if you unlock the note again." = "Le verrou le masque déjà. Voici ce que la liste affichera si vous déverrouillez la note.";
+
+/* Note templates offered when creating a note. */
+"Blank note" = "Note vide";
+"Crypto seed phrase" = "Phrase de récupération crypto";
+"Bank & card" = "Banque et carte";
+"Credentials" = "Identifiants";
+"Checklist" = "Liste de contrôle";

@@ -515,6 +515,58 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.state.index.notes.first { $0.id == NoteFixtures.bank.id }?.folder)
     }
 
+    func testEditorWithUnmodifiedTemplateRefusesToSaveSkeleton() async throws {
+        let store = InMemoryNoteStore()
+        let viewModel = NoteEditorViewModel(template: .seedPhrase, store: store, unlockAuthority: UnlockAuthority())
+
+        XCTAssertEqual(viewModel.state.body, NoteTemplate.seedPhrase.initialMarkdown)
+        XCTAssertEqual(viewModel.state.icon, "🔑")
+        XCTAssertEqual(viewModel.state.pendingCaretOffset, NoteTemplate.seedPhrase.initialCaretOffset)
+        XCTAssertFalse(viewModel.state.hasContent)
+
+        viewModel.send(.save)
+        await Task.yield()
+
+        let index = await store.index()
+        XCTAssertEqual(index.notes.count, 0)
+        XCTAssertNil(viewModel.state.note)
+    }
+
+    func testEditorWithModifiedTemplateSavesToStore() async throws {
+        let store = InMemoryNoteStore()
+        let viewModel = NoteEditorViewModel(template: .seedPhrase, store: store, unlockAuthority: UnlockAuthority())
+
+        viewModel.send(.setBody(NoteTemplate.seedPhrase.initialMarkdown + "apple banana cherry"))
+        XCTAssertTrue(viewModel.state.hasContent)
+
+        viewModel.send(.save)
+        try await settle { viewModel.state.note != nil && !viewModel.state.isDirty }
+
+        let index = await store.index()
+        XCTAssertEqual(index.notes.count, 1)
+        XCTAssertEqual(index.notes.first?.icon, "🔑")
+
+        let id = try XCTUnwrap(viewModel.state.note?.id)
+        let body = try await store.body(id)
+        XCTAssertTrue(body.contains("apple banana cherry"))
+    }
+
+    func testEditorWithTemplateTitleOnlySavesToStore() async throws {
+        let store = InMemoryNoteStore()
+        let viewModel = NoteEditorViewModel(template: .bankCard, store: store, unlockAuthority: UnlockAuthority())
+
+        viewModel.send(.setTitle("My Chase Card"))
+        XCTAssertTrue(viewModel.state.hasContent)
+
+        viewModel.send(.save)
+        try await settle { viewModel.state.note != nil && !viewModel.state.isDirty }
+
+        let index = await store.index()
+        XCTAssertEqual(index.notes.count, 1)
+        XCTAssertEqual(index.notes.first?.title, "My Chase Card")
+        XCTAssertEqual(index.notes.first?.icon, "💳")
+    }
+
     private func settle(
         until condition: @escaping @MainActor () -> Bool,
         file: StaticString = #filePath,

@@ -17,7 +17,7 @@ public struct NotesListScreen: View {
     private let theme: NoteTheme
     private let refreshToken: Int
     private let onOpenNote: @MainActor @Sendable (NoteDigest) -> Void
-    private let onCreateNote: @MainActor @Sendable () -> Void
+    private let onCreateNote: @MainActor @Sendable (NoteTemplate) -> Void
     private let onSelectionChange: @MainActor @Sendable (Bool) -> Void
     private let haptic: @MainActor @Sendable () -> Void
 
@@ -27,7 +27,7 @@ public struct NotesListScreen: View {
         preferences: (any NoteListPreferencesStore)? = nil,
         refreshToken: Int = 0,
         onOpenNote: @escaping @MainActor @Sendable (NoteDigest) -> Void,
-        onCreateNote: @escaping @MainActor @Sendable () -> Void,
+        onCreateNote: @escaping @MainActor @Sendable (NoteTemplate) -> Void = { _ in },
         onChange: @escaping @MainActor @Sendable () -> Void = {},
         /// The host hides its dock while a selection is live; the package cannot reach that
         /// modifier, and should not know it exists.
@@ -45,6 +45,30 @@ public struct NotesListScreen: View {
         self.onCreateNote = onCreateNote
         self.onSelectionChange = onSelectionChange
         self.haptic = haptic
+    }
+
+    public init(
+        store: any NoteStore,
+        theme: NoteTheme,
+        preferences: (any NoteListPreferencesStore)? = nil,
+        refreshToken: Int = 0,
+        onOpenNote: @escaping @MainActor @Sendable (NoteDigest) -> Void,
+        onCreateNote: @escaping @MainActor @Sendable () -> Void,
+        onChange: @escaping @MainActor @Sendable () -> Void = {},
+        onSelectionChange: @escaping @MainActor @Sendable (Bool) -> Void = { _ in },
+        haptic: @escaping @MainActor @Sendable () -> Void = {}
+    ) {
+        self.init(
+            store: store,
+            theme: theme,
+            preferences: preferences,
+            refreshToken: refreshToken,
+            onOpenNote: onOpenNote,
+            onCreateNote: { _ in onCreateNote() },
+            onChange: onChange,
+            onSelectionChange: onSelectionChange,
+            haptic: haptic
+        )
     }
 
     public var body: some View {
@@ -673,13 +697,28 @@ public struct NotesListScreen: View {
                 Text(.notesKit("Notes you write here are sealed in the vault with AES-256."))
                     .font(theme.bodyFont).multilineTextAlignment(.center).foregroundStyle(theme.secondaryText)
             }
-            Button(.notesKit("New note"), action: onCreateNote)
-                .font(theme.modeFont).textCase(.uppercase).tracking(1.4)
-                .foregroundStyle(theme.onAccent)
-                .padding(.horizontal, theme.large).frame(height: 44)
-                .background(theme.accent, in: Capsule())
-                .buttonStyle(NotePressButtonStyle())
-                .padding(.top, theme.xs)
+            Menu {
+                ForEach(NoteTemplate.allCases) { template in
+                    Button {
+                        haptic()
+                        onCreateNote(template)
+                    } label: {
+                        Label {
+                            Text(template.title)
+                        } icon: {
+                            Image(systemName: template.iconSymbol)
+                        }
+                    }
+                }
+            } label: {
+                Text(.notesKit("New note"))
+                    .font(theme.modeFont).textCase(.uppercase).tracking(1.4)
+                    .foregroundStyle(theme.onAccent)
+                    .padding(.horizontal, theme.large).frame(height: 44)
+                    .background(theme.accent, in: Capsule())
+            }
+            .buttonStyle(NotePressButtonStyle())
+            .padding(.top, theme.xs)
         }
         .padding(.horizontal, theme.large)
         .frame(minHeight: 380)
