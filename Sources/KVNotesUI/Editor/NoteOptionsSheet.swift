@@ -1,8 +1,7 @@
+import KVNotesCore
 import SwiftUI
 
 struct NoteOptionsSheet: View {
-    static let icons = ["🔑", "🏦", "💳", "🧾", "📓", "🖥", "🔒", "🧭", "✈️", "🏠", "💊", "🎓"]
-
     let icon: String?
     let folder: String?
     let folders: [String]
@@ -16,6 +15,8 @@ struct NoteOptionsSheet: View {
     let onToggleHiddenPreview: () -> Void
     let onDismiss: () -> Void
 
+    @State private var selectedCategory: NoteIconLibrary.Category = .general
+    @State private var customEmojiInput = ""
     @State private var newFolder = ""
     @FocusState private var isNamingFolder: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -37,6 +38,12 @@ struct NoteOptionsSheet: View {
         .safeAreaInset(edge: .top, spacing: 0) { header }
         .presentationDetents([.medium, .large])
         .presentationBackground(theme.sheet)
+        .onAppear {
+            selectedCategory = NoteIconLibrary.category(for: icon)
+            if let icon, NoteIcon.parse(icon)?.emoji != nil && !NoteIconLibrary.curatedEmojis.contains(icon) {
+                customEmojiInput = icon
+            }
+        }
     }
 
     private var header: some View {
@@ -66,12 +73,68 @@ struct NoteOptionsSheet: View {
 
     private var iconSection: some View {
         section(.notesKit("Icon")) {
-            LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible(), spacing: theme.small), count: 6),
-                spacing: theme.small
-            ) {
-                monogramTile
-                ForEach(Self.icons, id: \.self) { iconTile($0) }
+            VStack(alignment: .leading, spacing: theme.small) {
+                categoryPicker
+                iconGrid
+                if selectedCategory == .emoji {
+                    customEmojiField
+                }
+            }
+        }
+    }
+
+    private var categoryPicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: theme.xs + 2) {
+                ForEach(NoteIconLibrary.Category.allCases) { cat in
+                    let isSelected = selectedCategory == cat
+                    Button {
+                        haptic()
+                        withAnimation(NoteMotion.selection(reduceMotion: reduceMotion)) {
+                            selectedCategory = cat
+                        }
+                    } label: {
+                        categoryTitle(cat)
+                            .font(theme.modeFont)
+                            .textCase(.uppercase)
+                            .tracking(1.2)
+                            .foregroundStyle(isSelected ? theme.onAccent : theme.secondaryText)
+                            .padding(.horizontal, theme.small + 4)
+                            .frame(height: 32)
+                            .background {
+                                if isSelected { Capsule().fill(theme.accent) }
+                                else { Capsule().strokeBorder(theme.separator, lineWidth: 0.75) }
+                            }
+                    }
+                    .buttonStyle(NotePressButtonStyle())
+                    .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+                }
+            }
+        }
+    }
+
+    private func categoryTitle(_ category: NoteIconLibrary.Category) -> Text {
+        switch category {
+        case .general: Text(.notesKit("General"))
+        case .security: Text(.notesKit("Security"))
+        case .finance: Text(.notesKit("Finance"))
+        case .work: Text(.notesKit("Work"))
+        case .tech: Text(.notesKit("Tech"))
+        case .places: Text(.notesKit("Places"))
+        case .emoji: Text(.notesKit("Emoji"))
+        }
+    }
+
+    private var iconGrid: some View {
+        LazyVGrid(
+            columns: Array(repeating: GridItem(.flexible(), spacing: theme.small), count: 6),
+            spacing: theme.small
+        ) {
+            monogramTile
+            if selectedCategory == .emoji {
+                ForEach(NoteIconLibrary.curatedEmojis, id: \.self) { emojiTile($0) }
+            } else {
+                ForEach(NoteIconLibrary.symbols(for: selectedCategory), id: \.self) { symbolTile($0) }
             }
         }
     }
@@ -79,6 +142,7 @@ struct NoteOptionsSheet: View {
     private var monogramTile: some View {
         Button {
             haptic()
+            customEmojiInput = ""
             onIcon(nil)
         } label: {
             Image(systemName: "textformat")
@@ -93,11 +157,38 @@ struct NoteOptionsSheet: View {
         .accessibilityAddTraits(icon == nil ? [.isSelected] : [])
     }
 
-    private func iconTile(_ candidate: String) -> some View {
+    private func symbolTile(_ symbolName: String) -> some View {
+        let rawCandidate = "\(NoteIcon.symbolPrefix)\(symbolName)"
+        let isSelected = icon == rawCandidate
+        return Button {
+            haptic()
+            customEmojiInput = ""
+            onIcon(isSelected ? nil : rawCandidate)
+        } label: {
+            Image(systemName: symbolName)
+                .font(.system(size: 18, weight: .regular))
+                .foregroundStyle(isSelected ? theme.onAccent : theme.primaryText)
+                .scaleEffect(isSelected && !reduceMotion ? 1.12 : 1)
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(tileBackground(isSelected: isSelected))
+        }
+        .buttonStyle(NotePressButtonStyle())
+        .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: isSelected)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    private func emojiTile(_ candidate: String) -> some View {
         let isSelected = icon == candidate
         return Button {
             haptic()
-            onIcon(isSelected ? nil : candidate)
+            if isSelected {
+                onIcon(nil)
+                customEmojiInput = ""
+            } else {
+                onIcon(candidate)
+                customEmojiInput = ""
+            }
         } label: {
             Text(verbatim: candidate)
                 .font(.system(size: 20))
@@ -109,6 +200,70 @@ struct NoteOptionsSheet: View {
         .buttonStyle(NotePressButtonStyle())
         .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: isSelected)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    private var customEmojiField: some View {
+        HStack(spacing: theme.small) {
+            if let custom = NoteIconSanitizer.sanitizeEmoji(customEmojiInput), icon == custom {
+                Text(verbatim: custom)
+                    .font(.system(size: 18))
+                    .frame(width: 28, height: 28)
+                    .background(theme.accent, in: Circle())
+            } else {
+                Image(systemName: "face.smiling")
+                    .font(.system(size: 15))
+                    .foregroundStyle(theme.secondaryText)
+            }
+
+            TextField(
+                text: Binding(
+                    get: { customEmojiInput },
+                    set: { newValue in
+                        handleCustomEmojiChange(newValue)
+                    }
+                ),
+                prompt: Text(.notesKit("Custom emoji")).foregroundStyle(theme.disabledText)
+            ) { Text(.notesKit("Custom emoji")) }
+                .textFieldStyle(.plain)
+                .font(theme.monoFont)
+                .foregroundStyle(theme.primaryText)
+                .submitLabel(.done)
+
+            if !customEmojiInput.isEmpty {
+                Button {
+                    haptic()
+                    customEmojiInput = ""
+                    if !NoteIconLibrary.curatedEmojis.contains(icon ?? "") && NoteIcon.parse(icon)?.emoji != nil {
+                        onIcon(nil)
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(theme.secondaryText)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(.notesKit("Cancel")))
+            }
+        }
+        .padding(.horizontal, theme.small + 4)
+        .frame(height: 40)
+        .background(theme.card, in: Capsule())
+        .overlay { Capsule().strokeBorder(theme.separator, lineWidth: 0.75) }
+    }
+
+    private func handleCustomEmojiChange(_ input: String) {
+        if let sanitized = NoteIconSanitizer.sanitizeEmoji(input) {
+            haptic()
+            customEmojiInput = sanitized
+            onIcon(sanitized)
+        } else if input.isEmpty {
+            customEmojiInput = ""
+            if !NoteIconLibrary.curatedEmojis.contains(icon ?? "") && NoteIcon.parse(icon)?.emoji != nil {
+                onIcon(nil)
+            }
+        } else {
+            customEmojiInput = String(input.prefix(1))
+        }
     }
 
     private func tileBackground(isSelected: Bool) -> some View {

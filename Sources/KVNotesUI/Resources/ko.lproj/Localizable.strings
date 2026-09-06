@@ -171,3 +171,10 @@
 
 "Indent" = "들여쓰기";
 "Outdent" = "내어쓰기";
+"General" = "일반";
+"Finance" = "금융";
+"Work" = "업무";
+"Tech" = "기술";
+"Places" = "장소";
+"Emoji" = "이모티콘";
+"Custom emoji" = "사용자 지정 이모티콘";

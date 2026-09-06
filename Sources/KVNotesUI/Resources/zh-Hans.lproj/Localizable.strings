@@ -171,3 +171,10 @@
 
 "Indent" = "增加缩进";
 "Outdent" = "减少缩进";
+"General" = "通用";
+"Finance" = "财务";
+"Work" = "工作";
+"Tech" = "科技";
+"Places" = "地点";
+"Emoji" = "表情符号";
+"Custom emoji" = "自定义表情";

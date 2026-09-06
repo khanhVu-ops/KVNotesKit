@@ -595,6 +595,51 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(index.notes.first?.icon, "💳")
     }
 
+    func testEditorSetsAndSavesSFSymbolIcon() async throws {
+        let store = InMemoryNoteStore()
+        let viewModel = NoteEditorViewModel(store: store, unlockAuthority: UnlockAuthority())
+
+        viewModel.send(.setTitle("Security Checklist"))
+        viewModel.send(.setIcon("sf:lock.shield.fill"))
+        viewModel.send(.save)
+        try await settle { viewModel.state.note != nil && !viewModel.state.isDirty }
+
+        let index = await store.index()
+        XCTAssertEqual(index.notes.count, 1)
+        XCTAssertEqual(index.notes.first?.icon, "sf:lock.shield.fill")
+    }
+
+    func testEditorSetsAndSavesCustomEmojiIcon() async throws {
+        let store = InMemoryNoteStore()
+        let viewModel = NoteEditorViewModel(store: store, unlockAuthority: UnlockAuthority())
+
+        viewModel.send(.setTitle("Launch Plan"))
+        viewModel.send(.setIcon("🚀"))
+        viewModel.send(.save)
+        try await settle { viewModel.state.note != nil && !viewModel.state.isDirty }
+
+        let index = await store.index()
+        XCTAssertEqual(index.notes.count, 1)
+        XCTAssertEqual(index.notes.first?.icon, "🚀")
+    }
+
+    func testEditorClearsIconToMonogram() async throws {
+        let store = InMemoryNoteStore()
+        let viewModel = NoteEditorViewModel(template: .seedPhrase, store: store, unlockAuthority: UnlockAuthority())
+
+        viewModel.send(.setTitle("My Wallet"))
+        XCTAssertEqual(viewModel.state.icon, "🔑")
+        viewModel.send(.setIcon(nil))
+        XCTAssertNil(viewModel.state.icon)
+
+        viewModel.send(.save)
+        try await settle { viewModel.state.note != nil && !viewModel.state.isDirty }
+
+        let index = await store.index()
+        XCTAssertEqual(index.notes.count, 1)
+        XCTAssertNil(index.notes.first?.icon)
+    }
+
     func testOpenAndCloseTemplatesOptionSheet() {
         let store = InMemoryNoteStore()
         let viewModel = NotesListViewModel(store: store)

@@ -171,8 +171,15 @@ struct NoteCard: View {
     private var glyph: some View {
         ZStack {
             theme.elevatedCard
-            if let icon = note.icon, !icon.isEmpty {
-                Text(verbatim: icon).font(.system(size: 19))
+            if let parsed = NoteIcon.parse(note.icon) {
+                switch parsed {
+                case .emoji(let emoji):
+                    Text(verbatim: emoji).font(.system(size: 19))
+                case .symbol(let symbolName):
+                    Image(systemName: symbolName)
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(theme.primaryText)
+                }
             } else if let initial = note.title.first {
                 Text(verbatim: String(initial).uppercased())
                     .font(theme.rowFont)

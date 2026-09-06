@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Replace hardcoded note icons with a full icon picker supporting curated SF Symbols across 6 categories, curated emojis, and arbitrary emoji input capped at one grapheme cluster (NK-410).
 - Add smart auto-pairing, bracket skipping, pair deletion, selected text delimiter wrapping, and keyboard toolbar indent/outdent buttons (NK-236).
 - Auto-continue Markdown lists (`-`/`*`/`+`), checklists (`- [ ]`/`- [x]`), numbered lists (`1.`/`2)`), and blockquotes (`>`/`>>`) on Return, preserving nested indentation, outdenting empty indented items, and cleanly exiting root empty items with full undo support (NK-235).
 - Add quick note templates (`.blank`, `.seedPhrase`, `.bankCard`, `.credentials`, `.checklist`) offered
