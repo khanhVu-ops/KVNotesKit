@@ -18,6 +18,7 @@ public struct NotesListState: Equatable, Sendable {
         case sortAndFilter
         case note(NoteID)
         case batch
+        case templates
     }
     public struct FolderChip: Identifiable, Equatable, Sendable {
         public let name: String

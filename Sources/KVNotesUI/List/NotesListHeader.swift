@@ -28,7 +28,7 @@ struct NotesListToolbar: ToolbarContent {
     let isNarrowed: Bool
     let layout: NoteListLayout
     let haptic: @MainActor @Sendable () -> Void
-    let onCreateNote: @MainActor @Sendable (NoteTemplate) -> Void
+    let onCreateNote: @MainActor @Sendable () -> Void
     let onStartSelecting: @MainActor @Sendable () -> Void
     let onStopSelecting: @MainActor @Sendable () -> Void
     let onSelectAllOrNone: @MainActor @Sendable () -> Void
@@ -176,26 +176,14 @@ struct NotesListToolbar: ToolbarContent {
     }
 
     private var createButton: some View {
-        Menu {
-            ForEach(NoteTemplate.allCases) { template in
-                Button {
-                    haptic()
-                    onCreateNote(template)
-                } label: {
-                    Label {
-                        Text(template.title)
-                    } icon: {
-                        Image(systemName: template.iconSymbol)
-                    }
-                }
-            }
-        } label: {
+        Button(action: onCreateNote) {
             Image(systemName: "plus")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(theme.onAccent)
                 .frame(width: 32, height: 32)
                 .background(theme.accent, in: Circle())
         }
+        .buttonStyle(NotePressButtonStyle())
         .accessibilityLabel(Text(.notesKit("New note")))
     }
 }

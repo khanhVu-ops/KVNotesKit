@@ -268,7 +268,7 @@ public struct NotesListScreen: View {
             isNarrowed: viewModel.state.isNarrowed,
             layout: viewModel.state.layout,
             haptic: haptic,
-            onCreateNote: onCreateNote,
+            onCreateNote: { viewModel.send(.openOptions(.templates)) },
             onStartSelecting: {
                 withAnimation(NoteMotion.mode(reduceMotion: reduceMotion)) {
                     viewModel.send(.startSelecting)
@@ -541,9 +541,32 @@ public struct NotesListScreen: View {
                 subtitle: .localized(.notesKit(count: "\(viewModel.state.selection.count) selected")),
                 groups: batchOptionGroups
             )
+        case .templates:
+            sheet(
+                title: .notesKit("New note"),
+                subtitle: nil,
+                groups: templateOptionGroups
+            )
         case nil:
             sheet(title: .notesKit("Note options"), subtitle: nil, groups: [])
         }
+    }
+
+    private var templateOptionGroups: [NoteOptionGroup] {
+        [
+            NoteOptionGroup(
+                id: "templates",
+                items: NoteTemplate.allCases.map { template in
+                    NoteOptionItem(
+                        id: "template.\(template.rawValue)",
+                        title: .localized(template.title),
+                        systemImage: template.iconSymbol
+                    ) {
+                        onCreateNote(template)
+                    }
+                }
+            )
+        ]
     }
 
     private func sheet(
@@ -697,19 +720,9 @@ public struct NotesListScreen: View {
                 Text(.notesKit("Notes you write here are sealed in the vault with AES-256."))
                     .font(theme.bodyFont).multilineTextAlignment(.center).foregroundStyle(theme.secondaryText)
             }
-            Menu {
-                ForEach(NoteTemplate.allCases) { template in
-                    Button {
-                        haptic()
-                        onCreateNote(template)
-                    } label: {
-                        Label {
-                            Text(template.title)
-                        } icon: {
-                            Image(systemName: template.iconSymbol)
-                        }
-                    }
-                }
+            Button {
+                haptic()
+                viewModel.send(.openOptions(.templates))
             } label: {
                 Text(.notesKit("New note"))
                     .font(theme.modeFont).textCase(.uppercase).tracking(1.4)

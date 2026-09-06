@@ -3,7 +3,7 @@
 ## Unreleased
 
 - Add quick note templates (`.blank`, `.seedPhrase`, `.bankCard`, `.credentials`, `.checklist`) offered
-  from the create menu, with unmodified skeleton detection to prevent persisting empty notes (NK-400).
+  from the create option sheet, with unmodified skeleton detection to prevent persisting empty notes (NK-400).
 
 - Add `hidesPreview`: a per-note toggle that stops the list drawing a note's opening line without
   putting a biometric gate in front of it. Unlike the lock it keeps the snippet stored and

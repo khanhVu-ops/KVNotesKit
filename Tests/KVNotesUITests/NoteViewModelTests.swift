@@ -567,6 +567,17 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(index.notes.first?.icon, "💳")
     }
 
+    func testOpenAndCloseTemplatesOptionSheet() {
+        let store = InMemoryNoteStore()
+        let viewModel = NotesListViewModel(store: store)
+
+        viewModel.send(.openOptions(.templates))
+        XCTAssertEqual(viewModel.state.optionSheet, .templates)
+
+        viewModel.send(.closeOptions)
+        XCTAssertNil(viewModel.state.optionSheet)
+    }
+
     private func settle(
         until condition: @escaping @MainActor () -> Bool,
         file: StaticString = #filePath,
