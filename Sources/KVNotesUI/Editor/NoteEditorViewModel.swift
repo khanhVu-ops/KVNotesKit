@@ -59,6 +59,14 @@ public struct NoteEditorState: Equatable, Sendable {
     public var initialTemplateMarkdown: String?
 
     public var characterCount: Int { body.count }
+    public var metrics: NoteMetrics {
+        NoteMetrics(
+            body: isLocked ? nil : body,
+            isLocked: isLocked,
+            createdAt: note?.createdAt ?? Date(),
+            lastEditedAt: note?.lastEditedAt ?? Date()
+        )
+    }
     public var titlePlaceholder: String { NoteTextDerivation.derivedTitle(from: body) }
     public var hasContent: Bool {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)

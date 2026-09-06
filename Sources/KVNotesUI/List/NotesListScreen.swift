@@ -12,6 +12,7 @@ public struct NotesListScreen: View {
     /// written on every frame of every scroll, and writing `@State` at 120 Hz rebuilds this body
     /// 120 times a second. Only `NotesListHeader` reads it.
     @State private var collapse = NotesHeaderCollapse()
+    @State private var inspectingNote: NoteDigest?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let theme: NoteTheme
@@ -154,6 +155,14 @@ public struct NotesListScreen: View {
                 ),
                 sheet: optionSheet
             )
+            .sheet(item: $inspectingNote) { note in
+                NoteInspectorSheet(
+                    noteTitle: note.title,
+                    metrics: NoteMetrics(digest: note),
+                    theme: theme,
+                    onDismiss: { inspectingNote = nil }
+                )
+            }
             .noteConfirmSheet(
                 isPresented: Binding(
                     get: { viewModel.state.pendingBatchDiscard },
@@ -547,7 +556,7 @@ public struct NotesListScreen: View {
                 subtitle: nil,
                 groups: templateOptionGroups
             )
-        case nil:
+        case .inspector, nil:
             sheet(title: .notesKit("Note options"), subtitle: nil, groups: [])
         }
     }
@@ -642,6 +651,11 @@ public struct NotesListScreen: View {
                     title: .localized(note.isPinned ? .notesKit("Unpin") : .notesKit("Pin")),
                     systemImage: note.isPinned ? "pin.slash" : "pin"
                 ) { listChange(.togglePin(note.id)) },
+                NoteOptionItem(
+                    id: "info",
+                    title: .localized(.notesKit("Note info")),
+                    systemImage: "info.circle"
+                ) { inspectingNote = note },
                 NoteOptionItem(
                     id: "trash",
                     title: .localized(.notesKit("Move to Trash")),

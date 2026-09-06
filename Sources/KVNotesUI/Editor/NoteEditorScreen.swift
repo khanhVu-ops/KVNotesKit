@@ -442,6 +442,7 @@ public struct NoteEditorScreen: View {
             folders: viewModel.state.folders,
             isLocked: viewModel.state.requiresBiometricUnlock,
             hidesPreview: viewModel.state.hidesPreview,
+            metrics: viewModel.state.metrics,
             theme: theme,
             haptic: haptic,
             onIcon: { viewModel.send(.setIcon($0)) },

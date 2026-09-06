@@ -7,6 +7,7 @@ struct NoteOptionsSheet: View {
     let folders: [String]
     let isLocked: Bool
     let hidesPreview: Bool
+    var metrics: NoteMetrics? = nil
     let theme: NoteTheme
     let haptic: @MainActor @Sendable () -> Void
     let onIcon: (String?) -> Void
@@ -27,6 +28,9 @@ struct NoteOptionsSheet: View {
                 iconSection
                 folderSection
                 securitySection
+                if let metrics {
+                    detailsSection(metrics)
+                }
             }
             .padding(.horizontal, theme.medium)
             .padding(.top, theme.small)
@@ -439,6 +443,12 @@ struct NoteOptionsSheet: View {
                 .tracking(1.4)
                 .foregroundStyle(theme.secondaryText)
             content()
+        }
+    }
+
+    private func detailsSection(_ metrics: NoteMetrics) -> some View {
+        section(.notesKit("Details")) {
+            NoteInspectorView(metrics: metrics, theme: theme)
         }
     }
 }

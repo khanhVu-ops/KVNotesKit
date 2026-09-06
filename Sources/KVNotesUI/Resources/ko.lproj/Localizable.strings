@@ -178,3 +178,12 @@
 "Places" = "장소";
 "Emoji" = "이모티콘";
 "Custom emoji" = "사용자 지정 이모티콘";
+"Details" = "세부 정보";
+"Words" = "단어";
+"Characters" = "글자 수";
+"Lines" = "줄 수";
+"Created" = "생성일";
+"Modified" = "수정일";
+"Storage" = "저장 공간";
+"Cipher" = "암호화 방식";
+"Note info" = "메모 정보";

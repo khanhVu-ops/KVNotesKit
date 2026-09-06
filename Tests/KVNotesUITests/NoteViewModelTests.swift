@@ -640,6 +640,32 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertNil(index.notes.first?.icon)
     }
 
+    func testEditorMetricsExposesCountsAndHidesWhenLocked() async throws {
+        let store = InMemoryNoteStore()
+        let viewModel = NoteEditorViewModel(store: store, unlockAuthority: UnlockAuthority())
+
+        viewModel.send(.setBody("One two three four five.\nSecond line here."))
+        let metrics = viewModel.state.metrics
+        XCTAssertEqual(metrics.words, 8)
+        XCTAssertEqual(metrics.lines, 2)
+        XCTAssertEqual(metrics.characters, viewModel.state.body.count)
+        XCTAssertEqual(metrics.storedBytes, 1024)
+
+        // A locked note hides word/character/line counts so length does not leak across the lock boundary
+        let lockedDigest = NoteDigest(
+            title: "Bank PIN",
+            snippet: nil,
+            characterCount: 42,
+            requiresBiometricUnlock: true
+        )
+        let lockedViewModel = NoteEditorViewModel(note: lockedDigest, store: store, unlockAuthority: UnlockAuthority())
+        XCTAssertTrue(lockedViewModel.state.isLocked)
+        XCTAssertNil(lockedViewModel.state.metrics.words)
+        XCTAssertNil(lockedViewModel.state.metrics.characters)
+        XCTAssertNil(lockedViewModel.state.metrics.lines)
+        XCTAssertEqual(lockedViewModel.state.metrics.storedBytes, 1024)
+    }
+
     func testOpenAndCloseTemplatesOptionSheet() {
         let store = InMemoryNoteStore()
         let viewModel = NotesListViewModel(store: store)

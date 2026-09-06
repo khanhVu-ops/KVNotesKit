@@ -19,6 +19,7 @@ public struct NotesListState: Equatable, Sendable {
         case note(NoteID)
         case batch
         case templates
+        case inspector(NoteID)
     }
     public struct FolderChip: Identifiable, Equatable, Sendable {
         public let name: String
@@ -73,6 +74,11 @@ public struct NotesListState: Equatable, Sendable {
     /// "Pin" to a note the same sheet had just pinned.
     public var optionSheetNote: NoteDigest? {
         guard case .note(let id) = optionSheet else { return nil }
+        return index.notes.first { $0.id == id }
+    }
+
+    public var inspectorNote: NoteDigest? {
+        guard case .inspector(let id) = optionSheet else { return nil }
         return index.notes.first { $0.id == id }
     }
 

@@ -178,3 +178,12 @@
 "Places" = "場所";
 "Emoji" = "絵文字";
 "Custom emoji" = "カスタム絵文字";
+"Details" = "詳細";
+"Words" = "単語数";
+"Characters" = "文字数";
+"Lines" = "行数";
+"Created" = "作成日時";
+"Modified" = "変更日時";
+"Storage" = "ストレージ";
+"Cipher" = "暗号化方式";
+"Note info" = "ノート情報";

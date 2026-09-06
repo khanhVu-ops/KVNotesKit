@@ -178,3 +178,12 @@
 "Places" = "Места";
 "Emoji" = "Эмодзи";
 "Custom emoji" = "Свой эмодзи";
+"Details" = "Подробности";
+"Words" = "Слов";
+"Characters" = "Символов";
+"Lines" = "Строк";
+"Created" = "Создана";
+"Modified" = "Изменена";
+"Storage" = "Хранилище";
+"Cipher" = "Шифр";
+"Note info" = "Свойства заметки";
