@@ -168,3 +168,6 @@
 "Bank & card" = "銀行とカード";
 "Credentials" = "認証情報";
 "Checklist" = "チェックリスト";
+
+"Indent" = "インデント";
+"Outdent" = "インデント解除";

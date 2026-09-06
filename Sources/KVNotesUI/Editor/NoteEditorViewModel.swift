@@ -99,6 +99,8 @@ public final class NoteEditorViewModel {
         case insert(MarkdownToken, Range<Int>)
         case insertText(String, Range<Int>)
         case applyContinuation(text: String, caretOffset: Int)
+        case indent
+        case outdent
         case setSelection(Range<Int>)
         case openFind
         case closeFind
@@ -226,6 +228,21 @@ public final class NoteEditorViewModel {
             recordUndoSnapshot(coalescingTyping: false)
             state.body = text
             state.selection = caret..<caret
+            dirty()
+        case .indent:
+            recordUndoSnapshot(coalescingTyping: false)
+            let res = MarkdownIndentation.indent(in: state.body, selection: state.selection)
+            state.body = res.text
+            state.pendingCaretOffset = res.caretOffset
+            state.selection = res.selectedRange
+            dirty()
+        case .outdent:
+            let res = MarkdownIndentation.outdent(in: state.body, selection: state.selection)
+            guard res.text != state.body else { return }
+            recordUndoSnapshot(coalescingTyping: false)
+            state.body = res.text
+            state.pendingCaretOffset = res.caretOffset
+            state.selection = res.selectedRange
             dirty()
         case .setSelection(let range):
             guard range != state.selection else { return }

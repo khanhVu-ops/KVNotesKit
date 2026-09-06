@@ -168,3 +168,6 @@
 "Bank & card" = "은행 및 카드";
 "Credentials" = "로그인 자격 증명";
 "Checklist" = "체크리스트";
+
+"Indent" = "들여쓰기";
+"Outdent" = "내어쓰기";

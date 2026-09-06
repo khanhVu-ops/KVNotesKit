@@ -168,3 +168,6 @@
 "Bank & card" = "銀行與卡片";
 "Credentials" = "登入憑證";
 "Checklist" = "核對清單";
+
+"Indent" = "增加縮排";
+"Outdent" = "減少縮排";

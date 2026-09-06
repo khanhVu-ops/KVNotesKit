@@ -377,6 +377,8 @@ public struct NoteEditorScreen: View {
             },
             onOpenGenerator: { showsGenerator = true },
             onOpenFind: { viewModel.send(.openFind) },
+            onIndent: { viewModel.send(.indent) },
+            onOutdent: { viewModel.send(.outdent) },
             canUndo: viewModel.state.canUndo,
             canRedo: viewModel.state.canRedo,
             findMatches: viewModel.state.find.matches,
@@ -388,6 +390,8 @@ public struct NoteEditorScreen: View {
             timestampTitle: NotesLocalization.string("Insert the time", locale: locale),
             generatorTitle: NotesLocalization.string("Generate a password", locale: locale),
             findTitle: NotesLocalization.string("Find in note", locale: locale),
+            indentTitle: NotesLocalization.string("Indent", locale: locale),
+            outdentTitle: NotesLocalization.string("Outdent", locale: locale),
             haptic: haptic
         )
     }

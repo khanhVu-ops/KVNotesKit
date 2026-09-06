@@ -168,3 +168,6 @@
 "Bank & card" = "Banco y tarjeta";
 "Credentials" = "Credenciales";
 "Checklist" = "Lista de tareas";
+
+"Indent" = "Aumentar sangría";
+"Outdent" = "Reducir sangría";

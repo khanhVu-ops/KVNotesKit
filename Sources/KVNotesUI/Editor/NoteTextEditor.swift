@@ -19,6 +19,8 @@ struct NoteTextEditor: UIViewRepresentable {
     let onInsertTimestamp: @MainActor @Sendable () -> Void
     let onOpenGenerator: @MainActor @Sendable () -> Void
     let onOpenFind: @MainActor @Sendable () -> Void
+    let onIndent: @MainActor @Sendable () -> Void
+    let onOutdent: @MainActor @Sendable () -> Void
     let canUndo: Bool
     let canRedo: Bool
     let findMatches: [NSRange]
@@ -32,6 +34,8 @@ struct NoteTextEditor: UIViewRepresentable {
     let timestampTitle: String
     let generatorTitle: String
     let findTitle: String
+    let indentTitle: String
+    let outdentTitle: String
     let haptic: @MainActor @Sendable () -> Void
 
     func makeUIView(context: Context) -> UITextView {
@@ -241,7 +245,13 @@ struct NoteTextEditor: UIViewRepresentable {
             let find = key(symbol: "magnifyingglass", action: #selector(findTapped))
             find.accessibilityLabel = parent.findTitle
 
-            let keys = UIStackView(arrangedSubviews: [undo, redo, separator, find, timestamp, generator]
+            let outdent = key(symbol: "decrease.indent", action: #selector(outdentTapped))
+            outdent.accessibilityLabel = parent.outdentTitle
+
+            let indent = key(symbol: "increase.indent", action: #selector(indentTapped))
+            indent.accessibilityLabel = parent.indentTitle
+
+            let keys = UIStackView(arrangedSubviews: [undo, redo, separator, outdent, indent, find, timestamp, generator]
                 + MarkdownToken.allCases.enumerated().map { index, token in
                     key(titled: token.keyTitle, tag: index, action: #selector(insertTapped(_:)))
                 })
@@ -364,6 +374,16 @@ struct NoteTextEditor: UIViewRepresentable {
             parent.onOpenFind()
         }
 
+        @objc private func outdentTapped() {
+            parent.haptic()
+            parent.onOutdent()
+        }
+
+        @objc private func indentTapped() {
+            parent.haptic()
+            parent.onIndent()
+        }
+
         func textViewDidChange(_ textView: UITextView) {
             self.textView = textView
             styleEditedParagraph(in: textView)
@@ -376,31 +396,66 @@ struct NoteTextEditor: UIViewRepresentable {
             shouldChangeTextIn range: NSRange,
             replacementText text: String
         ) -> Bool {
-            guard text == "\n" else { return true }
             let fullText = textView.text ?? ""
             guard let textRange = Range(range, in: fullText) else { return true }
             let lower = fullText.distance(from: fullText.startIndex, to: textRange.lowerBound)
             let upper = fullText.distance(from: fullText.startIndex, to: textRange.upperBound)
-            guard let result = MarkdownListContinuation.continueOrExitList(
-                in: fullText,
-                selection: lower..<upper
-            ) else {
+
+            // 1. Return: Markdown list continuation / exit
+            if text == "\n" {
+                if let result = MarkdownListContinuation.continueOrExitList(
+                    in: fullText,
+                    selection: lower..<upper
+                ) {
+                    applyCustomEdit(result.text, caretOffset: result.caretOffset, in: textView)
+                    return false
+                }
                 return true
             }
 
-            textView.text = result.text
-            let charIdx = result.text.index(
-                result.text.startIndex,
-                offsetBy: min(max(result.caretOffset, 0), result.text.count)
+            // 2. Typing: Auto-pairing / Smart-wrapping / Skip-over
+            if text.count == 1 {
+                if let result = MarkdownAutoPairing.handleTyping(
+                    text,
+                    in: fullText,
+                    selection: lower..<upper
+                ) {
+                    applyCustomEdit(result.text, caretOffset: result.caretOffset, in: textView)
+                    return false
+                }
+            }
+
+            // 3. Backspace: Empty pair deletion
+            if text.isEmpty, range.length == 1 {
+                if let result = MarkdownAutoPairing.handleBackspace(
+                    in: fullText,
+                    selection: lower..<upper
+                ) {
+                    applyCustomEdit(result.text, caretOffset: result.caretOffset, in: textView)
+                    return false
+                }
+            }
+
+            return true
+        }
+
+        private func applyCustomEdit(
+            _ newText: String,
+            caretOffset: Int,
+            in textView: UITextView
+        ) {
+            textView.text = newText
+            let charIdx = newText.index(
+                newText.startIndex,
+                offsetBy: min(max(caretOffset, 0), newText.count)
             )
-            let utf16Offset = NSRange(charIdx..<charIdx, in: result.text).location
+            let utf16Offset = NSRange(charIdx..<charIdx, in: newText).location
             textView.selectedRange = NSRange(location: utf16Offset, length: 0)
             textView.scrollRangeToVisible(textView.selectedRange)
             styleEditedParagraph(in: textView)
-            parent.text = result.text
+            parent.text = newText
             reportSelection(of: textView)
-            parent.onContinuation?(result.text, result.caretOffset)
-            return false
+            parent.onContinuation?(newText, caretOffset)
         }
 
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
@@ -439,6 +494,8 @@ struct NoteTextEditor: View {
     let onInsertTimestamp: @MainActor @Sendable () -> Void
     let onOpenGenerator: @MainActor @Sendable () -> Void
     let onOpenFind: @MainActor @Sendable () -> Void
+    let onIndent: @MainActor @Sendable () -> Void
+    let onOutdent: @MainActor @Sendable () -> Void
     let canUndo: Bool
     let canRedo: Bool
     let findMatches: [NSRange]
@@ -450,6 +507,8 @@ struct NoteTextEditor: View {
     let timestampTitle: String
     let generatorTitle: String
     let findTitle: String
+    let indentTitle: String
+    let outdentTitle: String
     let haptic: @MainActor @Sendable () -> Void
 
     var body: some View {

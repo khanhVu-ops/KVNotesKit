@@ -268,6 +268,23 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state.body, "- [ ] milk")
     }
 
+    func testIndentAndOutdentAreUndoable() async throws {
+        let viewModel = NoteEditorViewModel(store: InMemoryNoteStore(), unlockAuthority: UnlockAuthority())
+        viewModel.send(.setBody("- [ ] milk"))
+        viewModel.send(.setSelection(2..<2))
+
+        viewModel.send(.indent)
+        XCTAssertEqual(viewModel.state.body, "  - [ ] milk")
+        XCTAssertEqual(viewModel.state.selection, 4..<4)
+
+        viewModel.send(.outdent)
+        XCTAssertEqual(viewModel.state.body, "- [ ] milk")
+        XCTAssertEqual(viewModel.state.selection, 2..<2)
+
+        viewModel.send(.undo)
+        XCTAssertEqual(viewModel.state.body, "  - [ ] milk")
+    }
+
     func testHistoryDiesWithTheSession() async throws {
         let viewModel = NoteEditorViewModel(store: InMemoryNoteStore(), unlockAuthority: UnlockAuthority())
 
