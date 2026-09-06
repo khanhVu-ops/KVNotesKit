@@ -134,7 +134,7 @@ public enum NoteMarkdownBlock: Equatable, Sendable {
     /// The one definition of what a task line looks like: the renderer, the toggle and the
     /// list's *has checklist* flag all ask this, so the three cannot drift into disagreeing
     /// about whether `- [x]done` counts.
-    static func boxRange(in line: String) -> Range<String.Index>? {
+    public static func boxRange(in line: String) -> Range<String.Index>? {
         var index = line.startIndex
         while index < line.endIndex, line[index] == " " || line[index] == "\t" {
             index = line.index(after: index)
@@ -154,6 +154,57 @@ public enum NoteMarkdownBlock: Equatable, Sendable {
         let afterClosing = line.index(after: closing)
         guard afterClosing < line.endIndex, line[afterClosing] == " " else { return nil }
         return box..<closing
+    }
+
+    /// The range of the full task checkbox marker prefix (e.g. `- [ ]` or `  * [x] `) within the
+    /// line, including leading indentation and closing bracket, or `nil` if the line is not a task.
+    public static func markerRange(in line: String) -> Range<String.Index>? {
+        guard let box = boxRange(in: line) else { return nil }
+        let closing = box.upperBound
+        let afterClosing = line.index(after: closing)
+        if afterClosing < line.endIndex, line[afterClosing] == " " {
+            return line.startIndex..<line.index(after: afterClosing)
+        }
+        return line.startIndex..<afterClosing
+    }
+
+    /// Checks if a character offset within the entire document falls on a task's checkbox marker.
+    /// Returns the 0-based line index if it does, or `nil` if the offset is not on a checkbox marker.
+    public static func taskLineIndex(at characterOffset: Int, in text: String) -> Int? {
+        let nsText = text as NSString
+        guard nsText.length > 0, characterOffset >= 0, characterOffset <= nsText.length else { return nil }
+        let safeOffset = min(characterOffset, nsText.length - 1)
+        let lineRange = nsText.lineRange(for: NSRange(location: safeOffset, length: 0))
+        guard lineRange.location != NSNotFound, lineRange.length > 0 else { return nil }
+
+        let lineString = nsText.substring(with: lineRange)
+        guard let marker = markerRange(in: lineString) else { return nil }
+
+        let markerLength = (lineString[marker] as NSString).length
+        let markerStartInDoc = lineRange.location
+        let markerEndInDoc = markerStartInDoc + markerLength
+
+        if characterOffset >= markerStartInDoc && characterOffset < markerEndInDoc {
+            let prefix = nsText.substring(to: lineRange.location)
+            return prefix.components(separatedBy: .newlines).count - 1
+        }
+        return nil
+    }
+
+    /// The NSRange of the line at lineIndex in text.
+    public static func lineNSRange(at lineIndex: Int, in text: String) -> NSRange? {
+        let nsText = text as NSString
+        guard nsText.length > 0, lineIndex >= 0 else { return nil }
+        var currentLine = 0
+        var foundRange: NSRange?
+        nsText.enumerateSubstrings(in: NSRange(location: 0, length: nsText.length), options: [.byLines, .substringNotRequired]) { _, range, _, stop in
+            if currentLine == lineIndex {
+                foundRange = range
+                stop.pointee = true
+            }
+            currentLine += 1
+        }
+        return foundRange
     }
 
     /// ```` ```secret ```` opens a masked block; any other info string is an ordinary fence.

@@ -37,6 +37,7 @@ struct NoteTextEditor: UIViewRepresentable {
     let indentTitle: String
     let outdentTitle: String
     let haptic: @MainActor @Sendable () -> Void
+    let onToggleTask: (@MainActor @Sendable (Int) -> Void)?
 
     func makeUIView(context: Context) -> UITextView {
         let view = UITextView()
@@ -64,6 +65,15 @@ struct NoteTextEditor: UIViewRepresentable {
         view.inputAccessoryView = context.coordinator.makeAccessoryBar()
         context.coordinator.attach(view)
         context.coordinator.styleEverythingVisible(in: view)
+
+        let tapGesture = UITapGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handleTapOnCheckbox(_:))
+        )
+        tapGesture.delegate = context.coordinator
+        tapGesture.cancelsTouchesInView = true
+        view.addGestureRecognizer(tapGesture)
+
         return view
     }
 
@@ -73,7 +83,14 @@ struct NoteTextEditor: UIViewRepresentable {
             // A ViewModel-driven change: an insertion, an undo, a toggled checkbox. Assigning
             // `.text` drops every attribute in the storage, so the visible range is restyled
             // immediately afterwards rather than on the next keystroke.
+            let previousRange = view.selectedRange
             view.text = text
+            if pendingCaretOffset == nil {
+                let textLength = (text as NSString).length
+                let safeLocation = min(previousRange.location, textLength)
+                let safeLength = min(previousRange.length, max(0, textLength - safeLocation))
+                view.selectedRange = NSRange(location: safeLocation, length: safeLength)
+            }
             context.coordinator.styleEverythingVisible(in: view)
         }
         context.coordinator.updateHistoryKeys(canUndo: canUndo, canRedo: canRedo)
@@ -107,7 +124,7 @@ struct NoteTextEditor: UIViewRepresentable {
     }
 
     @MainActor
-    final class Coordinator: NSObject, UITextViewDelegate {
+    final class Coordinator: NSObject, UITextViewDelegate, UIGestureRecognizerDelegate {
         var parent: NoteTextEditor
         private weak var textView: UITextView?
         private weak var undoKey: UIButton?
@@ -118,6 +135,54 @@ struct NoteTextEditor: UIViewRepresentable {
         func attach(_ view: UITextView) {
             textView = view
             view.typingAttributes = styling.typingAttributes
+        }
+
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            guard let textView, parent.onToggleTask != nil else { return false }
+            let point = gestureRecognizer.location(in: textView)
+            return taskLineIndex(at: point, in: textView) != nil
+        }
+
+        @objc func handleTapOnCheckbox(_ gesture: UITapGestureRecognizer) {
+            guard gesture.state == .ended, let textView else { return }
+            let point = gesture.location(in: textView)
+            guard let lineIndex = taskLineIndex(at: point, in: textView) else { return }
+            parent.onToggleTask?(lineIndex)
+        }
+
+        func taskLineIndex(at point: CGPoint, in textView: UITextView) -> Int? {
+            let text = textView.text ?? ""
+            guard !text.isEmpty, let position = textView.closestPosition(to: point) else { return nil }
+            let charOffset = textView.offset(from: textView.beginningOfDocument, to: position)
+            guard let lineIndex = NoteMarkdownBlock.taskLineIndex(at: charOffset, in: text) else {
+                return nil
+            }
+
+            guard let lineNSRange = NoteMarkdownBlock.lineNSRange(at: lineIndex, in: text),
+                  let startPos = textView.position(from: textView.beginningOfDocument, offset: lineNSRange.location),
+                  let endPos = textView.position(from: textView.beginningOfDocument, offset: min(lineNSRange.location + lineNSRange.length, (text as NSString).length)),
+                  let textRange = textView.textRange(from: startPos, to: endPos)
+            else { return lineIndex }
+
+            let rect = textView.firstRect(for: textRange)
+            guard !rect.isEmpty, !rect.isNull else { return lineIndex }
+
+            let verticalRange = (rect.minY - 8)...(rect.maxY + 8)
+            guard verticalRange.contains(point.y) else { return nil }
+
+            let lineString = (text as NSString).substring(with: lineNSRange)
+            if let marker = NoteMarkdownBlock.markerRange(in: lineString) {
+                let markerLen = (lineString[marker] as NSString).length
+                if let markerEndPos = textView.position(from: startPos, offset: markerLen),
+                   let markerRange = textView.textRange(from: startPos, to: markerEndPos) {
+                    let markerRect = textView.firstRect(for: markerRange)
+                    if !markerRect.isEmpty, !markerRect.isNull {
+                        guard point.x <= markerRect.maxX + 16 else { return nil }
+                    }
+                }
+            }
+
+            return lineIndex
         }
 
         /// Built once and reused: the attribute dictionaries are the expensive part, and they do
@@ -510,6 +575,7 @@ struct NoteTextEditor: View {
     let indentTitle: String
     let outdentTitle: String
     let haptic: @MainActor @Sendable () -> Void
+    var onToggleTask: (@MainActor @Sendable (Int) -> Void)? = nil
 
     var body: some View {
         TextEditor(text: $text)

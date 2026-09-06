@@ -392,7 +392,11 @@ public struct NoteEditorScreen: View {
             findTitle: NotesLocalization.string("Find in note", locale: locale),
             indentTitle: NotesLocalization.string("Indent", locale: locale),
             outdentTitle: NotesLocalization.string("Outdent", locale: locale),
-            haptic: haptic
+            haptic: haptic,
+            onToggleTask: viewModel.state.isLocked || viewModel.state.isLoading ? nil : { line in
+                haptic()
+                viewModel.send(.toggleTask(line: line))
+            }
         )
     }
 
