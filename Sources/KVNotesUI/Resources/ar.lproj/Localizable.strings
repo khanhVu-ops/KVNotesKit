@@ -192,3 +192,4 @@
 "Export as Markdown" = "تصدير بتنسيق Markdown";
 "Export as Plain Text" = "تصدير كنص عادي";
 "The exported file will not be encrypted. Anyone with access to this file can read its contents." = "لن يتم تشفير الملف المُصدَّر. يمكن لأي شخص لديه حق الوصول إلى هذا الملف قراءة محتوياته.";
+"Duplicate" = "تكرار";

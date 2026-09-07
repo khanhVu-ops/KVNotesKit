@@ -168,6 +168,7 @@ public final class NotesListViewModel {
         case setFilter(NoteFilter)
         case setLayout(NoteListLayout)
         case togglePin(NoteID)
+        case duplicate(NoteID)
         case moveToFolder(NoteID, String?)
         case requestDiscard(NoteDigest)
         case confirmDiscard
@@ -256,6 +257,9 @@ public final class NotesListViewModel {
             // and the list then animated a second time about half a second after the row had
             // already moved. One write, one digest back, one row updated in place.
             update(id) { try await self.store.apply(NoteAttributePatch(isPinned: pinned), to: id) }
+        case .duplicate(let id):
+            state.optionSheet = nil
+            perform { try await self.store.duplicate(id) }
         case .moveToFolder(let id, let folder):
             perform { try await self.store.apply(NoteAttributePatch(folder: .set(folder)), to: id) }
         case .requestDiscard(let note):

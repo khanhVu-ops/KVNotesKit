@@ -192,3 +192,4 @@
 "Export as Markdown" = "Экспортировать как Markdown";
 "Export as Plain Text" = "Экспортировать как обычный текст";
 "The exported file will not be encrypted. Anyone with access to this file can read its contents." = "Экспортированный файл не будет зашифрован. Любой, у кого есть доступ к этому файлу, сможет прочитать его содержимое.";
+"Duplicate" = "Дублировать";

@@ -677,6 +677,27 @@ final class NoteViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.state.optionSheet)
     }
 
+    func testListDuplicatesANoteWithNewIdentityAndUnpinned() async throws {
+        let store = InMemoryNoteStore(notes: NoteFixtures.all, bodies: NoteFixtures.bodies)
+        let viewModel = NotesListViewModel(store: store)
+        viewModel.send(.onAppear)
+        try await settle { viewModel.state.phase == .loaded }
+
+        let original = NoteFixtures.bank
+        viewModel.send(.duplicate(original.id))
+        try await settle { !viewModel.state.isBusy }
+
+        let index = await store.index()
+        XCTAssertEqual(index.notes.count, NoteFixtures.all.count + 1)
+
+        let clone = try XCTUnwrap(index.notes.first { $0.id != original.id && $0.title == original.title })
+        XCTAssertFalse(clone.isPinned, "Duplicated note must never be pinned")
+        XCTAssertEqual(clone.folder, original.folder)
+        XCTAssertEqual(clone.icon, original.icon)
+        let cloneBody = try await store.body(clone.id)
+        XCTAssertEqual(cloneBody, NoteFixtures.bodies[original.id])
+    }
+
     private func settle(
         until condition: @escaping @MainActor () -> Bool,
         file: StaticString = #filePath,
@@ -720,6 +741,12 @@ private actor DelayedNoteStore: NoteStore {
 
     func apply(_ patch: NoteAttributePatch, to id: NoteID) async throws -> NoteDigest {
         try await base.apply(patch, to: id)
+    }
+
+    func duplicate(_ id: NoteID) async throws -> NoteDigest {
+        try await Task.sleep(for: delay)
+        writes += 1
+        return try await base.duplicate(id)
     }
 
     func discard(_ id: NoteID) async throws { try await base.discard(id) }

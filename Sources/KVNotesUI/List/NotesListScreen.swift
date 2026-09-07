@@ -502,7 +502,63 @@ public struct NotesListScreen: View {
         // have to fight for the space; a taller neighbour still wins the row. Rows have no floor
         // — a row is as tall as what is in it.
         .frame(minHeight: viewModel.state.layout == .grid ? 158 : nil)
-        .simultaneousGesture(optionsLongPress(note, isSelecting: isSelecting))
+        .contextMenu(isSelecting ? nil : ContextMenu { noteContextMenu(for: note) })
+    }
+
+    @ViewBuilder
+    private func noteContextMenu(for note: NoteDigest) -> some View {
+        Button {
+            listChange(.togglePin(note.id))
+        } label: {
+            Label {
+                Text(note.isPinned ? .notesKit("Unpin") : .notesKit("Pin"))
+            } icon: {
+                Image(systemName: note.isPinned ? "pin.slash" : "pin")
+            }
+        }
+
+        Button {
+            listChange(.duplicate(note.id))
+        } label: {
+            Label {
+                Text(.notesKit("Duplicate"))
+            } icon: {
+                Image(systemName: "doc.on.doc")
+            }
+        }
+
+        Button {
+            inspectingNote = note
+        } label: {
+            Label {
+                Text(.notesKit("Note info"))
+            } icon: {
+                Image(systemName: "info.circle")
+            }
+        }
+
+        if onExportNote != nil {
+            Button {
+                exportingNote = note
+                pendingListExport = true
+            } label: {
+                Label {
+                    Text(.notesKit("Export note"))
+                } icon: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+            }
+        }
+
+        Button(role: .destructive) {
+            viewModel.send(.requestDiscard(note))
+        } label: {
+            Label {
+                Text(.notesKit("Move to Trash"))
+            } icon: {
+                Image(systemName: "trash")
+            }
+        }
     }
 
     /// Deliberately not a `.headerProminence` default: the header has to read as the same
@@ -527,20 +583,6 @@ public struct NotesListScreen: View {
         .padding(.top, topPadding)
         .padding(.bottom, theme.xs)
         .accessibilityAddTraits(.isHeader)
-    }
-
-    /// Opens a row or card's options without stealing its tap.
-    ///
-    /// `simultaneousGesture` rather than `.onLongPressGesture`, which would swallow the tap that
-    /// opens the note; and 0.45s rather than the 0.5s default, which is long enough that people
-    /// let go first. With the swipes gone this and the corner button are the two ways in, so it
-    /// covers the whole card rather than a menu affordance somewhere on it.
-    private func optionsLongPress(_ note: NoteDigest, isSelecting: Bool) -> some Gesture {
-        LongPressGesture(minimumDuration: 0.45).onEnded { _ in
-            guard !isSelecting else { return }
-            haptic()
-            viewModel.send(.openOptions(.note(note.id)))
-        }
     }
 
     /// Everything that can be done to one note, in the one place both layouts read it from.
@@ -686,6 +728,11 @@ public struct NotesListScreen: View {
                 title: .localized(note.isPinned ? .notesKit("Unpin") : .notesKit("Pin")),
                 systemImage: note.isPinned ? "pin.slash" : "pin"
             ) { listChange(.togglePin(note.id)) },
+            NoteOptionItem(
+                id: "duplicate",
+                title: .localized(.notesKit("Duplicate")),
+                systemImage: "doc.on.doc"
+            ) { listChange(.duplicate(note.id)) },
             NoteOptionItem(
                 id: "info",
                 title: .localized(.notesKit("Note info")),

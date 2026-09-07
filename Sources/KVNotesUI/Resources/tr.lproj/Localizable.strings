@@ -192,3 +192,4 @@
 "Export as Markdown" = "Markdown olarak dışa aktar";
 "Export as Plain Text" = "Düz Metin olarak dışa aktar";
 "The exported file will not be encrypted. Anyone with access to this file can read its contents." = "Dışa aktarılan dosya şifrelenmeyecektir. Bu dosyaya erişimi olan herkes içeriğini okuyabilir.";
+"Duplicate" = "Çoğalt";

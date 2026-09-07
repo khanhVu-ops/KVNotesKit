@@ -6,6 +6,7 @@ public protocol NoteStore: Sendable {
     func create(_ draft: NoteDraft) async throws -> NoteDigest
     func update(_ id: NoteID, body: String, title: String?) async throws -> NoteDigest
     func apply(_ patch: NoteAttributePatch, to id: NoteID) async throws -> NoteDigest
+    func duplicate(_ id: NoteID) async throws -> NoteDigest
     func discard(_ id: NoteID) async throws
     func renameFolder(_ name: String, to newName: String) async throws -> Int
     /// Paints every note in the folder with one tint. Folders are labels, so this is the only

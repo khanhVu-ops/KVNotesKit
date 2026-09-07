@@ -41,4 +41,31 @@ final class InMemoryNoteStoreTests: XCTestCase {
             XCTAssertEqual(error as? InMemoryNoteStoreError, .noteNotFound(id))
         }
     }
+
+    func testDuplicateClonesBodyAndDigestWithNewIdentityAndUnpinned() async throws {
+        let store = InMemoryNoteStore()
+        let original = await store.create(NoteDraft(
+            body: "Meeting notes",
+            title: "Sync",
+            folder: "Work",
+            icon: "💼",
+            requiresBiometricUnlock: false,
+            hidesPreview: true
+        ))
+        _ = try await store.apply(NoteAttributePatch(isPinned: true), to: original.id)
+
+        let clone = try await store.duplicate(original.id)
+
+        XCTAssertNotEqual(clone.id, original.id)
+        XCTAssertEqual(clone.title, "Sync")
+        XCTAssertEqual(clone.folder, "Work")
+        XCTAssertEqual(clone.icon, "💼")
+        XCTAssertFalse(clone.isPinned, "Duplicate must never be pinned")
+        XCTAssertTrue(clone.hidesPreview)
+        let cloneBody = try await store.body(clone.id)
+        XCTAssertEqual(cloneBody, "Meeting notes")
+
+        let index = await store.index()
+        XCTAssertEqual(index.notes.count, 2)
+    }
 }

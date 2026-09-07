@@ -78,6 +78,32 @@ public actor InMemoryNoteStore: NoteStore {
         return digest
     }
 
+    public func duplicate(_ id: NoteID) throws -> NoteDigest {
+        let source = try requireDigest(id)
+        let sourceBody = bodies[id, default: ""]
+        let now = Date()
+        let newID = NoteID()
+        let clone = NoteDigest(
+            id: newID,
+            title: source.title,
+            snippet: source.snippet,
+            characterCount: source.characterCount,
+            folder: source.folder,
+            folderTint: source.folderTint,
+            icon: source.icon,
+            requiresBiometricUnlock: source.requiresBiometricUnlock,
+            isTitleUserProvided: source.isTitleUserProvided,
+            isPinned: false,
+            hasChecklist: source.hasChecklist,
+            hidesPreview: source.hidesPreview,
+            createdAt: now,
+            lastEditedAt: now
+        )
+        digests[newID] = clone
+        bodies[newID] = sourceBody
+        return clone
+    }
+
     public func discard(_ id: NoteID) throws {
         guard digests.removeValue(forKey: id) != nil else {
             throw InMemoryNoteStoreError.noteNotFound(id)

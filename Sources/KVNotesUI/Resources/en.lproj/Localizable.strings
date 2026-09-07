@@ -192,3 +192,4 @@
 "Export as Markdown" = "Export as Markdown";
 "Export as Plain Text" = "Export as Plain Text";
 "The exported file will not be encrypted. Anyone with access to this file can read its contents." = "The exported file will not be encrypted. Anyone with access to this file can read its contents.";
+"Duplicate" = "Duplicate";
