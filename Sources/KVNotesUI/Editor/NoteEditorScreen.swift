@@ -74,6 +74,11 @@ public struct NoteEditorScreen: View {
             .onChange(of: scenePhase) { _, phase in
                 if phase != .active, viewModel.state.isDirty { viewModel.send(.save) }
             }
+            #if canImport(UIKit)
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+                if viewModel.state.isDirty { viewModel.send(.save) }
+            }
+            #endif
             .sheet(isPresented: Binding(
                 get: { viewModel.state.showOptions },
                 set: {
