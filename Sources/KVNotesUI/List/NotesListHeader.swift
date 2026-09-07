@@ -382,6 +382,7 @@ struct NotesListFilterBar: View {
         }
         .buttonStyle(NotePressButtonStyle())
         .frame(minHeight: 44)
+        .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }

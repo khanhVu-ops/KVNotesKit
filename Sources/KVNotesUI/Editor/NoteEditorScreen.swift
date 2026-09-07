@@ -7,6 +7,7 @@ public struct NoteEditorScreen: View {
     @State private var initialOptionsDestination: NoteOptionsDestination? = nil
     @Namespace private var modeNamespace
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.locale) private var locale
     @Environment(\.scenePhase) private var scenePhase
 
@@ -156,25 +157,35 @@ public struct NoteEditorScreen: View {
     }
 
     private var metaRow: some View {
-        HStack(spacing: theme.small) {
-            HStack(spacing: 4) {
-                Image(systemName: "checkmark.seal").font(.system(size: 9, weight: .semibold))
-                Text(verbatim: "AES-256-GCM")
-            }
-            .foregroundStyle(theme.success)
+        let isAccessibility = dynamicTypeSize.isAccessibilitySize
+        let layout = isAccessibility
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+            : AnyLayout(HStackLayout(spacing: theme.small))
 
-            if let folder = viewModel.state.folder {
-                divider
-                Text(verbatim: folder)
-            }
-            if viewModel.state.requiresBiometricUnlock {
-                divider
-                HStack(spacing: 3) {
-                    Image(systemName: "lock.fill").font(.system(size: 8, weight: .semibold))
-                    Text(.notesKit("Locked"))
+        return layout {
+            HStack(spacing: theme.small) {
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.seal").font(.system(size: 9, weight: .semibold))
+                    Text(verbatim: "AES-256-GCM")
+                }
+                .foregroundStyle(theme.success)
+
+                if let folder = viewModel.state.folder {
+                    divider
+                    Text(verbatim: folder)
+                }
+                if viewModel.state.requiresBiometricUnlock {
+                    divider
+                    HStack(spacing: 3) {
+                        Image(systemName: "lock.fill").font(.system(size: 8, weight: .semibold))
+                        Text(.notesKit("Locked"))
+                    }
                 }
             }
-            Spacer(minLength: theme.small)
+
+            if !isAccessibility {
+                Spacer(minLength: theme.small)
+            }
             saveStatus
         }
         .font(theme.metadataFont)
@@ -212,6 +223,23 @@ public struct NoteEditorScreen: View {
         .foregroundStyle(saveTone)
         .contentTransition(.opacity)
         .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: viewModel.state.saveStatus)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(saveStatusAccessibilityLabel)
+    }
+
+    private var saveStatusAccessibilityLabel: Text {
+        switch viewModel.state.saveStatus {
+        case .idle:
+            Text(.notesKit(count: "\(viewModel.state.characterCount) characters"))
+        case .unsaved:
+            Text(.notesKit("Unsaved"))
+        case .saving:
+            Text(.notesKit("Saving…"))
+        case .saved:
+            Text(.notesKit("Saved to vault"))
+        case .failed:
+            Text(.notesKit("Not saved"))
+        }
     }
 
     private var saveTone: Color {
@@ -466,12 +494,14 @@ public struct NoteEditorScreen: View {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 13))
                     .foregroundStyle(theme.success)
+                    .accessibilityHidden(true)
                 Text(.notesKit("Saved to vault"))
                     .font(theme.modeFont)
                     .textCase(.uppercase)
                     .tracking(1.2)
                     .foregroundStyle(theme.primaryText)
             }
+            .accessibilityElement(children: .combine)
             .padding(.horizontal, theme.medium)
             .padding(.vertical, theme.small + 2)
             .background(theme.card, in: Capsule())

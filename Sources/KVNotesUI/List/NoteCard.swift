@@ -52,6 +52,7 @@ struct NoteCard: View {
                 marker
                     .padding(theme.small + 2)
                     .transition(.scale.combined(with: .opacity))
+                    .accessibilityHidden(true)
             } else {
                 Button {
                     haptic()
@@ -192,6 +193,7 @@ struct NoteCard: View {
         }
         .frame(width: 44, height: 44)
         .clipShape(RoundedRectangle(cornerRadius: theme.smallRadius, style: .continuous))
+        .accessibilityHidden(true)
     }
 
     /// One metadata line for both layouts.

@@ -43,11 +43,15 @@ final class NoteSyntaxStyling {
         let accent = UIColor(theme.accent)
         let codeBackground = UIColor(theme.elevatedCard)
 
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.baseWritingDirection = .natural
+
         base = [
             .font: baseFont,
             .foregroundColor: primary,
             .backgroundColor: UIColor.clear,
-            .strikethroughStyle: 0
+            .strikethroughStyle: 0,
+            .paragraphStyle: paragraphStyle
         ]
         headings = [
             1: [.font: Self.scaled(baseFont, by: 1.45, traits: .traitBold), .foregroundColor: primary],

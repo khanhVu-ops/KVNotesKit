@@ -17,6 +17,7 @@ public struct NotesListScreen: View {
     @State private var showListExportConfirmation = false
     @State private var pendingListExport = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private let theme: NoteTheme
     private let refreshToken: Int
@@ -448,12 +449,15 @@ public struct NotesListScreen: View {
         .padding(.top, theme.xs)
     }
 
-    /// One column or two. The only difference between the two layouts, as far as this screen is
-    /// concerned — everything else about the change is `NoteCard` reading `layout`.
+    /// One column or two. At accessibility Dynamic Type sizes, collapses to one column so rows
+    /// have the full width to scale their text without clipping.
     private var columns: [GridItem] {
         let spacing = theme.small
         let column = GridItem(.flexible(), spacing: spacing, alignment: .top)
-        return viewModel.state.layout == .grid ? [column, column] : [column]
+        guard viewModel.state.layout == .grid && !dynamicTypeSize.isAccessibilitySize else {
+            return [column]
+        }
+        return [column, column]
     }
 
     /// A note together with the group it is currently drawn in.
@@ -478,10 +482,11 @@ public struct NotesListScreen: View {
 
     private func noteCard(_ note: NoteDigest) -> some View {
         let isSelecting = viewModel.state.isSelecting
+        let effectiveLayout: NoteListLayout = dynamicTypeSize.isAccessibilitySize ? .list : viewModel.state.layout
         return NoteCard(
             note: note,
             theme: theme,
-            layout: viewModel.state.layout,
+            layout: effectiveLayout,
             isSelecting: isSelecting,
             isSelected: viewModel.state.selection.contains(note.id),
             haptic: haptic,

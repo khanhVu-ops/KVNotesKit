@@ -26,6 +26,14 @@ struct NoteMarkdownView: View {
 
     @ViewBuilder
     private func blockView(_ block: NoteMarkdownBlock) -> some View {
+        let isRTL = block.isRightToLeft
+        blockContent(block)
+            .frame(maxWidth: .infinity, alignment: isRTL ? .trailing : .leading)
+            .environment(\.layoutDirection, isRTL ? .rightToLeft : .leftToRight)
+    }
+
+    @ViewBuilder
+    private func blockContent(_ block: NoteMarkdownBlock) -> some View {
         switch block {
         case .heading(let level, let text):
             Text(inline(text))
@@ -74,6 +82,7 @@ struct NoteMarkdownView: View {
                 theme: theme,
                 onCopy: copy
             )
+            .environment(\.layoutDirection, .leftToRight)
         case .divider:
             Rectangle()
                 .fill(theme.separator)
@@ -107,6 +116,7 @@ private struct TaskRow: View {
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(task.isDone ? theme.accent : theme.secondaryText)
                     .frame(width: 18)
+                    .accessibilityHidden(true)
 
                 Text(verbatim: task.text)
                     .font(theme.bodyFont)
@@ -120,6 +130,7 @@ private struct TaskRow: View {
         .buttonStyle(NotePressButtonStyle())
         .disabled(!isEnabled)
         .animation(NoteMotion.selection(reduceMotion: reduceMotion), value: task.isDone)
+        .accessibilityElement(children: .combine)
         .accessibilityAddTraits(task.isDone ? [.isSelected] : [])
         .accessibilityLabel(Text(verbatim: task.text))
     }
@@ -235,5 +246,33 @@ private struct CopyableValueRow: View {
             }
             secondsLeft = nil
         }
+    }
+}
+
+extension NoteMarkdownBlock {
+    var isRightToLeft: Bool {
+        switch self {
+        case .heading(_, let text), .paragraph(let text), .bullet(let text), .quote(let text):
+            return text.isRightToLeftText
+        case .task(let task):
+            return task.text.isRightToLeftText
+        case .code, .divider:
+            return false
+        }
+    }
+}
+
+extension String {
+    var isRightToLeftText: Bool {
+        guard let firstLetter = first(where: { $0.isLetter }) else { return false }
+        for scalar in firstLetter.unicodeScalars {
+            let v = scalar.value
+            // Hebrew (0590–05FF), Arabic & Arabic Supplement/Extended (0600–08FF),
+            // Arabic Presentation Forms (FB50–FDFF, FE70–FEFF)
+            if (0x0590...0x08FF).contains(v) || (0xFB1D...0xFEFC).contains(v) {
+                return true
+            }
+        }
+        return false
     }
 }
