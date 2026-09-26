@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `NotesListScreen` takes `isCreateLocked` and `authorizeCreate`: the host is asked before the
+  template sheet opens, and both create controls show a small lock while it will ask first. The
+  package still knows nothing of plans or paywalls; the defaults open the sheet at once.
 - Fix toggle switch and row icon tint colors in NoteOptionsSheet to match SettingsThemeToggle (`AppColor.Brand.primary` / `theme.accent` and `theme.background` instead of green `theme.success`).
 - Polish sheet UI/UX across Note options, Export, Inspector, and Folders: eliminate default drag indicators (`.presentationDragIndicator(.hidden)`), standardize card corner radii to 18pt (`theme.largeRadius`), align row hairline separators to text baseline (56pt inset), add tactile haptics, spring selection animations, and unified press styles across all buttons and option cards.
 - Redesign note detail more options into a card-based NavigationStack sheet with dedicated sub-destinations for icon picker, folder picker, export format sheet, and note details; add trailing toolbar icon button for direct icon access; replace confirmationDialog popover on export with dedicated NoteExportSheet.

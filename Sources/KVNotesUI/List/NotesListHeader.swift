@@ -28,6 +28,7 @@ struct NotesListToolbar: ToolbarContent {
     let isNarrowed: Bool
     let layout: NoteListLayout
     let haptic: @MainActor @Sendable () -> Void
+    var isCreateLocked = false
     let onCreateNote: @MainActor @Sendable () -> Void
     let onStartSelecting: @MainActor @Sendable () -> Void
     let onStopSelecting: @MainActor @Sendable () -> Void
@@ -182,6 +183,19 @@ struct NotesListToolbar: ToolbarContent {
                 .foregroundStyle(theme.onAccent)
                 .frame(width: 32, height: 32)
                 .background(theme.accent, in: Circle())
+                // Inside the button's own square: the toolbar's glass capsule clips anything that
+                // hangs past it, which cut an offset badge in half.
+                .overlay(alignment: .bottomTrailing) {
+                    if isCreateLocked {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 6, weight: .bold))
+                            .foregroundStyle(theme.onAccent)
+                            .frame(width: 12, height: 12)
+                            .background(theme.secondaryText, in: Circle())
+                            .overlay { Circle().strokeBorder(theme.accent, lineWidth: 1) }
+                            .accessibilityHidden(true)
+                    }
+                }
         }
         .buttonStyle(NotePressButtonStyle())
         .accessibilityLabel(Text(.notesKit("New note")))

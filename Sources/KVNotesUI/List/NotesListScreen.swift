@@ -1,6 +1,11 @@
 import KVNotesCore
 import SwiftUI
 
+/// Asked before a note may be created: call the closure to open the template sheet, or don't.
+public typealias NoteCreateAuthorizer = @MainActor @Sendable (
+    _ proceed: @escaping @MainActor @Sendable () -> Void
+) -> Void
+
 public struct NotesListScreen: View {
     @State private var viewModel: NotesListViewModel
     @State private var searchText = ""
@@ -23,6 +28,8 @@ public struct NotesListScreen: View {
     private let refreshToken: Int
     private let onOpenNote: @MainActor @Sendable (NoteDigest) -> Void
     private let onCreateNote: @MainActor @Sendable (NoteTemplate) -> Void
+    private let isCreateLocked: Bool
+    private let authorizeCreate: NoteCreateAuthorizer
     private let onSelectionChange: @MainActor @Sendable (Bool) -> Void
     private let onExportNote: (@MainActor @Sendable (NoteDigest, NoteExportFormat) -> Void)?
     private let haptic: @MainActor @Sendable () -> Void
@@ -34,6 +41,12 @@ public struct NotesListScreen: View {
         refreshToken: Int = 0,
         onOpenNote: @escaping @MainActor @Sendable (NoteDigest) -> Void,
         onCreateNote: @escaping @MainActor @Sendable (NoteTemplate) -> Void = { _ in },
+        /// Drawn on both create controls when the host will ask before a note can be made. The
+        /// package does not know why — a plan, a policy — only that the tap leads somewhere first.
+        isCreateLocked: Bool = false,
+        /// Runs before the template sheet opens. Call `proceed` to open it; not calling it leaves
+        /// the list as it was. The default opens the sheet at once.
+        authorizeCreate: @escaping NoteCreateAuthorizer = { proceed in proceed() },
         onChange: @escaping @MainActor @Sendable () -> Void = {},
         /// The host hides its dock while a selection is live; the package cannot reach that
         /// modifier, and should not know it exists.
@@ -50,6 +63,8 @@ public struct NotesListScreen: View {
         self.refreshToken = refreshToken
         self.onOpenNote = onOpenNote
         self.onCreateNote = onCreateNote
+        self.isCreateLocked = isCreateLocked
+        self.authorizeCreate = authorizeCreate
         self.onSelectionChange = onSelectionChange
         self.onExportNote = onExportNote
         self.haptic = haptic
@@ -314,7 +329,8 @@ public struct NotesListScreen: View {
             isNarrowed: viewModel.state.isNarrowed,
             layout: viewModel.state.layout,
             haptic: haptic,
-            onCreateNote: { viewModel.send(.openOptions(.templates)) },
+            isCreateLocked: isCreateLocked,
+            onCreateNote: requestCreate,
             onStartSelecting: {
                 withAnimation(NoteMotion.mode(reduceMotion: reduceMotion)) {
                     viewModel.send(.startSelecting)
@@ -831,6 +847,13 @@ public struct NotesListScreen: View {
         .frame(minHeight: 380)
     }
 
+    /// Every create control goes through the host first, so a gate stands before the template
+    /// sheet rather than after a template has been chosen.
+    private func requestCreate() {
+        let viewModel = viewModel
+        authorizeCreate { viewModel.send(.openOptions(.templates)) }
+    }
+
     private var emptyVault: some View {
         VStack(spacing: theme.medium) {
             stateMark(icon: "note.text", tone: theme.primaryText)
@@ -842,13 +865,20 @@ public struct NotesListScreen: View {
             }
             Button {
                 haptic()
-                viewModel.send(.openOptions(.templates))
+                requestCreate()
             } label: {
-                Text(.notesKit("New note"))
-                    .font(theme.modeFont).textCase(.uppercase).tracking(1.4)
-                    .foregroundStyle(theme.onAccent)
-                    .padding(.horizontal, theme.large).frame(height: 44)
-                    .background(theme.accent, in: Capsule())
+                HStack(spacing: theme.xs) {
+                    if isCreateLocked {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                            .accessibilityHidden(true)
+                    }
+                    Text(.notesKit("New note"))
+                }
+                .font(theme.modeFont).textCase(.uppercase).tracking(1.4)
+                .foregroundStyle(theme.onAccent)
+                .padding(.horizontal, theme.large).frame(height: 44)
+                .background(theme.accent, in: Capsule())
             }
             .buttonStyle(NotePressButtonStyle())
             .padding(.top, theme.xs)
