@@ -32,7 +32,7 @@ struct NoteExportSheet: View {
             Text(.notesKit("Security"))
                 .font(theme.metadataFont)
                 .textCase(.uppercase)
-                .tracking(1.3)
+                .scriptTracking(1.3)
                 .foregroundStyle(theme.secondaryText)
         }
     }
@@ -140,7 +140,7 @@ struct NoteExportSheet: View {
             Text(.notesKit("Cancel"))
                 .font(theme.modeFont)
                 .textCase(.uppercase)
-                .tracking(1.3)
+                .scriptTracking(1.3)
                 .foregroundStyle(theme.primaryText)
                 .frame(maxWidth: .infinity, minHeight: 50)
                 .background(theme.card, in: Capsule())

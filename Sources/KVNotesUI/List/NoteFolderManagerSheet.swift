@@ -91,7 +91,7 @@ struct NoteFolderManagerSheet: View {
                 Text(.notesKit(count: "\(folders.count) folders"))
                     .font(theme.metadataFont)
                     .textCase(.uppercase)
-                    .tracking(1.3)
+                    .scriptTracking(1.3)
                     .foregroundStyle(theme.secondaryText)
                     .contentTransition(.numericText())
             }
@@ -100,7 +100,7 @@ struct NoteFolderManagerSheet: View {
                 Text(.notesKit("Done"))
                     .font(theme.modeFont)
                     .textCase(.uppercase)
-                    .tracking(1.2)
+                    .scriptTracking(1.2)
                     .foregroundStyle(theme.onAccent)
                     .padding(.horizontal, theme.medium)
                     .frame(height: 36)
@@ -214,7 +214,7 @@ struct NoteFolderManagerSheet: View {
             Text(.notesKit(count: "\(counts[folder] ?? 0) notes"))
                 .font(theme.metadataFont)
                 .textCase(.uppercase)
-                .tracking(1.2)
+                .scriptTracking(1.2)
                 .foregroundStyle(theme.disabledText)
                 .contentTransition(.numericText())
         }

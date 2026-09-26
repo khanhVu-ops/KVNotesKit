@@ -194,7 +194,7 @@ public struct NoteEditorScreen: View {
             saveStatus
         }
         .font(theme.metadataFont)
-        .tracking(1.1)
+        .scriptTracking(1.1)
         .textCase(.uppercase)
         .lineLimit(1)
         .minimumScaleFactor(0.8)
@@ -347,7 +347,7 @@ public struct NoteEditorScreen: View {
             Text(title)
                 .font(theme.modeFont)
                 .textCase(.uppercase)
-                .tracking(1.2)
+                .scriptTracking(1.2)
                 .foregroundStyle(isSelected ? theme.onAccent : theme.secondaryText)
                 .padding(.horizontal, theme.small + 4)
                 .frame(height: 26)
@@ -403,7 +403,7 @@ public struct NoteEditorScreen: View {
                 Text(.notesKit("Done"))
                     .font(theme.modeFont)
                     .textCase(.uppercase)
-                    .tracking(1.2)
+                    .scriptTracking(1.2)
                     .foregroundStyle(theme.primaryText)
             }
             .buttonStyle(NotePressButtonStyle())
@@ -503,7 +503,7 @@ public struct NoteEditorScreen: View {
                 Text(.notesKit("Saved to vault"))
                     .font(theme.modeFont)
                     .textCase(.uppercase)
-                    .tracking(1.2)
+                    .scriptTracking(1.2)
                     .foregroundStyle(theme.primaryText)
             }
             .accessibilityElement(children: .combine)

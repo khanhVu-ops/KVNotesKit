@@ -71,7 +71,7 @@ struct NoteBatchToolbar: View {
             Text(title)
                 .font(theme.modeFont)
                 .textCase(.uppercase)
-                .tracking(1.1)
+                .scriptTracking(1.1)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }

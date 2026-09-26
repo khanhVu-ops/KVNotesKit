@@ -30,7 +30,7 @@ struct NoteInspectorView: View {
             Text(title)
                 .font(theme.metadataFont)
                 .textCase(.uppercase)
-                .tracking(1.2)
+                .scriptTracking(1.2)
                 .foregroundStyle(theme.secondaryText)
                 .lineLimit(1)
 
@@ -184,7 +184,7 @@ struct NoteInspectorSheet: View {
                 Text(.notesKit("Details"))
                     .font(theme.sectionFont)
                     .textCase(.uppercase)
-                    .tracking(1.8)
+                    .scriptTracking(1.8)
                     .foregroundStyle(theme.primaryText)
                 if !noteTitle.isEmpty {
                     Text(verbatim: noteTitle)
@@ -198,7 +198,7 @@ struct NoteInspectorSheet: View {
                 Text(.notesKit("Done"))
                     .font(theme.modeFont)
                     .textCase(.uppercase)
-                    .tracking(1.2)
+                    .scriptTracking(1.2)
                     .foregroundStyle(theme.onAccent)
                     .padding(.horizontal, theme.medium)
                     .frame(height: 32)

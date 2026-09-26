@@ -67,7 +67,7 @@ struct NoteOptionSheetView: View {
                                 Text(heading)
                                     .font(theme.metadataFont)
                                     .textCase(.uppercase)
-                                    .tracking(1.4)
+                                    .scriptTracking(1.4)
                                     .foregroundStyle(theme.secondaryText)
                                     .padding(.horizontal, theme.xs)
                                     .accessibilityAddTraits(.isHeader)
@@ -95,7 +95,7 @@ struct NoteOptionSheetView: View {
                 subtitle.text
                     .font(theme.metadataFont)
                     .textCase(.uppercase)
-                    .tracking(1.3)
+                    .scriptTracking(1.3)
                     .foregroundStyle(theme.secondaryText)
                     .lineLimit(1)
             }
@@ -175,7 +175,7 @@ struct NoteOptionSheetView: View {
             Text(dismissesOnSelection ? .notesKit("Cancel") : .notesKit("Done"))
                 .font(theme.modeFont)
                 .textCase(.uppercase)
-                .tracking(1.3)
+                .scriptTracking(1.3)
                 .foregroundStyle(dismissesOnSelection ? theme.primaryText : theme.onAccent)
                 .frame(maxWidth: .infinity, minHeight: 50)
                 .background {

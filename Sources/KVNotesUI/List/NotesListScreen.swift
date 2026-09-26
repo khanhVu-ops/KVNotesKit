@@ -596,7 +596,7 @@ public struct NotesListScreen: View {
             if let icon {
                 Image(systemName: icon).font(.system(size: 9, weight: .semibold))
             }
-            title.textCase(.uppercase).tracking(1.4)
+            title.textCase(.uppercase).scriptTracking(1.4)
         }
         .font(theme.metadataFont)
         .foregroundStyle(theme.secondaryText)
@@ -836,9 +836,9 @@ public struct NotesListScreen: View {
         VStack(spacing: theme.medium) {
             stateMark(icon: "exclamationmark.triangle", tone: theme.error)
             Text(.notesKit("Something went wrong."))
-                .font(theme.titleFont).textCase(.uppercase).tracking(1.4).foregroundStyle(theme.primaryText)
+                .font(theme.titleFont).textCase(.uppercase).scriptTracking(1.4).foregroundStyle(theme.primaryText)
             Button(.notesKit("Try again")) { viewModel.send(.refresh) }
-                .font(theme.modeFont).textCase(.uppercase).tracking(1.4)
+                .font(theme.modeFont).textCase(.uppercase).scriptTracking(1.4)
                 .foregroundStyle(theme.onAccent)
                 .padding(.horizontal, theme.large).frame(height: 44)
                 .background(theme.accent, in: Capsule())
@@ -859,7 +859,7 @@ public struct NotesListScreen: View {
             stateMark(icon: "note.text", tone: theme.primaryText)
             VStack(spacing: theme.xs) {
                 Text(.notesKit("No notes yet"))
-                    .font(theme.titleFont).textCase(.uppercase).tracking(1.4).foregroundStyle(theme.primaryText)
+                    .font(theme.titleFont).textCase(.uppercase).scriptTracking(1.4).foregroundStyle(theme.primaryText)
                 Text(.notesKit("Notes you write here are sealed in the vault with AES-256."))
                     .font(theme.bodyFont).multilineTextAlignment(.center).foregroundStyle(theme.secondaryText)
             }
@@ -875,7 +875,7 @@ public struct NotesListScreen: View {
                     }
                     Text(.notesKit("New note"))
                 }
-                .font(theme.modeFont).textCase(.uppercase).tracking(1.4)
+                .font(theme.modeFont).textCase(.uppercase).scriptTracking(1.4)
                 .foregroundStyle(theme.onAccent)
                 .padding(.horizontal, theme.large).frame(height: 44)
                 .background(theme.accent, in: Capsule())
@@ -899,7 +899,7 @@ public struct NotesListScreen: View {
             )
             VStack(spacing: theme.xs) {
                 Text(.notesKit("No matching notes"))
-                    .font(theme.titleFont).textCase(.uppercase).tracking(1.4).foregroundStyle(theme.primaryText)
+                    .font(theme.titleFont).textCase(.uppercase).scriptTracking(1.4).foregroundStyle(theme.primaryText)
                 Text(isFiltered
                     ? .notesKit("No note in this vault matches the filter you have on.")
                     : .notesKit("Titles and previews are searchable. The body of a note is not."))
@@ -907,7 +907,7 @@ public struct NotesListScreen: View {
             }
             if isFiltered {
                 Button(.notesKit("Show all notes")) { listChange(.setFilter(.all)) }
-                    .font(theme.modeFont).textCase(.uppercase).tracking(1.4)
+                    .font(theme.modeFont).textCase(.uppercase).scriptTracking(1.4)
                     .foregroundStyle(theme.onAccent)
                     .padding(.horizontal, theme.large).frame(height: 44)
                     .background(theme.accent, in: Capsule())

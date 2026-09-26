@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Letter-spacing drops to zero for Arabic and Hindi (`scriptTracking`): tracking pries joined scripts apart, and every caps label in Notes was drawn that way in Arabic.
 - `NotesListScreen` takes `isCreateLocked` and `authorizeCreate`: the host is asked before the
   template sheet opens, and both create controls show a small lock while it will ask first. The
   package still knows nothing of plans or paywalls; the defaults open the sheet at once.

@@ -30,7 +30,7 @@ struct PasswordGeneratorSheet: View {
         Text(.notesKit("Generate a password"))
             .font(theme.sectionFont)
             .textCase(.uppercase)
-            .tracking(1.6)
+            .scriptTracking(1.6)
             .foregroundStyle(theme.primaryText)
             .padding(.top, theme.small)
     }
@@ -58,7 +58,7 @@ struct PasswordGeneratorSheet: View {
                 Text(.notesKit("Length"))
                     .font(theme.modeFont)
                     .textCase(.uppercase)
-                    .tracking(1.3)
+                    .scriptTracking(1.3)
                     .foregroundStyle(theme.secondaryText)
                 Spacer()
                 Text(recipe.length, format: .number)
@@ -88,7 +88,7 @@ struct PasswordGeneratorSheet: View {
             title
                 .font(theme.modeFont)
                 .textCase(.uppercase)
-                .tracking(1.3)
+                .scriptTracking(1.3)
                 .foregroundStyle(theme.secondaryText)
         }
         .tint(theme.accent)
@@ -99,7 +99,7 @@ struct PasswordGeneratorSheet: View {
             Button(.notesKit("Regenerate")) { regenerate() }
                 .font(theme.modeFont)
                 .textCase(.uppercase)
-                .tracking(1.3)
+                .scriptTracking(1.3)
                 .foregroundStyle(theme.primaryText)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(theme.card, in: Capsule())
@@ -109,7 +109,7 @@ struct PasswordGeneratorSheet: View {
             Button(.notesKit("Insert")) { onInsert(value) }
                 .font(theme.modeFont)
                 .textCase(.uppercase)
-                .tracking(1.3)
+                .scriptTracking(1.3)
                 .foregroundStyle(theme.onAccent)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(theme.accent, in: Capsule())

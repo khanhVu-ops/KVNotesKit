@@ -234,7 +234,7 @@ struct NoteCard: View {
             }
         }
         .font(theme.metadataFont)
-        .tracking(1)
+        .scriptTracking(1)
         .textCase(.uppercase)
         .foregroundStyle(theme.disabledText)
         .lineLimit(1)

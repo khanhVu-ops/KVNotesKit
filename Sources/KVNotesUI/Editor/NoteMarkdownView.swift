@@ -39,7 +39,7 @@ struct NoteMarkdownView: View {
             Text(inline(text))
                 .font(level == 1 ? theme.sectionFont : theme.modeFont)
                 .textCase(.uppercase)
-                .tracking(level == 1 ? 1.8 : 1.5)
+                .scriptTracking(level == 1 ? 1.8 : 1.5)
                 .foregroundStyle(level == 1 ? theme.primaryText : theme.secondaryText)
                 .padding(.top, level == 1 ? theme.medium : theme.small + 4)
         case .paragraph(let text):
@@ -173,7 +173,7 @@ private struct CopyableValueRow: View {
                     Text(secondsLeft == nil ? .notesKit("Copy") : .notesKit("Copied"))
                         .font(theme.modeFont)
                         .textCase(.uppercase)
-                        .tracking(1.2)
+                        .scriptTracking(1.2)
                         .foregroundStyle(secondsLeft == nil ? theme.secondaryText : theme.success)
                         .padding(.horizontal, theme.small)
                         .frame(height: 26)

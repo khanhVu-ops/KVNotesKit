@@ -58,7 +58,7 @@ struct NotesListToolbar: ToolbarContent {
                     Text(.notesKit("Cancel"))
                         .font(theme.modeFont)
                         .textCase(.uppercase)
-                        .tracking(1.0)
+                        .scriptTracking(1.0)
                         .foregroundStyle(theme.primaryText)
                         .lineLimit(1)
                         .fixedSize()
@@ -72,7 +72,7 @@ struct NotesListToolbar: ToolbarContent {
                 Text(.notesKit(count: "\(selectionCount) selected"))
                     .font(theme.metadataFont)
                     .textCase(.uppercase)
-                    .tracking(1.2)
+                    .scriptTracking(1.2)
                     .foregroundStyle(theme.secondaryText)
                     .contentTransition(.numericText())
                     .lineLimit(1)
@@ -89,7 +89,7 @@ struct NotesListToolbar: ToolbarContent {
                         : .notesKit("Select All"))
                         .font(theme.modeFont)
                         .textCase(.uppercase)
-                        .tracking(1.0)
+                        .scriptTracking(1.0)
                         .foregroundStyle(theme.primaryText)
                         .lineLimit(1)
                         .fixedSize()
@@ -380,7 +380,7 @@ struct NotesListFilterBar: View {
                 if tint != .neutral, !isSelected {
                     Circle().fill(theme.color(for: tint)).frame(width: 6, height: 6)
                 }
-                title.textCase(.uppercase).tracking(1.3)
+                title.textCase(.uppercase).scriptTracking(1.3)
                 Text(count, format: .number)
                     .foregroundStyle(isSelected ? theme.onAccent.opacity(0.6) : theme.disabledText)
             }
@@ -491,7 +491,7 @@ struct NotesListTitleBlock: View {
             }
         }
         .font(theme.metadataFont)
-        .tracking(1.4)
+        .scriptTracking(1.4)
         .foregroundStyle(theme.secondaryText)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
